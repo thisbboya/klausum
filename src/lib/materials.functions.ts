@@ -126,6 +126,8 @@ export const processMaterial = createServerFn({ method: "POST" })
       model,
       schema: ProcessedSchema,
       messages: [{ role: "user", content: userParts }],
+      maxOutputTokens: 16000,
+      maxRetries: 2,
     });
 
     return object;
