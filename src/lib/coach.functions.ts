@@ -50,6 +50,35 @@ const PlanSchema = z.object({
     .min(3)
     .max(40),
 });
+// Mini flashcard deck (6 cards) for a knowledge-gap topic
+const GapCardsInput = z.object({ accessToken: z.string(), topic: z.string(), subject: z.string() });
+const GapCardsSchema = z.object({
+  cards: z
+    .array(
+      z.object({
+        front: z.string(),
+        back: z.string(),
+        bloom_level: z.number().int().min(1).max(6),
+      })
+    )
+    .min(4)
+    .max(8),
+});
+export const generateGapCards = createServerFn({ method: "POST" })
+  .inputValidator((d) => GapCardsInput.parse(d))
+  .handler(async ({ data }) => {
+    await getUserIdFromToken(data.accessToken);
+    const { object } = await generateObject({
+      model: model(),
+      schema: GapCardsSchema,
+      prompt:
+        `Create exactly 6 spaced-repetition flashcards to remediate a weak spot on "${data.topic}" in ${data.subject}. ` +
+        `Each card: front = a precise question or sub-concept, back = a tight 1-3 sentence answer with a concrete example. ` +
+        `Spread Bloom levels across L1-L4. Avoid yes/no questions.`,
+    });
+    return object;
+  });
+
 export const generatePlan = createServerFn({ method: "POST" })
   .inputValidator((d) => PlanInput.parse(d))
   .handler(async ({ data }) => {
