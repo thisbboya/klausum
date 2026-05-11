@@ -204,3 +204,104 @@ function StatusBadge({ status }: { status: string | null }) {
     <span className={`text-xs px-2 py-0.5 rounded-full ${map[s] || map.pending}`}>{s}</span>
   );
 }
+
+function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: string; onSaved: () => void }) {
+  const [mood, setMood] = useState<number | null>(existing?.mood ?? null);
+  const [energy, setEnergy] = useState<string | null>(existing?.energy ?? null);
+  const [saving, setSaving] = useState(false);
+
+  const moods = [
+    { v: 1, e: "😞" }, { v: 2, e: "😐" }, { v: 3, e: "🙂" }, { v: 4, e: "😄" }, { v: 5, e: "🔥" },
+  ];
+  const energies = ["low", "medium", "high"];
+
+  async function save(m: number, en: string) {
+    if (!userId) return;
+    setSaving(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const { error } = await supabase
+      .from("daily_checkins")
+      .upsert({ user_id: userId, check_date: today, mood: m, energy: en }, { onConflict: "user_id,check_date" } as any);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Checked in for today ✦");
+    onSaved();
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <CalendarClock className="h-3.5 w-3.5" /> Today's check-in
+      </div>
+      <h3 className="mt-1 font-display text-base font-semibold">
+        {existing ? "How you felt today" : "How are you feeling?"}
+      </h3>
+      <div className="mt-3 flex gap-2">
+        {moods.map((m) => (
+          <button
+            key={m.v}
+            onClick={() => { setMood(m.v); if (energy) save(m.v, energy); }}
+            className={`flex-1 rounded-lg border py-2 text-xl transition ${
+              mood === m.v ? "border-primary bg-primary/10" : "border-border bg-background hover:border-primary/40"
+            }`}
+          >
+            {m.e}
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {energies.map((en) => (
+          <button
+            key={en}
+            disabled={saving}
+            onClick={() => { setEnergy(en); if (mood) save(mood, en); }}
+            className={`rounded-lg border py-2 text-xs font-medium capitalize transition ${
+              energy === en ? "border-primary bg-primary/10 text-primary" : "border-border bg-background hover:border-primary/40"
+            }`}
+          >
+            {en} energy
+          </button>
+        ))}
+      </div>
+      {existing && (
+        <p className="mt-3 text-xs text-muted-foreground">Tap to update today's mood or energy.</p>
+      )}
+    </div>
+  );
+}
+
+function ExamCountdown({ exams }: { exams: any[] }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <CalendarClock className="h-3.5 w-3.5" /> Upcoming exams
+        </div>
+        <Link to="/settings" className="text-xs text-primary hover:underline">Manage</Link>
+      </div>
+      {exams.length === 0 ? (
+        <div className="mt-3 text-sm text-muted-foreground">
+          No exams scheduled. Add one in Settings to track readiness.
+        </div>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {exams.map((e) => {
+            const days = Math.max(0, Math.ceil((new Date(e.exam_date).getTime() - Date.now()) / 86400000));
+            return (
+              <li key={e.id} className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{e.exam_name}</div>
+                  <div className="text-xs text-muted-foreground">{e.subject || "—"}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-display text-lg font-semibold text-primary">{days}d</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">to go</div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
