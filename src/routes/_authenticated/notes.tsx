@@ -242,6 +242,8 @@ function NoteEditor({ id }: { id: string }) {
       setExporting(false);
     }
   }
+
+  if (loading) {
     return <div className="text-sm text-muted-foreground">Loading note…</div>;
   }
 
