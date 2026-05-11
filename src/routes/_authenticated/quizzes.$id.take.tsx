@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Flag, ChevronRight, Loader2 } from "lucide-react";
+import { Flag, ChevronRight, Loader2, Timer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Q = {
@@ -16,22 +16,29 @@ type Q = {
   bloom_level: number;
 };
 
-export const Route = createFileRoute("/_authenticated/quizzes/$id/take")({ component: TakeQuiz });
+type Search = { timer?: number };
+
+export const Route = createFileRoute("/_authenticated/quizzes/$id/take")({
+  validateSearch: (s: Record<string, unknown>): Search => ({ timer: typeof s.timer === "number" ? s.timer : 0 }),
+  component: TakeQuiz,
+});
 
 function TakeQuiz() {
   const { id } = Route.useParams();
+  const { timer: timerSec } = Route.useSearch();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Q[]>([]);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
-  const [materialId, setMaterialId] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [flags, setFlags] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [start] = useState(Date.now());
+  const [secLeft, setSecLeft] = useState(timerSec ?? 0);
+  const [reviewMode, setReviewMode] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -44,13 +51,29 @@ function TakeQuiz() {
       setQuestions((data.questions as any) ?? []);
       setTitle(data.title);
       setSubject(data.subject ?? "General");
-      setMaterialId(data.material_id ?? null);
       setLoading(false);
     })();
   }, [id, navigate]);
 
   const total = questions.length;
   const q = questions[idx];
+
+  // Per-question countdown timer
+  useEffect(() => {
+    if (!timerSec || loading || reviewMode) return;
+    setSecLeft(timerSec);
+    const t = setInterval(() => {
+      setSecLeft((s: number) => {
+        if (s <= 1) {
+          clearInterval(t);
+          if (idx < total - 1) setIdx((i: number) => i + 1);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [idx, timerSec, loading, total, reviewMode]);
 
   function toggleFlag() {
     const s = new Set(flags);
@@ -139,11 +162,28 @@ function TakeQuiz() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <header>
-        <p className="text-xs text-muted-foreground uppercase tracking-wider">{subject} · {idx + 1} / {total}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">{subject} · {idx + 1} / {total}</p>
+          {timerSec && timerSec > 0 ? (
+            <span className={`inline-flex items-center gap-1 text-xs font-mono ${secLeft <= 5 ? "text-destructive" : "text-muted-foreground"}`}>
+              <Timer className="h-3 w-3" /> {secLeft}s
+            </span>
+          ) : null}
+        </div>
         <h1 className="font-display text-xl font-semibold mt-1">{title}</h1>
         <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
           <div className="h-full bg-primary transition-all" style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
+        {flags.size > 0 && (
+          <div className="mt-2 flex items-center gap-2 text-[11px] text-amber-400">
+            <Flag className="h-3 w-3" /> {flags.size} flagged
+            {!reviewMode && idx === total - 1 && (
+              <button onClick={() => { setReviewMode(true); setIdx(Array.from(flags)[0]); }} className="ml-1 underline">
+                review them
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       <AnimatePresence mode="wait">

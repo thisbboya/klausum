@@ -1,14 +1,21 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { ListChecks, Sparkles, Loader2, Play } from "lucide-react";
+import { ListChecks, Sparkles, Loader2, Play, RotateCcw } from "lucide-react";
 import { generateQuiz } from "@/lib/study.functions";
 
 export const Route = createFileRoute("/_authenticated/quizzes")({ component: QuizzesPage });
+
+const PRESETS: Record<string, number[]> = {
+  Balanced: [20, 20, 20, 15, 15, 10],
+  "Recall-heavy (L1-L2)": [40, 35, 15, 5, 5, 0],
+  "Application (L3-L4)": [10, 15, 35, 30, 5, 5],
+  "Higher-order (L5-L6)": [5, 10, 15, 20, 25, 25],
+};
 
 function QuizzesPage() {
   const { user, session } = useAuth();
@@ -22,6 +29,24 @@ function QuizzesPage() {
   const [count, setCount] = useState(5);
   const [materialId, setMaterialId] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [bloom, setBloom] = useState<number[]>([20, 20, 20, 15, 15, 10]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [timer, setTimer] = useState(false);
+
+  const bloomTotal = bloom.reduce((a, b) => a + b, 0);
+
+  function setBloomLevel(idx: number, val: number) {
+    const next = [...bloom];
+    next[idx] = val;
+    setBloom(next);
+  }
+  function applyPreset(name: string) {
+    setBloom(PRESETS[name]);
+  }
+  function normalize() {
+    const sum = bloom.reduce((a, b) => a + b, 0) || 1;
+    setBloom(bloom.map((v) => Math.round((v / sum) * 100)));
+  }
 
   const { data: quizzes } = useQuery({
     queryKey: ["quizzes", user?.id],
@@ -52,6 +77,9 @@ function QuizzesPage() {
 
   async function generate() {
     if (!session || !user) return;
+    if (showAdvanced && Math.abs(bloomTotal - 100) > 2) {
+      return toast.error(`Bloom distribution must total 100% (currently ${bloomTotal}%)`);
+    }
     let context: string | undefined;
     let useTopic = topic.trim();
     let useSubject = subject;
@@ -75,6 +103,7 @@ function QuizzesPage() {
           difficulty,
           count,
           context,
+          bloomDistribution: showAdvanced ? bloom : undefined,
         },
       });
       const { data: quiz, error } = await supabase
@@ -94,7 +123,7 @@ function QuizzesPage() {
       if (error) throw error;
       toast.success("Quiz ready — let's go.");
       qc.invalidateQueries({ queryKey: ["quizzes", user.id] });
-      navigate({ to: "/quizzes/$id/take", params: { id: quiz.id } });
+      navigate({ to: "/quizzes/$id/take", params: { id: quiz.id }, search: { timer: timer ? 30 : 0 } });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to generate quiz");
     } finally {
@@ -141,7 +170,52 @@ function QuizzesPage() {
               {[3, 5, 10, 15, 20, 25].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </Field>
+          <label className="flex items-end gap-2 pb-1">
+            <input type="checkbox" checked={timer} onChange={(e) => setTimer(e.target.checked)} className="h-4 w-4" />
+            <span className="text-xs">30-second timer per question</span>
+          </label>
         </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((s) => !s)}
+            className="text-xs text-primary hover:underline"
+          >
+            {showAdvanced ? "Hide" : "Show"} Bloom distribution
+          </button>
+        </div>
+
+        {showAdvanced && (
+          <div className="rounded-lg border border-border/60 bg-background/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold">Bloom level distribution</div>
+                <div className="text-[11px] text-muted-foreground">Total: <span className={Math.abs(bloomTotal - 100) > 2 ? "text-destructive font-semibold" : "text-primary font-semibold"}>{bloomTotal}%</span></div>
+              </div>
+              <div className="flex gap-1">
+                {Object.keys(PRESETS).map((p) => (
+                  <button key={p} onClick={() => applyPreset(p)} className="text-[10px] rounded-md border border-border px-2 py-1 hover:border-primary/40">
+                    {p}
+                  </button>
+                ))}
+                <button onClick={normalize} className="inline-flex items-center gap-1 text-[10px] rounded-md border border-border px-2 py-1 hover:border-primary/40">
+                  <RotateCcw className="h-3 w-3" /> Normalize
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {["L1 Remember", "L2 Understand", "L3 Apply", "L4 Analyze", "L5 Evaluate", "L6 Create"].map((label, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="w-28 text-[11px] text-muted-foreground">{label}</span>
+                  <input type="range" min={0} max={60} value={bloom[i]} onChange={(e) => setBloomLevel(i, parseInt(e.target.value))} className="flex-1 accent-[hsl(var(--primary))]" />
+                  <span className="w-10 text-right text-[11px] font-mono">{bloom[i]}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button
           onClick={generate}
           disabled={busy}
@@ -171,6 +245,7 @@ function QuizzesPage() {
                 <Link
                   to="/quizzes/$id/take"
                   params={{ id: q.id }}
+                  search={{ timer: 0 }}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/20"
                 >
                   <Play className="h-3.5 w-3.5" /> Take

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Trophy, RefreshCcw, MessagesSquare } from "lucide-react";
+import { Trophy, RefreshCcw, MessagesSquare, Layers, Loader2 } from "lucide-react";
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { motion } from "framer-motion";
 
@@ -16,9 +17,12 @@ export const Route = createFileRoute("/_authenticated/quizzes/$id/results")({
 function Results() {
   const { id } = Route.useParams();
   const { attempt } = Route.useSearch();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState<any>(null);
   const [att, setAtt] = useState<any>(null);
+  const [makingDeck, setMakingDeck] = useState(false);
+  const [deckMade, setDeckMade] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -87,9 +91,48 @@ function Results() {
             {pct >= 75 ? "Strong work — keep this rhythm. We've still flagged any wrong answers as gaps." : "Mistakes are gold. Each wrong answer is now a knowledge gap to close."}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link to="/quizzes/$id/take" params={{ id }} className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/20">
+            <Link to="/quizzes/$id/take" params={{ id }} search={{ timer: 0 }} className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/20">
               <RefreshCcw className="h-3.5 w-3.5" /> Retake
             </Link>
+            <button
+              onClick={async () => {
+                if (!user) return;
+                const wrong = questions.map((qq: any, i: number) => ({ qq, i })).filter(({ qq, i }) => userAnswers[i] !== qq.correct);
+                if (wrong.length === 0) return toast.info("No wrong answers — nothing to drill.");
+                setMakingDeck(true);
+                try {
+                  const { data: deck, error: dErr } = await supabase.from("flashcard_decks").insert({
+                    user_id: user.id,
+                    title: `Wrong answers · ${quiz.title}`,
+                    subject: quiz.subject,
+                    description: `Auto-generated from quiz attempt`,
+                    total_cards: wrong.length,
+                  }).select("id").single();
+                  if (dErr || !deck) throw dErr;
+                  const cards = wrong.map(({ qq }: any) => ({
+                    deck_id: deck.id,
+                    user_id: user.id,
+                    front: qq.question,
+                    back: `${qq.correct}. ${qq.options[qq.correct]}\n\n${qq.explanation}`,
+                    bloom_level: qq.bloom_level,
+                    tags: [qq.topic],
+                  }));
+                  const { error: cErr } = await supabase.from("flashcards").insert(cards);
+                  if (cErr) throw cErr;
+                  toast.success(`Created deck of ${wrong.length} cards`);
+                  setDeckMade(true);
+                } catch (e: any) {
+                  toast.error(e.message ?? "Failed");
+                } finally {
+                  setMakingDeck(false);
+                }
+              }}
+              disabled={makingDeck || deckMade}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/20 disabled:opacity-50"
+            >
+              {makingDeck ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Layers className="h-3.5 w-3.5" />}
+              {deckMade ? "Deck created" : "Flashcards from wrong answers"}
+            </button>
             <Link to="/tutor" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary/40">
               <MessagesSquare className="h-3.5 w-3.5" /> Ask the tutor
             </Link>
