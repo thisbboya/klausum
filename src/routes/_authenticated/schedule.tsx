@@ -166,7 +166,7 @@ function SchedulePage() {
 
       {view === "list" && <ListView blocks={blocks} colorFor={colorFor} onComplete={complete} onDelete={del} />}
       {view === "week" && <WeekGrid cursor={cursor} blocks={blocks} colorFor={colorFor} onComplete={complete} onDelete={del} />}
-      {view === "month" && <MonthGrid cursor={cursor} blocks={blocks} colorFor={colorFor} onPick={(d) => { setCursor(d); setView("week"); }} />}
+      {view === "month" && <MonthGrid cursor={cursor} blocks={blocks} colorFor={colorFor} onPick={(d: Date) => { setCursor(d); setView("week"); }} />}
 
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
     </div>
