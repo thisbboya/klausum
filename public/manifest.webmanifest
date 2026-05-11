@@ -1,0 +1,23 @@
+{
+  "name": "NkyinkyimIQ — Learning that bends to your mind",
+  "short_name": "NkyinkyimIQ",
+  "description": "Adaptive AI study companion with VARK-personalised content, FSRS-5 spaced repetition, and a Socratic AI tutor.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F172A",
+  "theme_color": "#0F172A",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Flashcards", "short_name": "Cards", "url": "/flashcards", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Quiz", "short_name": "Quiz", "url": "/quiz", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Code Lab", "short_name": "Code", "url": "/codelab", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Study Rooms", "short_name": "Rooms", "url": "/studyrooms", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
