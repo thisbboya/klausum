@@ -28,7 +28,7 @@ function Dashboard() {
           .select("id,next_review_date,fsrs_state")
           .eq("user_id", user!.id),
       ]);
-      const dueCount = (cardsRes.data ?? []).filter((c) => isDue(c.next_review_date)).length;
+      const dueCount = (cardsRes.data ?? []).filter((c) => c.next_review_date && isDue(c.next_review_date)).length;
       return {
         profile: profileRes.data,
         materials: materialsRes.data ?? [],
