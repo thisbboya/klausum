@@ -1,1 +1,48 @@
-\n# NkyinkyimIQ — Phase 1 MVP Plan\n\nAdapting your v2.0 prompt to this project's actual stack: **TanStack Start v1 + TanStack Router + Lovable Cloud (Supabase) + Lovable AI Gateway** (no exposed `VITE_GEMINI_API_KEY`). Phases 2+ (Cornell notes, mind maps, code execution, study rooms, voice notes, WebAuthn, offline PWA, etc.) come in follow-up turns once you paste the rest of the prompt.\n\n## Phase 1 Scope (this turn)\n\n1. **Foundation** — Lovable Cloud, design system, Adinkra symbols, fonts, dark theme\n2. **Auth** — email/password + Google sign-in, profile auto-creation\n3. **Onboarding** — name/level/curriculum + 8-question VARK quiz → primary/secondary learning style\n4. **Materials** — upload PDF/DOCX/TXT, extract text via Gemini, store in DB\n5. **AI processing** — generate summary, key concepts, and 4 VARK adaptations per material\n6. **Flashcards** — auto-generate from material, FSRS-5 review engine, due-card queue\n7. **AI Tutor** — chat scoped to a material, streaming responses, Standard + Socratic modes\n8. **Dashboard** — XP, streak, due cards today, recent materials, quick actions\n\nOut of scope for Phase 1: quizzes, Cornell notes, mind maps, code execution, formula library, study rooms, voice notes, exam countdowns, WebAuthn, offline IndexedDB, knowledge gaps, schedule planner. These remain in the database schema but UI is added later.\n\n## Architecture\n\n```text\nFrontend:    TanStack Start v1 (file routes in src/routes/)\nRouting:     TanStack Router (NOT react-router-dom)\nBackend:     Lovable Cloud (Supabase) — auth, Postgres, RLS, Realtime\nAI:          Lovable AI Gateway via Vercel AI SDK (server functions)\n             Default model: google/gemini-3-flash-preview\n             PDF parsing: send base64 to gateway as multimodal input\nStyling:     Tailwind v4 + shadcn/ui, tokens in src/styles.css (oklch)\nMath:        KaTeX + react-markdown + remark-math + rehype-katex\nState:       Zustand for client state, TanStack Query for server state\nCharts:      Recharts (Phase 2+)\n```\n\n### Why deviations from your prompt\n\n- **No `VITE_GEMINI_API_KEY`**: client-side keys are public. All Gemini calls go through `/api/*` server routes using `LOVABLE_API_KEY` (server-only, auto-provisioned).\n- **No PDF.js, no client GeminiQueue**: PDFs are base64'd in the browser, posted to a server function, and the AI Gateway handles concurrency/retries.\n- **TanStack file routes** instead of React Router v6: e.g. `src/routes/_aut
+## Slice 7 — Knowledge Gaps: adaptive remediation loop
+
+Right now `/gaps` lists weak topics with an Explain button and a manual Close. This slice closes the loop so each gap becomes actionable practice that automatically lowers in severity (or resolves) when the user demonstrates mastery.
+
+### What you'll get
+
+1. **Auto-promote severity** based on age and re-occurrence
+   - When a quiz attempt is saved and a wrong answer maps to an existing open gap, increment a hit counter and bump severity (`low → moderate → critical`).
+   - When a correct answer matches an open gap's topic, raise `confidence` and auto-resolve at ≥80%.
+
+2. **One-click practice paths** on each gap card
+   - **Mini-quiz (5 Qs)** — generate a focused quiz on just that topic via the existing AI quiz pipeline, tagged so its result feeds back into the gap.
+   - **Flashcards** — generate a 6-card deck for the topic (front = sub-concept, back = explanation) and drop it into the user's decks.
+   - **Tutor it** — open `/tutor` pre-seeded with a Socratic prompt about the topic.
+
+3. **Severity & filter UI**
+   - Filter chips: All / Critical / Moderate / Low / Closed.
+   - Sort by severity then age. Show "X days open" on each card.
+   - Empty/celebration state when 0 critical gaps remain.
+
+4. **Gap → Schedule** (small)
+   - "Add 25-min review block" button creates a `schedule_blocks` row tomorrow morning for that topic.
+
+### Technical notes
+
+- Add a `hit_count` integer column to `knowledge_gaps` (nullable, default 0) via migration. Existing RLS already covers it.
+- New server fn `generateGapPractice` in `src/lib/coach.functions.ts` that takes `{ topic, subject, mode: "quiz" | "deck" }` and returns 5 MCQs or 6 cards using the same Lovable AI Gateway prompt style as the existing quiz/flashcard generators.
+- Client writes go through the existing browser `supabase` client (RLS by user_id).
+- On quiz attempt save (`quizzes.$id.results.tsx`), add a post-submit pass that:
+  - reads open gaps for the user
+  - for each wrong question, fuzzy-matches its topic/concept against open gaps (lowercase substring match on `topic`)
+  - increments `hit_count` and escalates severity
+  - for each correct question matching a gap, +15 confidence; resolve at ≥80
+- `/gaps` page gains the filter chips and three new buttons per card; navigation uses TanStack `Link`/`useNavigate`.
+
+### Files touched
+
+- `supabase/migrations/<ts>_gap_hit_count.sql` (add column)
+- `src/lib/coach.functions.ts` (add `generateGapPractice` server fn)
+- `src/routes/_authenticated/gaps.tsx` (filters, action buttons, severity badges)
+- `src/routes/_authenticated/quizzes.$id.results.tsx` (post-submit gap reconciliation)
+
+### Out of scope
+
+- Cross-material concept graph linking (Phase 3).
+- Notifications / email reminders for stale gaps.
+
+After this, remaining candidates: voice-notes polish, formula library polish, dashboard "today" focus widget, or settings/profile polish. I'll ask you to pick once Slice 7 lands.
