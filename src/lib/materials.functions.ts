@@ -107,7 +107,7 @@ export const processMaterial = createServerFn({ method: "POST" })
         text:
           `You are Klausum, an adaptive learning engine. ` +
           `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract formulas." : "Non-STEM — formulas array should be empty."} ` +
-          `Produce: summary, 8-15 key concepts (with stable ids c1..cN), concept_graph edges between concepts, ` +
+          `Produce: extracted_text (plain text of the source — for files, transcribe the readable content; for pasted text, echo it cleaned up), summary, 8-15 key concepts (with stable ids c1..cN), concept_graph edges between concepts, ` +
           `four VARK adaptations (each <600 words, with the special callout tags described in the schema), ` +
           `Cornell Notes (cue/notes/summary), exactly 15 flashcards distributed 2/3/3/3/2/2 across Bloom L1-L6, ` +
           `${stem ? "all formulas in LaTeX, " : ""}` +
