@@ -1,91 +1,61 @@
-## Slice 9 — Code Lab depth
+# Slice 10 — Notes + Formulas polish
 
-Turn the Code Lab into a full coding workbench: persistent snippets, AI test generation, AI code explanation, and a tabbed Engineering Calculator with 6 widgets.
+Make Cornell notes and the Formula Library feel like real study artifacts: live math rendering, polished PDF exports, and an AI-generated reference sheet per subject.
 
-### 1. Snippets Library (persistent)
+## 1. KaTeX in Cornell notes
 
-New table `code_snippets`:
-- `id`, `user_id`, `title`, `language`, `code`, `tags[]`, `is_favorite`, `created_at`, `updated_at`
-- RLS: users own their snippets
+Cornell notes already accept Markdown + `$LaTeX$` in the prompt, but render as raw text. Add live preview rendering across the three columns.
 
-UI on `/codelab`:
-- Collapsible left rail listing the user's saved snippets (title + language chip + star)
-- "Save snippet" button in the editor toolbar — opens a small dialog (title, optional tags) and stores current `code` + `lang`
-- Click a snippet → loads it into the editor
-- Inline rename, delete, favorite-toggle
-- Search input filters by title/tag
+- Add a per-column "Edit / Preview" toggle in the Cornell editor (`src/routes/_authenticated/notes.tsx`).
+- Preview mode renders Markdown + inline `$...$` and block `$$...$$` math via `react-markdown` + `remark-math` + `rehype-katex` (already have `katex` installed for the Formula Library).
+- Defaults: Cue + Summary columns open in preview, Notes column opens in edit. Click toggles. Edit mode keeps the existing textarea behavior.
+- Same renderer used in Formula Library's `SafeMath` is reused, plus inline math support.
 
-### 2. Generate Tests (AI)
+## 2. PDF exports
 
-New server fn `generateTests` in `src/lib/lab.functions.ts`:
-- Input: `language`, `code`
-- Output: `{ tests: string, framework: string, notes: string }`
-- Uses an idiomatic framework per language (pytest, vitest/jest, JUnit, Catch2, Go testing, Rust `#[test]`)
+Two export entry points, both client-side via `jspdf` + `html2canvas` (no server fns, no extra storage).
 
-UI: "Generate tests" button in the editor toolbar. Result shown in a side panel with:
-- Copy-to-clipboard
-- "Open in editor" (replaces editor with combined code+tests so the user can run)
+a. **Cornell note → PDF**
+   - "Export PDF" button in the note editor toolbar.
+   - Renders a hidden printable layout: title + subject header, 3-column Cornell grid (Cue 25% / Notes 75%), summary band at the bottom, page footer with date.
+   - Preserves KaTeX rendering (uses the preview HTML, not raw text).
+   - Filename: `{title}-cornell.pdf`.
 
-### 3. Explain Code (AI)
+b. **Formula Library → PDF reference sheet**
+   - "Export PDF" button on `/formulas` (next to "Add formula").
+   - Honors current subject filter + search query (exports the visible set).
+   - Layout: 2-column grid, each formula = name + rendered KaTeX + subject chip + description. Auto page-breaks.
+   - Filename: `formulas-{subject}.pdf`.
 
-New server fn `explainCode`:
-- Input: `language`, `code`
-- Output: structured explanation `{ summary, line_by_line: [{lines, explanation}], complexity, suggestions[] }`
+## 3. AI Reference Sheet (per subject)
 
-UI: "Explain" button next to "Run". Result rendered as collapsible sections under the existing AI panel.
+New server fn `generateReferenceSheet` in a new file `src/lib/formulas.functions.ts`:
 
-### 4. Engineering Calculators (tabbed widget below editor)
+- Input: `subject` (string), optional `topic` hint.
+- Pulls the user's existing formulas for that subject as seed context (server-side via `serviceSupabase`), asks Lovable AI (`google/gemini-2.5-flash`) to produce a curated 1-page reference sheet: 8–15 formulas with `name`, `latex`, `description`, `category`, `tags[]`.
+- Returns structured JSON validated with Zod.
+- UI: "Generate Reference Sheet" button on `/formulas` opens a dialog (subject dropdown of existing subjects + free-text override + optional topic). On generate, shows preview list with rendered KaTeX, each row has a checkbox; "Add selected" inserts into `formulas` table for the user.
 
-New component `src/components/codelab/EngineeringCalculators.tsx` with a tab strip:
-
-1. **Unit converter** — length, mass, temperature, time, volume, pressure, energy, data. Two-column input/output with live conversion (pure JS, no AI).
-2. **Ohm's law** — V/I/R/P solver: enter any 2, get the other 2. Includes formula display and worked-step output.
-3. **Resistor decoder** — 4-band and 5-band color picker → resistance ± tolerance. Visual resistor with selectable color bands.
-4. **Logic gates** — truth-table builder. User picks gate (AND/OR/NOT/NAND/NOR/XOR/XNOR) and number of inputs (2–4); table renders live. Bonus: small expression evaluator (`A & B | !C`).
-5. **Statistics** — paste comma/newline-separated numbers → mean, median, mode, range, variance, stdev, quartiles, min/max, count.
-6. **Matrix** — 2×2 and 3×3 operations: add, subtract, multiply, transpose, determinant, inverse. Editable grid inputs.
-
-All calculators are pure client-side, no AI calls, no DB. Reuse existing semantic tokens.
-
-### 5. Layout reshape
-
-Restructure `/codelab` into a 3-pane responsive layout:
-```text
-+----------------+----------------------------------+
-| Snippets rail  |  Editor (Monaco)                 |
-| (collapsible)  |  + toolbar: Run / Save / Tests / |
-|                |    Explain                       |
-|                +----------------------------------+
-|                |  stdin | output                  |
-|                +----------------------------------+
-|                |  AI panel (debug/explain/tests)  |
-+----------------+----------------------------------+
-| Engineering Calculators (full-width tabs below)   |
-+---------------------------------------------------+
-```
-
-On viewports < 768px the snippets rail becomes a top accordion and calculator tabs scroll horizontally.
-
-### Files
+## 4. Files
 
 **Created**
-- `supabase/migrations/<ts>_code_snippets.sql` — new table + RLS
-- `src/components/codelab/SnippetsRail.tsx`
-- `src/components/codelab/EngineeringCalculators.tsx`
-- `src/components/codelab/calc/UnitConverter.tsx`
-- `src/components/codelab/calc/OhmsLaw.tsx`
-- `src/components/codelab/calc/ResistorDecoder.tsx`
-- `src/components/codelab/calc/LogicGates.tsx`
-- `src/components/codelab/calc/StatsCalc.tsx`
-- `src/components/codelab/calc/MatrixCalc.tsx`
+- `src/lib/formulas.functions.ts` — `generateReferenceSheet` server fn
+- `src/components/notes/MarkdownMath.tsx` — shared markdown+KaTeX renderer
+- `src/components/notes/CornellPdfExport.tsx` — printable layout + export trigger
+- `src/components/formulas/FormulasPdfExport.tsx` — printable formula sheet
+- `src/components/formulas/ReferenceSheetDialog.tsx` — AI generation dialog
 
 **Edited**
-- `src/lib/lab.functions.ts` — add `generateTests` and `explainCode` server fns
-- `src/routes/_authenticated/codelab.tsx` — new layout, integrate snippets rail, new toolbar buttons, calculator tabs
+- `src/routes/_authenticated/notes.tsx` — column edit/preview toggles, Export PDF button
+- `src/routes/_authenticated/formulas.tsx` — Export PDF + Reference Sheet buttons, swap `SafeMath` to use shared renderer
 
-### Out of scope (deferred)
-- Multi-file projects / package installs in the runner
-- Real test execution (we generate, user runs)
-- Saving calculator results (kept stateless for now)
+**New deps**
+- `react-markdown`, `remark-math`, `rehype-katex`, `jspdf`, `html2canvas`
 
-After approval I'll ship this in one pass and then move to Slice 10 (Notes + Formulas polish: KaTeX in Cornell, PDF exports, AI Reference Sheet).
+## Out of scope
+- DOCX export (PDF only)
+- Server-side PDF rendering
+- Sharing reference sheets between users
+- Editing formulas inline in the AI preview (user can edit after insert)
+
+After approval I'll ship in one pass and then move to Slice 11 (PWA + offline).
