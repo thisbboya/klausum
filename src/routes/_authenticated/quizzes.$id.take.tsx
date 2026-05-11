@@ -51,7 +51,6 @@ function TakeQuiz() {
       setQuestions((data.questions as any) ?? []);
       setTitle(data.title);
       setSubject(data.subject ?? "General");
-      setMaterialId(data.material_id ?? null);
       setLoading(false);
     })();
   }, [id, navigate]);
