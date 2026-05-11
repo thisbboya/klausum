@@ -1,48 +1,39 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Loader2, Sparkles, ArrowLeft, Brain } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { Loader2, ArrowLeft, Brain, BookOpen } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { generateFlashcards } from "@/lib/materials.functions";
-import { useServerFn } from "@tanstack/react-start";
-import { getAccessToken } from "@/lib/auth-helper";
-import { createNewCard } from "@/lib/fsrs";
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
 });
 
 const TABS = [
-  { key: "summary", label: "Summary" },
-  { key: "visual", label: "Visual" },
-  { key: "auditory", label: "Auditory" },
-  { key: "reading", label: "Reading" },
-  { key: "kinesthetic", label: "Kinesthetic" },
+  { key: "summary", label: "Summary", color: "text-foreground" },
+  { key: "visual", label: "👁️ Visual", color: "text-[color:var(--color-visual)]" },
+  { key: "auditory", label: "🎧 Auditory", color: "text-[color:var(--color-auditory)]" },
+  { key: "reading", label: "📖 Reading", color: "text-[color:var(--color-reading)]" },
+  { key: "kinesthetic", label: "⚡ Kinesthetic", color: "text-[color:var(--color-kinesthetic)]" },
+  { key: "cornell", label: "📓 Cornell", color: "text-foreground" },
+  { key: "formulas", label: "🧮 Formulas", color: "text-foreground" },
+  { key: "questions", label: "🎯 Bloom Q&A", color: "text-foreground" },
 ] as const;
 
 function MaterialDetail() {
   const { id } = Route.useParams();
   const { user } = useAuth();
-  const qc = useQueryClient();
-  const navigate = useNavigate();
-  const generateFn = useServerFn(generateFlashcards);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("summary");
-  const [generating, setGenerating] = useState(false);
 
   const { data: material, isLoading } = useQuery({
     queryKey: ["material", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("study_materials")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
+      const { data, error } = await supabase.from("study_materials").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -53,78 +44,18 @@ function MaterialDetail() {
     queryKey: ["deck-for-material", id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("flashcard_decks")
-        .select("*")
-        .eq("material_id", id)
-        .maybeSingle();
+      const { data } = await supabase.from("flashcard_decks").select("*").eq("material_id", id).maybeSingle();
       return data;
     },
   });
 
-  async function makeCards() {
-    if (!user || !material) return;
-    setGenerating(true);
-    try {
-      const accessToken = await getAccessToken();
-      const content =
-        material.adapted_reading ||
-        material.ai_summary ||
-        material.original_content;
-      const { cards } = await generateFn({
-        data: {
-          accessToken,
-          title: material.title,
-          materialContent: content,
-          count: 12,
-        },
-      });
-
-      // Create deck
-      const { data: newDeck, error: deckErr } = await supabase
-        .from("flashcard_decks")
-        .insert({
-          user_id: user.id,
-          material_id: material.id,
-          title: material.title,
-          subject: material.subject ?? "General",
-          total_cards: cards.length,
-        })
-        .select()
-        .single();
-      if (deckErr) throw deckErr;
-
-      const initial = createNewCard();
-      const rows = cards.map((c) => ({
-        user_id: user.id,
-        deck_id: newDeck.id,
-        front: c.front,
-        back: c.back,
-        hint: c.hint,
-        bloom_level: c.bloom_level,
-        tags: c.tags,
-        fsrs_state: initial.state,
-        fsrs_stability: initial.stability,
-        fsrs_difficulty: initial.difficulty,
-        fsrs_retrievability: initial.retrievability,
-        fsrs_repetitions: initial.repetitions,
-        fsrs_lapses: initial.lapses,
-        next_review_date: initial.nextReviewDate,
-      }));
-      const { error: cardsErr } = await supabase.from("flashcards").insert(rows);
-      if (cardsErr) throw cardsErr;
-
-      await supabase.rpc("increment_xp", { _amount: 30 });
-      toast.success(`Generated ${cards.length} flashcards`);
-      qc.invalidateQueries({ queryKey: ["deck-for-material", id] });
-      navigate({ to: "/review" });
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message ?? "Generation failed");
-    } finally {
-      setGenerating(false);
-    }
-  }
+  const visibleTabs = useMemo(() => {
+    if (!material) return TABS;
+    return TABS.filter((t) => {
+      if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0;
+      return true;
+    });
+  }, [material]);
 
   if (isLoading) {
     return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-muted-foreground" /></div>;
@@ -139,87 +70,182 @@ function MaterialDetail() {
         <ArrowLeft className="h-3.5 w-3.5 mr-1" /> All materials
       </Link>
 
-      <header>
-        <h1 className="font-display text-2xl font-bold">{material.title}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {material.subject} · {material.word_count ? `${material.word_count} words` : "—"} ·{" "}
-          {material.estimated_read_minutes ? `${material.estimated_read_minutes} min read` : ""}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold">{material.title}</h1>
+          <p className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-muted">{material.subject}</span>
+            {material.field_category && <span className="px-2 py-0.5 rounded-full bg-muted">{material.field_category}</span>}
+            {material.is_stem && <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary">⚗️ STEM</span>}
+            <span>{material.word_count ?? "—"} words · {material.estimated_read_minutes ?? "—"} min</span>
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link to="/tutor" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10">🧠 Tutor</Link>
+          {deck && <Link to="/review" className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">⚡ Review {deck.total_cards}</Link>}
+        </div>
       </header>
 
       {!isReady ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
-          <p className="mt-3 text-sm">Processing with AI…</p>
-          <p className="text-xs text-muted-foreground">Auto-refreshing.</p>
+          <p className="mt-3 text-sm">Processing with AI… auto-refreshing.</p>
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2 border-b border-border">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`px-3 py-2 text-sm border-b-2 -mb-px transition ${
-                  tab === t.key
-                    ? "border-primary text-primary font-medium"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
+          <div className="flex flex-wrap gap-1 border-b border-border overflow-x-auto">
+            {visibleTabs.map((t) => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap transition ${
+                  tab === t.key ? `border-primary font-medium ${t.color}` : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}>
                 {t.label}
               </button>
             ))}
           </div>
 
-          <article className="prose prose-invert prose-sm md:prose-base max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-              {tab === "summary"
-                ? renderSummary(material)
-                : (material as any)[`adapted_${tab}`] ?? "_(no adaptation)_"}
-            </ReactMarkdown>
-          </article>
-
-          <div className="rounded-xl border border-border bg-card p-5 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary/15 p-2 text-primary">
-                <Brain className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="font-display font-semibold">Flashcards</div>
-                <div className="text-xs text-muted-foreground">
-                  {deck ? `${deck.total_cards} cards generated` : "Not generated yet"}
-                </div>
-              </div>
-            </div>
-            {!deck ? (
-              <button
-                onClick={makeCards}
-                disabled={generating}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              >
-                {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {generating ? "Generating…" : "Generate flashcards"}
-              </button>
-            ) : (
-              <Link
-                to="/review"
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent/10"
-              >
-                Go review
-              </Link>
-            )}
-          </div>
+          {tab === "summary" && <SummaryTab material={material} />}
+          {(tab === "visual" || tab === "auditory" || tab === "reading" || tab === "kinesthetic") && (
+            <CalloutMarkdown text={(material as any)[`adapted_${tab}`] ?? ""} />
+          )}
+          {tab === "cornell" && <CornellTab material={material} />}
+          {tab === "formulas" && <FormulasTab formulas={material.formulas as any[]} />}
+          {tab === "questions" && <BloomTab questions={material.bloom_questions as any} />}
         </>
       )}
     </div>
   );
 }
 
-function renderSummary(m: any): string {
-  const parts: string[] = [];
-  if (m.ai_summary) parts.push(`## Summary\n\n${m.ai_summary}`);
-  if (Array.isArray(m.key_concepts) && m.key_concepts.length > 0) {
-    parts.push(`## Key concepts\n\n` + m.key_concepts.map((c: any) => `- **${c.term}** — ${c.definition}`).join("\n"));
-  }
-  return parts.join("\n\n") || "_No summary yet._";
+function SummaryTab({ material }: { material: any }) {
+  return (
+    <div className="space-y-5">
+      <article className="prose prose-invert prose-sm md:prose-base max-w-none">
+        <h2>Summary</h2>
+        <p>{material.ai_summary}</p>
+      </article>
+      {Array.isArray(material.key_concepts) && material.key_concepts.length > 0 && (
+        <div className="grid gap-2 md:grid-cols-2">
+          {material.key_concepts.map((c: any, i: number) => (
+            <div key={i} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h3 className="font-display font-semibold text-sm">{c.concept ?? c.term}</h3>
+                {c.bloom_level && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted">L{c.bloom_level}</span>}
+              </div>
+              <p className="text-xs text-muted-foreground">{c.definition}</p>
+              {c.example && <p className="text-xs mt-2 italic text-muted-foreground">e.g. {c.example}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Replace [TAG: ...] with semantic blocks before markdown rendering.
+function preprocessCallouts(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/\[KEY TERM:\s*([^\]]+)\]/g, '\n\n> 🔑 **Key term:** $1\n\n')
+    .replace(/\[DIAGRAM:\s*([^\]]+)\]/g, '\n\n> 📊 **Diagram:** $1\n\n')
+    .replace(/\[SAY THIS ALOUD:\s*([^\]]+)\]/g, '\n\n> 🎧 **Say aloud:** $1\n\n')
+    .replace(/\[VERBAL SUMMARY:\s*([^\]]+)\]/g, '\n\n> 🗣️ **Verbal summary:** $1\n\n')
+    .replace(/\[TRY THIS:\s*([^\]]+)\]/g, '\n\n> ⚡ **Try this:** $1\n\n')
+    .replace(/\[REAL WORLD:\s*([^\]]+)\]/g, '\n\n> 🌍 **Real world:** $1\n\n')
+    .replace(/\[WRITE THIS DOWN:\s*([^\]]+)\]/g, '\n\n> ✏️ **Write down:** $1\n\n')
+    .replace(/\[FORMULA:\s*([^\]]+)\]/g, '\n\n$$$1$$\n\n');
+}
+
+function CalloutMarkdown({ text }: { text: string }) {
+  const processed = useMemo(() => preprocessCallouts(text), [text]);
+  if (!text) return <p className="text-muted-foreground text-sm">No adaptation available.</p>;
+  return (
+    <article className="prose prose-invert prose-sm md:prose-base max-w-none prose-blockquote:border-l-primary prose-blockquote:bg-card prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-md prose-blockquote:not-italic">
+      <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
+        {processed}
+      </ReactMarkdown>
+    </article>
+  );
+}
+
+function CornellTab({ material }: { material: any }) {
+  if (!material.cornell_notes) return <p className="text-muted-foreground text-sm">No Cornell Notes available.</p>;
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-2"><Brain className="h-4 w-4 text-primary" /> Cues</h3>
+          <pre className="text-xs whitespace-pre-wrap font-sans text-muted-foreground">{material.cornell_cue}</pre>
+        </div>
+        <div className="md:col-span-2 rounded-xl border border-border bg-card p-4">
+          <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /> Notes</h3>
+          <article className="prose prose-invert prose-sm max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
+              {material.cornell_notes}
+            </ReactMarkdown>
+          </article>
+        </div>
+      </div>
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <h3 className="font-display font-semibold text-sm mb-2">Summary</h3>
+        <p className="text-sm">{material.cornell_summary}</p>
+      </div>
+    </div>
+  );
+}
+
+function FormulasTab({ formulas }: { formulas: any[] }) {
+  if (!formulas?.length) return <p className="text-muted-foreground text-sm">No formulas extracted.</p>;
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {formulas.map((f, i) => (
+        <div key={i} className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h4 className="font-display font-semibold text-sm">{f.name}</h4>
+            <button onClick={() => navigator.clipboard.writeText(f.latex)}
+              className="text-[10px] text-muted-foreground hover:text-foreground">Copy LaTeX</button>
+          </div>
+          <div className="rounded bg-background p-3 text-center overflow-x-auto">
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {`$$${f.latex}$$`}
+            </ReactMarkdown>
+          </div>
+          {f.variables?.length > 0 && (
+            <ul className="mt-3 space-y-1">
+              {f.variables.map((v: any, j: number) => (
+                <li key={j} className="text-xs text-muted-foreground">
+                  <code className="text-primary">{v.symbol}</code> — {v.meaning}{v.unit && ` (${v.unit})`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BloomTab({ questions }: { questions: Record<string, { question: string; answer: string }[]> }) {
+  if (!questions || typeof questions !== "object") return <p className="text-muted-foreground text-sm">No question bank.</p>;
+  const labels: Record<string, string> = {
+    L1: "Remember", L2: "Understand", L3: "Apply", L4: "Analyse", L5: "Evaluate", L6: "Create",
+  };
+  return (
+    <div className="space-y-4">
+      {(["L1","L2","L3","L4","L5","L6"] as const).map((lvl) => (
+        <div key={lvl} className="rounded-xl border border-border bg-card p-4">
+          <h3 className="font-display font-semibold text-sm mb-3">
+            <span className="px-2 py-0.5 rounded text-xs mr-2" style={{ background: `var(--bloom-${lvl[1]})`, color: "oklch(0.2 0.04 260)" }}>{lvl}</span>
+            {labels[lvl]}
+          </h3>
+          {questions[lvl]?.map((q, i) => (
+            <details key={i} className="mb-2 group">
+              <summary className="cursor-pointer text-sm hover:text-primary">{q.question}</summary>
+              <p className="mt-2 ml-4 text-xs text-muted-foreground">{q.answer}</p>
+            </details>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
 }
