@@ -83,10 +83,8 @@ function ReviewPage() {
 
     const xp = supabase.rpc("increment_xp", { _amount: rating === 1 ? 1 : 5 });
 
-    const [{ error: e1 }, { error: e2 }] = await Promise.all([updates, review, xp]).then(
-      (r) => [r[0], r[1]]
-    );
-    if (e1 || e2) toast.error((e1 || e2)!.message);
+    const [u, r, _x] = await Promise.all([updates, review, xp]);
+    if (u.error || r.error) toast.error((u.error || r.error)!.message);
 
     setReviewedToday((n) => n + 1);
     setShowBack(false);
