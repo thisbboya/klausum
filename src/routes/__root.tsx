@@ -69,7 +69,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Klausum — Learning that bends to your mind" },
+      { title: "Klausum — Your private vault for everything you study" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Klausum" },
@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "theme-color", content: "#0F172A" },
       { property: "og:title", content: "Klausum" },
-      { property: "og:description", content: "Learning that bends to your mind." },
+      { property: "og:description", content: "Your private vault for everything you study." },
       { property: "og:type", content: "website" },
     ],
     links: [
