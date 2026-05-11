@@ -76,6 +76,7 @@ function AuthLayout() {
           <NavItem to="/exams" icon={GraduationCap} label="Exams" />
           <NavItem to="/tutor" icon={MessagesSquare} label="AI Tutor" />
           <NavItem to="/settings" icon={Settings} label="Settings" />
+          {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}
         </nav>
         <div className="mt-auto px-2 text-xs text-muted-foreground">
           <div className="truncate">{profile?.full_name || user.email}</div>
