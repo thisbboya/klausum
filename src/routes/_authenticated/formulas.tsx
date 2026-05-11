@@ -179,3 +179,28 @@ function SafeMath({ latex }: { latex: string }) {
     return <code className="text-xs text-red-400">Invalid LaTeX</code>;
   }
 }
+
+function PrintableFormulas({ formulas, subject }: { formulas: any[]; subject: string }) {
+  return (
+    <div style={{ color: "#0f172a" }}>
+      <div style={{ borderBottom: "2px solid #0f172a", paddingBottom: 8, marginBottom: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Formula Reference Sheet</h1>
+        <p style={{ fontSize: 12, color: "#475569", margin: "4px 0 0" }}>
+          Subject: {subject} · {formulas.length} formulas · Generated {new Date().toLocaleDateString()}
+        </p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {formulas.map((f) => (
+          <div key={f.id} style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: 10, background: "#f8fafc", breakInside: "avoid" }}>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{f.name}</div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", color: "#64748b", letterSpacing: 0.5 }}>{f.subject}</div>
+            <div style={{ background: "#fff", padding: 8, borderRadius: 4, margin: "6px 0", overflow: "hidden" }}>
+              <SafeMath latex={f.latex} />
+            </div>
+            {f.description && <p style={{ fontSize: 11, color: "#475569", margin: 0 }}>{f.description}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
