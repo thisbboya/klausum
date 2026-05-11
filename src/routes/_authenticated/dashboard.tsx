@@ -109,6 +109,15 @@ function Dashboard() {
         />
       </section>
 
+      <section className="grid gap-4 md:grid-cols-2">
+        <DailyCheckin
+          existing={data?.checkin}
+          userId={user?.id}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["dash", user?.id] })}
+        />
+        <ExamCountdown exams={data?.exams ?? []} />
+      </section>
+
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-lg font-semibold">Recent materials</h2>
