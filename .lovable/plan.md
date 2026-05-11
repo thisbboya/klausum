@@ -1,48 +1,91 @@
-## Slice 7 — Knowledge Gaps: adaptive remediation loop
+## Slice 9 — Code Lab depth
 
-Right now `/gaps` lists weak topics with an Explain button and a manual Close. This slice closes the loop so each gap becomes actionable practice that automatically lowers in severity (or resolves) when the user demonstrates mastery.
+Turn the Code Lab into a full coding workbench: persistent snippets, AI test generation, AI code explanation, and a tabbed Engineering Calculator with 6 widgets.
 
-### What you'll get
+### 1. Snippets Library (persistent)
 
-1. **Auto-promote severity** based on age and re-occurrence
-   - When a quiz attempt is saved and a wrong answer maps to an existing open gap, increment a hit counter and bump severity (`low → moderate → critical`).
-   - When a correct answer matches an open gap's topic, raise `confidence` and auto-resolve at ≥80%.
+New table `code_snippets`:
+- `id`, `user_id`, `title`, `language`, `code`, `tags[]`, `is_favorite`, `created_at`, `updated_at`
+- RLS: users own their snippets
 
-2. **One-click practice paths** on each gap card
-   - **Mini-quiz (5 Qs)** — generate a focused quiz on just that topic via the existing AI quiz pipeline, tagged so its result feeds back into the gap.
-   - **Flashcards** — generate a 6-card deck for the topic (front = sub-concept, back = explanation) and drop it into the user's decks.
-   - **Tutor it** — open `/tutor` pre-seeded with a Socratic prompt about the topic.
+UI on `/codelab`:
+- Collapsible left rail listing the user's saved snippets (title + language chip + star)
+- "Save snippet" button in the editor toolbar — opens a small dialog (title, optional tags) and stores current `code` + `lang`
+- Click a snippet → loads it into the editor
+- Inline rename, delete, favorite-toggle
+- Search input filters by title/tag
 
-3. **Severity & filter UI**
-   - Filter chips: All / Critical / Moderate / Low / Closed.
-   - Sort by severity then age. Show "X days open" on each card.
-   - Empty/celebration state when 0 critical gaps remain.
+### 2. Generate Tests (AI)
 
-4. **Gap → Schedule** (small)
-   - "Add 25-min review block" button creates a `schedule_blocks` row tomorrow morning for that topic.
+New server fn `generateTests` in `src/lib/lab.functions.ts`:
+- Input: `language`, `code`
+- Output: `{ tests: string, framework: string, notes: string }`
+- Uses an idiomatic framework per language (pytest, vitest/jest, JUnit, Catch2, Go testing, Rust `#[test]`)
 
-### Technical notes
+UI: "Generate tests" button in the editor toolbar. Result shown in a side panel with:
+- Copy-to-clipboard
+- "Open in editor" (replaces editor with combined code+tests so the user can run)
 
-- Add a `hit_count` integer column to `knowledge_gaps` (nullable, default 0) via migration. Existing RLS already covers it.
-- New server fn `generateGapPractice` in `src/lib/coach.functions.ts` that takes `{ topic, subject, mode: "quiz" | "deck" }` and returns 5 MCQs or 6 cards using the same Lovable AI Gateway prompt style as the existing quiz/flashcard generators.
-- Client writes go through the existing browser `supabase` client (RLS by user_id).
-- On quiz attempt save (`quizzes.$id.results.tsx`), add a post-submit pass that:
-  - reads open gaps for the user
-  - for each wrong question, fuzzy-matches its topic/concept against open gaps (lowercase substring match on `topic`)
-  - increments `hit_count` and escalates severity
-  - for each correct question matching a gap, +15 confidence; resolve at ≥80
-- `/gaps` page gains the filter chips and three new buttons per card; navigation uses TanStack `Link`/`useNavigate`.
+### 3. Explain Code (AI)
 
-### Files touched
+New server fn `explainCode`:
+- Input: `language`, `code`
+- Output: structured explanation `{ summary, line_by_line: [{lines, explanation}], complexity, suggestions[] }`
 
-- `supabase/migrations/<ts>_gap_hit_count.sql` (add column)
-- `src/lib/coach.functions.ts` (add `generateGapPractice` server fn)
-- `src/routes/_authenticated/gaps.tsx` (filters, action buttons, severity badges)
-- `src/routes/_authenticated/quizzes.$id.results.tsx` (post-submit gap reconciliation)
+UI: "Explain" button next to "Run". Result rendered as collapsible sections under the existing AI panel.
 
-### Out of scope
+### 4. Engineering Calculators (tabbed widget below editor)
 
-- Cross-material concept graph linking (Phase 3).
-- Notifications / email reminders for stale gaps.
+New component `src/components/codelab/EngineeringCalculators.tsx` with a tab strip:
 
-After this, remaining candidates: voice-notes polish, formula library polish, dashboard "today" focus widget, or settings/profile polish. I'll ask you to pick once Slice 7 lands.
+1. **Unit converter** — length, mass, temperature, time, volume, pressure, energy, data. Two-column input/output with live conversion (pure JS, no AI).
+2. **Ohm's law** — V/I/R/P solver: enter any 2, get the other 2. Includes formula display and worked-step output.
+3. **Resistor decoder** — 4-band and 5-band color picker → resistance ± tolerance. Visual resistor with selectable color bands.
+4. **Logic gates** — truth-table builder. User picks gate (AND/OR/NOT/NAND/NOR/XOR/XNOR) and number of inputs (2–4); table renders live. Bonus: small expression evaluator (`A & B | !C`).
+5. **Statistics** — paste comma/newline-separated numbers → mean, median, mode, range, variance, stdev, quartiles, min/max, count.
+6. **Matrix** — 2×2 and 3×3 operations: add, subtract, multiply, transpose, determinant, inverse. Editable grid inputs.
+
+All calculators are pure client-side, no AI calls, no DB. Reuse existing semantic tokens.
+
+### 5. Layout reshape
+
+Restructure `/codelab` into a 3-pane responsive layout:
+```text
++----------------+----------------------------------+
+| Snippets rail  |  Editor (Monaco)                 |
+| (collapsible)  |  + toolbar: Run / Save / Tests / |
+|                |    Explain                       |
+|                +----------------------------------+
+|                |  stdin | output                  |
+|                +----------------------------------+
+|                |  AI panel (debug/explain/tests)  |
++----------------+----------------------------------+
+| Engineering Calculators (full-width tabs below)   |
++---------------------------------------------------+
+```
+
+On viewports < 768px the snippets rail becomes a top accordion and calculator tabs scroll horizontally.
+
+### Files
+
+**Created**
+- `supabase/migrations/<ts>_code_snippets.sql` — new table + RLS
+- `src/components/codelab/SnippetsRail.tsx`
+- `src/components/codelab/EngineeringCalculators.tsx`
+- `src/components/codelab/calc/UnitConverter.tsx`
+- `src/components/codelab/calc/OhmsLaw.tsx`
+- `src/components/codelab/calc/ResistorDecoder.tsx`
+- `src/components/codelab/calc/LogicGates.tsx`
+- `src/components/codelab/calc/StatsCalc.tsx`
+- `src/components/codelab/calc/MatrixCalc.tsx`
+
+**Edited**
+- `src/lib/lab.functions.ts` — add `generateTests` and `explainCode` server fns
+- `src/routes/_authenticated/codelab.tsx` — new layout, integrate snippets rail, new toolbar buttons, calculator tabs
+
+### Out of scope (deferred)
+- Multi-file projects / package installs in the runner
+- Real test execution (we generate, user runs)
+- Saving calculator results (kept stateless for now)
+
+After approval I'll ship this in one pass and then move to Slice 10 (Notes + Formulas polish: KaTeX in Cornell, PDF exports, AI Reference Sheet).
