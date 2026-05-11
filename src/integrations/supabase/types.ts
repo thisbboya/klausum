@@ -477,6 +477,7 @@ export type Database = {
         Row: {
           display_name: string | null
           id: string
+          is_ready: boolean | null
           joined_at: string | null
           room_id: string
           user_id: string
@@ -484,6 +485,7 @@ export type Database = {
         Insert: {
           display_name?: string | null
           id?: string
+          is_ready?: boolean | null
           joined_at?: string | null
           room_id: string
           user_id: string
@@ -491,6 +493,7 @@ export type Database = {
         Update: {
           display_name?: string | null
           id?: string
+          is_ready?: boolean | null
           joined_at?: string | null
           room_id?: string
           user_id?: string
@@ -539,6 +542,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      room_questions: {
+        Row: {
+          body: string
+          created_at: string | null
+          display_name: string | null
+          id: string
+          resolved: boolean | null
+          room_id: string
+          upvotes: number | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          resolved?: boolean | null
+          room_id: string
+          upvotes?: number | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          resolved?: boolean | null
+          room_id?: string
+          upvotes?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       schedule_blocks: {
         Row: {
