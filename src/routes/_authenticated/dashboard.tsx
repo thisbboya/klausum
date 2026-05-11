@@ -277,7 +277,7 @@ function ExamCountdown({ exams }: { exams: any[] }) {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <CalendarClock className="h-3.5 w-3.5" /> Upcoming exams
         </div>
-        <Link to="/settings" className="text-xs text-primary hover:underline">Manage</Link>
+        <Link to="/exams" className="text-xs text-primary hover:underline">Manage</Link>
       </div>
       {exams.length === 0 ? (
         <div className="mt-3 text-sm text-muted-foreground">
