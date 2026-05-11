@@ -260,7 +260,7 @@ function Onboarding() {
             <div className="text-center">
               <h1 className="font-display text-3xl font-bold">Akwaaba — welcome.</h1>
               <p className="mt-3 text-muted-foreground">
-                We'll ask 8 quick questions to discover how you learn best, then tailor every lesson to your mind.
+                We'll ask {QUESTIONS.length} quick questions to discover how you learn best, then tailor every lesson to your mind.
               </p>
               <button
                 onClick={() => setStep(1)}
