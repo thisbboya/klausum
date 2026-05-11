@@ -59,15 +59,15 @@ const ProcessedSchema = z.object({
       z.object({
         front: z.string(),
         back: z.string(),
-        hint: z.string().nullable(),
+        hint: z.string().nullable().default(null),
         bloom_level: z.number().int().min(1).max(6),
         card_type: z.enum(["standard", "formula", "code"]).default("standard"),
         tags: z.array(z.string()).default([]),
       })
     )
-    .min(10)
-    .max(15)
-    .describe("Exactly 15 cards: 2x L1, 3x L2, 3x L3, 3x L4, 2x L5, 2x L6"),
+    .min(6)
+    .max(20)
+    .describe("Aim for ~15 cards: 2x L1, 3x L2, 3x L3, 3x L4, 2x L5, 2x L6"),
   formulas: z
     .array(
       z.object({
@@ -81,12 +81,12 @@ const ProcessedSchema = z.object({
     .default([])
     .describe("Empty array if no formulas. Otherwise extract all equations in LaTeX."),
   bloom_questions: z.object({
-    L1: z.array(z.object({ question: z.string(), answer: z.string() })).length(2),
-    L2: z.array(z.object({ question: z.string(), answer: z.string() })).length(2),
-    L3: z.array(z.object({ question: z.string(), answer: z.string() })).length(2),
-    L4: z.array(z.object({ question: z.string(), answer: z.string() })).length(2),
-    L5: z.array(z.object({ question: z.string(), answer: z.string() })).length(2),
-    L6: z.array(z.object({ question: z.string(), answer: z.string() })).length(2),
+    L1: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
+    L2: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
+    L3: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
+    L4: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
+    L5: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
+    L6: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
   }),
   word_count: z.number().int(),
   estimated_read_minutes: z.number().int(),
