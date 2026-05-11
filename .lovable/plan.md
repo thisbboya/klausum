@@ -1,61 +1,65 @@
-# Slice 10 — Notes + Formulas polish
+## Slice 11: Installable PWA (manifest-only, no service worker)
 
-Make Cornell notes and the Formula Library feel like real study artifacts: live math rendering, polished PDF exports, and an AI-generated reference sheet per subject.
+Make NkyinkyimIQ installable on iOS/Android/desktop via "Add to Home Screen" with a proper standalone shell, branded icons, and a soft in-app install prompt. **No service worker, no offline caching** — keeps the editor preview safe from cache pollution per Lovable's PWA guidance.
 
-## 1. KaTeX in Cornell notes
+### What ships
 
-Cornell notes already accept Markdown + `$LaTeX$` in the prompt, but render as raw text. Add live preview rendering across the three columns.
+1. **Web app manifest** at `public/manifest.webmanifest`
+   - `name`: "NkyinkyimIQ — Learning that bends to your mind"
+   - `short_name`: "NkyinkyimIQ"
+   - `start_url`: "/", `scope`: "/", `display`: "standalone", `orientation`: "portrait-primary"
+   - `background_color`: "#0F172A", `theme_color`: "#0F172A"
+   - `icons`: 192×192 + 512×512 (any) + 512×512 (maskable)
+   - `shortcuts`: quick links to /flashcards, /quiz, /codelab, /studyrooms (4 launcher shortcuts)
+   - `categories`: ["education", "productivity"]
 
-- Add a per-column "Edit / Preview" toggle in the Cornell editor (`src/routes/_authenticated/notes.tsx`).
-- Preview mode renders Markdown + inline `$...$` and block `$$...$$` math via `react-markdown` + `remark-math` + `rehype-katex` (already have `katex` installed for the Formula Library).
-- Defaults: Cue + Summary columns open in preview, Notes column opens in edit. Click toggles. Edit mode keeps the existing textarea behavior.
-- Same renderer used in Formula Library's `SafeMath` is reused, plus inline math support.
+2. **Branded icons** (generated, premium quality)
+   - `public/icon-192.png`, `public/icon-512.png`, `public/icon-512-maskable.png` (with ~20% safe-zone padding for Android adaptive icons)
+   - `public/apple-touch-icon.png` (180×180, no transparency, dark indigo bg + brand mark) for iOS home screen
+   - `public/favicon.ico` is already present; leave untouched
 
-## 2. PDF exports
+3. **`__root.tsx` head additions** (links/meta only, no SW)
+   - `<link rel="manifest" href="/manifest.webmanifest">`
+   - `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">`
+   - `<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">`
+   - `<meta name="apple-mobile-web-app-capable" content="yes">`
+   - `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`
+   - `<meta name="apple-mobile-web-app-title" content="NkyinkyimIQ">`
+   - `<meta name="mobile-web-app-capable" content="yes">`
+   - keep existing `theme-color` (#0F172A)
 
-Two export entry points, both client-side via `jspdf` + `html2canvas` (no server fns, no extra storage).
+4. **Soft install prompt** — `src/components/pwa/InstallPrompt.tsx`
+   - Listens for `beforeinstallprompt` (Android/Chrome/Edge), stashes the event, shows a dismissible bottom-sheet card: "Install NkyinkyimIQ for a faster, app-like experience."
+   - On iOS Safari (no `beforeinstallprompt`): shows a one-time tip with the share-icon + "Add to Home Screen" instructions when `navigator.standalone === false` and UA matches iPhone/iPad.
+   - "Maybe later" stores `pwa-install-dismissed-at` in localStorage and re-appears after 14 days.
+   - Hides entirely when already installed (`display-mode: standalone` or `navigator.standalone`).
+   - Mounted in `RootComponent` next to `<Toaster />`.
 
-a. **Cornell note → PDF**
-   - "Export PDF" button in the note editor toolbar.
-   - Renders a hidden printable layout: title + subject header, 3-column Cornell grid (Cue 25% / Notes 75%), summary band at the bottom, page footer with date.
-   - Preserves KaTeX rendering (uses the preview HTML, not raw text).
-   - Filename: `{title}-cornell.pdf`.
+5. **`useIsStandalone()` hook** — `src/hooks/useIsStandalone.ts`
+   - Returns true when `matchMedia('(display-mode: standalone)').matches` or `navigator.standalone`. Used by InstallPrompt and (optionally) to hide redundant install CTAs.
 
-b. **Formula Library → PDF reference sheet**
-   - "Export PDF" button on `/formulas` (next to "Add formula").
-   - Honors current subject filter + search query (exports the visible set).
-   - Layout: 2-column grid, each formula = name + rendered KaTeX + subject chip + description. Auto page-breaks.
-   - Filename: `formulas-{subject}.pdf`.
+### Out of scope (explicitly not doing)
+- Service worker / Workbox / `vite-plugin-pwa`
+- Offline read of notes/flashcards/formulas
+- Push notifications
+- Background sync
+- Splash screen `.png` set per iOS device size (the manifest + theme/bg colors handle the modern flow)
 
-## 3. AI Reference Sheet (per subject)
-
-New server fn `generateReferenceSheet` in a new file `src/lib/formulas.functions.ts`:
-
-- Input: `subject` (string), optional `topic` hint.
-- Pulls the user's existing formulas for that subject as seed context (server-side via `serviceSupabase`), asks Lovable AI (`google/gemini-2.5-flash`) to produce a curated 1-page reference sheet: 8–15 formulas with `name`, `latex`, `description`, `category`, `tags[]`.
-- Returns structured JSON validated with Zod.
-- UI: "Generate Reference Sheet" button on `/formulas` opens a dialog (subject dropdown of existing subjects + free-text override + optional topic). On generate, shows preview list with rendered KaTeX, each row has a checkbox; "Add selected" inserts into `formulas` table for the user.
-
-## 4. Files
+### Files
 
 **Created**
-- `src/lib/formulas.functions.ts` — `generateReferenceSheet` server fn
-- `src/components/notes/MarkdownMath.tsx` — shared markdown+KaTeX renderer
-- `src/components/notes/CornellPdfExport.tsx` — printable layout + export trigger
-- `src/components/formulas/FormulasPdfExport.tsx` — printable formula sheet
-- `src/components/formulas/ReferenceSheetDialog.tsx` — AI generation dialog
+- `public/manifest.webmanifest`
+- `public/icon-192.png`, `public/icon-512.png`, `public/icon-512-maskable.png`, `public/apple-touch-icon.png`
+- `src/hooks/useIsStandalone.ts`
+- `src/components/pwa/InstallPrompt.tsx`
 
 **Edited**
-- `src/routes/_authenticated/notes.tsx` — column edit/preview toggles, Export PDF button
-- `src/routes/_authenticated/formulas.tsx` — Export PDF + Reference Sheet buttons, swap `SafeMath` to use shared renderer
+- `src/routes/__root.tsx` — add manifest/apple-touch/meta links; mount `<InstallPrompt />` inside `RootComponent`
 
-**New deps**
-- `react-markdown`, `remark-math`, `rehype-katex`, `jspdf`, `html2canvas`
+### Verification
+- Inspect generated icons (QA each PNG visually)
+- Check `__root.tsx` head renders manifest link in dev
+- Confirm InstallPrompt is hidden when `display-mode: standalone` is simulated
+- Note to user: install prompt only fires on the **published URL** (not in the editor iframe), but the manifest + iOS meta tags work everywhere
 
-## Out of scope
-- DOCX export (PDF only)
-- Server-side PDF rendering
-- Sharing reference sheets between users
-- Editing formulas inline in the AI preview (user can edit after insert)
-
-After approval I'll ship in one pass and then move to Slice 11 (PWA + offline).
+After this ships, next up is **Slice 12: Security tab** (passkeys, sessions, active devices in /settings).
