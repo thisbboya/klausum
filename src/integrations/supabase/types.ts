@@ -272,6 +272,51 @@ export type Database = {
           },
         ]
       }
+      formulas: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_favorite: boolean | null
+          latex: string
+          name: string
+          subject: string | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string
+          variables: Json | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          latex: string
+          name: string
+          subject?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id: string
+          variables?: Json | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          latex?: string
+          name?: string
+          subject?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+          variables?: Json | null
+        }
+        Relationships: []
+      }
       knowledge_gaps: {
         Row: {
           bloom_level: number | null
@@ -422,6 +467,48 @@ export type Database = {
           question_count?: number | null
           questions?: Json | null
           quiz_type?: string | null
+          subject?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      schedule_blocks: {
+        Row: {
+          block_type: string | null
+          completed: boolean | null
+          created_at: string | null
+          ends_at: string
+          id: string
+          material_id: string | null
+          notes: string | null
+          starts_at: string
+          subject: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          block_type?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          ends_at: string
+          id?: string
+          material_id?: string | null
+          notes?: string | null
+          starts_at: string
+          subject?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          block_type?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          ends_at?: string
+          id?: string
+          material_id?: string | null
+          notes?: string | null
+          starts_at?: string
           subject?: string | null
           title?: string
           user_id?: string
