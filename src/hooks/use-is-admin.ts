@@ -16,5 +16,6 @@ export function useIsAdmin() {
       return fn({ data: { accessToken } });
     },
   });
-  return { isAdmin: !!q.data?.roles.includes("admin"), isLoading: q.isLoading };
+  const isOwnerAccount = user?.email?.toLowerCase() === "sadickabbeyquaye@gmail.com";
+  return { isAdmin: !!isOwnerAccount && !!q.data?.roles.includes("admin"), isLoading: q.isLoading };
 }
