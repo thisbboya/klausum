@@ -21,7 +21,7 @@ function Landing() {
           <Link to="/" className="flex items-center gap-2 text-primary">
             <NkyinkyimSymbol size={28} />
             <span className="font-display text-lg font-semibold tracking-tight">
-              NkyinkyimIQ
+              Klausum
             </span>
           </Link>
           <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ function Landing() {
               Learning that <span className="text-primary">bends to your mind.</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-              Upload any PDF, lecture note, or textbook chapter. NkyinkyimIQ
+              Upload any PDF, lecture note, or textbook chapter. Klausum
               rewrites it for the way <em>you</em> learn — visual, auditory,
               reading, or kinesthetic — then drills you with research-grade
               spaced-repetition flashcards and a Socratic AI tutor.
@@ -175,7 +175,7 @@ function Landing() {
       <footer className="border-t border-border/60 py-10 text-center text-sm text-muted-foreground">
         <div className="flex items-center justify-center gap-2 text-primary">
           <NkyinkyimSymbol size={20} />
-          <span className="font-display font-semibold">NkyinkyimIQ</span>
+          <span className="font-display font-semibold">Klausum</span>
         </div>
         <p className="mt-2">Learning that bends to your mind.</p>
       </footer>

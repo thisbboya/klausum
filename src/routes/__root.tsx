@@ -69,19 +69,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "NkyinkyimIQ — Learning that bends to your mind" },
+      { title: "Klausum — Learning that bends to your mind" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "NkyinkyimIQ" },
+      { name: "apple-mobile-web-app-title", content: "Klausum" },
       { name: "mobile-web-app-capable", content: "yes" },
-      { name: "application-name", content: "NkyinkyimIQ" },
+      { name: "application-name", content: "Klausum" },
       {
         name: "description",
         content:
           "Adaptive AI study companion: VARK-personalised content, FSRS-5 spaced repetition flashcards, and a Socratic AI tutor. From JHS to professional study.",
       },
       { name: "theme-color", content: "#0F172A" },
-      { property: "og:title", content: "NkyinkyimIQ" },
+      { property: "og:title", content: "Klausum" },
       { property: "og:description", content: "Learning that bends to your mind." },
       { property: "og:type", content: "website" },
     ],

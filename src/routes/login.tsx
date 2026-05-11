@@ -36,7 +36,7 @@ function LoginPage() {
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 text-primary">
           <NkyinkyimSymbol size={32} />
-          <span className="font-display text-lg font-semibold">NkyinkyimIQ</span>
+          <span className="font-display text-lg font-semibold">Klausum</span>
         </Link>
         <h1 className="text-center font-display text-2xl font-semibold">Welcome back</h1>
         <p className="mt-1 text-center text-sm text-muted-foreground">Log in to keep learning</p>

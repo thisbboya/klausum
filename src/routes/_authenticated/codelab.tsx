@@ -12,8 +12,8 @@ import { EngineeringCalculators } from "@/components/codelab/EngineeringCalculat
 export const Route = createFileRoute("/_authenticated/codelab")({ component: CodeLab });
 
 const LANGS = [
-  { id: "python", piston: "python", version: "3.10.0", sample: 'print("Hello, NkyinkyimIQ")\n' },
-  { id: "javascript", piston: "javascript", version: "18.15.0", sample: 'console.log("Hello, NkyinkyimIQ")\n' },
+  { id: "python", piston: "python", version: "3.10.0", sample: 'print("Hello, Klausum")\n' },
+  { id: "javascript", piston: "javascript", version: "18.15.0", sample: 'console.log("Hello, Klausum")\n' },
   { id: "typescript", piston: "typescript", version: "5.0.3", sample: 'const x: string = "Hello"; console.log(x);\n' },
   { id: "java", piston: "java", version: "15.0.2", sample: 'public class Main { public static void main(String[] a) { System.out.println("Hello"); } }\n' },
   { id: "cpp", piston: "c++", version: "10.2.0", sample: '#include <iostream>\nint main(){ std::cout << "Hello"; }\n' },
