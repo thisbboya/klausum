@@ -88,6 +88,7 @@ const ProcessedSchema = z.object({
     L5: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
     L6: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
   }),
+  extracted_text: z.string().describe("Plain-text transcription of the source content (extracted from the file or echoed back from pasted text). At least 200 chars unless the source is shorter."),
   word_count: z.number().int(),
   estimated_read_minutes: z.number().int(),
 });
