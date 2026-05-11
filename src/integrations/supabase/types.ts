@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      cornell_notes: {
+        Row: {
+          created_at: string | null
+          cue_column: string | null
+          id: string
+          material_id: string | null
+          notes_column: string | null
+          subject: string | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          cue_column?: string | null
+          id?: string
+          material_id?: string | null
+          notes_column?: string | null
+          subject?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          cue_column?: string | null
+          id?: string
+          material_id?: string | null
+          notes_column?: string | null
+          subject?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_checkins: {
         Row: {
           check_date: string
@@ -232,6 +271,162 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knowledge_gaps: {
+        Row: {
+          bloom_level: number | null
+          confidence: number | null
+          created_at: string | null
+          id: string
+          resolved_at: string | null
+          severity: string | null
+          source: string | null
+          source_id: string | null
+          status: string | null
+          subject: string | null
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          bloom_level?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          resolved_at?: string | null
+          severity?: string | null
+          source?: string | null
+          source_id?: string | null
+          status?: string | null
+          subject?: string | null
+          topic: string
+          user_id: string
+        }
+        Update: {
+          bloom_level?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          resolved_at?: string | null
+          severity?: string | null
+          source?: string | null
+          source_id?: string | null
+          status?: string | null
+          subject?: string | null
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mind_maps: {
+        Row: {
+          created_at: string | null
+          edges: Json | null
+          id: string
+          material_id: string | null
+          nodes: Json | null
+          subject: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          edges?: Json | null
+          id?: string
+          material_id?: string | null
+          nodes?: Json | null
+          subject?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          edges?: Json | null
+          id?: string
+          material_id?: string | null
+          nodes?: Json | null
+          subject?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quiz_attempts: {
+        Row: {
+          answers: Json | null
+          bloom_breakdown: Json | null
+          completed_at: string | null
+          duration_seconds: number | null
+          id: string
+          quiz_id: string
+          score: number | null
+          total: number | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          bloom_breakdown?: Json | null
+          completed_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          quiz_id: string
+          score?: number | null
+          total?: number | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          bloom_breakdown?: Json | null
+          completed_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          quiz_id?: string
+          score?: number | null
+          total?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quizzes: {
+        Row: {
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          material_id: string | null
+          question_count: number | null
+          questions: Json | null
+          quiz_type: string | null
+          subject: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          material_id?: string | null
+          question_count?: number | null
+          questions?: Json | null
+          quiz_type?: string | null
+          subject?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          material_id?: string | null
+          question_count?: number | null
+          questions?: Json | null
+          quiz_type?: string | null
+          subject?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       study_materials: {
         Row: {
