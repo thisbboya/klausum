@@ -4,14 +4,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
 import { processMaterial } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";
+import { createNewCard } from "@/lib/fsrs";
 
 export const Route = createFileRoute("/_authenticated/materials")({
   component: MaterialsPage,
 });
+
+const SUBJECTS = [
+  "Mathematics","Physics","Chemistry","Biology","English","French","Economics",
+  "History","Geography","Computer Science","Electronics","Mechanical Engineering",
+  "Civil Engineering","Electrical Engineering","Medicine","Law","Business",
+  "Accounting","Agriculture","General","Other",
+];
+const FIELDS = ["Sciences","Engineering","Humanities","Medicine","Law","Business","Other"];
+const STEM_FIELDS = new Set(["Sciences","Engineering","Medicine"]);
+
+const STEPS = [
+  "Content received",
+  "Extracting key concepts & graph",
+  "Creating visual version",
+  "Creating auditory version",
+  "Creating reading version",
+  "Creating kinesthetic version",
+  "Generating Cornell Notes",
+  "Building 15 flashcards (Bloom L1–L6)",
+  "Extracting formulas",
+  "Building Bloom question bank",
+];
 
 function MaterialsPage() {
   const { user } = useAuth();
@@ -19,6 +42,12 @@ function MaterialsPage() {
   const navigate = useNavigate();
   const processFn = useServerFn(processMaterial);
   const [uploading, setUploading] = useState(false);
+  const [stepIdx, setStepIdx] = useState(0);
+  const [tab, setTab] = useState<"text" | "file">("text");
+  const [title, setTitle] = useState("");
+  const [subject, setSubject] = useState("General");
+  const [field, setField] = useState("Sciences");
+  const [pasteText, setPasteText] = useState("");
 
   const { data: materials } = useQuery({
     queryKey: ["materials", user?.id],
@@ -33,55 +62,76 @@ function MaterialsPage() {
     },
   });
 
-  async function handleFile(file: File) {
+  async function runProcess(opts: {
+    title: string;
+    subject: string;
+    fieldCategory: string;
+    isStem: boolean;
+    text?: string;
+    fileBase64?: string;
+    mimeType?: string;
+    rawContent: string;
+    fileName?: string;
+    fileType?: string;
+  }) {
     if (!user) return;
-    if (file.size > 20 * 1024 * 1024) return toast.error("Max 20MB");
     setUploading(true);
+    setStepIdx(0);
     try {
-      const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
-      let text: string | undefined;
-      let fileBase64: string | undefined;
-      let mimeType: string | undefined;
-
-      if (isText) {
-        text = await file.text();
-      } else {
-        fileBase64 = await fileToBase64(file);
-        mimeType = file.type || "application/pdf";
-      }
-
-      // Insert pending row first
       const { data: row, error: insertErr } = await supabase
         .from("study_materials")
         .insert({
           user_id: user.id,
-          title: file.name.replace(/\.[^.]+$/, ""),
-          subject: "General",
-          original_content: text ?? `[binary file: ${file.name}]`,
-          file_name: file.name,
-          file_type: file.type,
+          title: opts.title,
+          subject: opts.subject,
+          field_category: opts.fieldCategory,
+          is_stem: opts.isStem,
+          original_content: opts.rawContent,
+          file_name: opts.fileName,
+          file_type: opts.fileType,
           processing_status: "processing",
         })
         .select()
         .single();
       if (insertErr) throw insertErr;
-
       qc.invalidateQueries({ queryKey: ["materials"] });
+
+      // Animate steps while server runs
+      const stepTimer = setInterval(() => {
+        setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
+      }, 2200);
 
       const accessToken = await getAccessToken();
       const result = await processFn({
-        data: { accessToken, title: row.title, text, fileBase64, mimeType },
+        data: {
+          accessToken,
+          title: opts.title,
+          subject: opts.subject,
+          fieldCategory: opts.fieldCategory,
+          isStem: opts.isStem,
+          text: opts.text,
+          fileBase64: opts.fileBase64,
+          mimeType: opts.mimeType,
+        },
       });
+      clearInterval(stepTimer);
+      setStepIdx(STEPS.length - 1);
 
       const { error: updateErr } = await supabase
         .from("study_materials")
         .update({
           ai_summary: result.summary,
           key_concepts: result.key_concepts,
+          concept_graph: result.concept_graph,
           adapted_visual: result.visual,
           adapted_auditory: result.auditory,
           adapted_reading: result.reading,
           adapted_kinesthetic: result.kinesthetic,
+          cornell_cue: result.cornell.cue_column,
+          cornell_notes: result.cornell.notes_column,
+          cornell_summary: result.cornell.summary,
+          formulas: result.formulas,
+          bloom_questions: result.bloom_questions,
           word_count: result.word_count,
           estimated_read_minutes: result.estimated_read_minutes,
           processing_status: "ready",
@@ -89,8 +139,42 @@ function MaterialsPage() {
         .eq("id", row.id);
       if (updateErr) throw updateErr;
 
-      await supabase.rpc("increment_xp", { _amount: 25 });
-      toast.success("Material ready");
+      // Create deck + flashcards
+      const { data: deck, error: deckErr } = await supabase
+        .from("flashcard_decks")
+        .insert({
+          user_id: user.id,
+          material_id: row.id,
+          title: opts.title,
+          subject: opts.subject,
+          total_cards: result.flashcards.length,
+        })
+        .select()
+        .single();
+      if (deckErr) throw deckErr;
+
+      const init = createNewCard();
+      const cardRows = result.flashcards.map((c) => ({
+        user_id: user.id,
+        deck_id: deck.id,
+        front: c.front,
+        back: c.back,
+        hint: c.hint,
+        bloom_level: c.bloom_level,
+        tags: c.tags,
+        fsrs_state: init.state,
+        fsrs_stability: init.stability,
+        fsrs_difficulty: init.difficulty,
+        fsrs_retrievability: init.retrievability,
+        fsrs_repetitions: init.repetitions,
+        fsrs_lapses: init.lapses,
+        next_review_date: init.nextReviewDate,
+      }));
+      const { error: cardsErr } = await supabase.from("flashcards").insert(cardRows);
+      if (cardsErr) throw cardsErr;
+
+      await supabase.rpc("increment_xp", { _amount: 30 });
+      toast.success("Material ready · 15 flashcards generated");
       qc.invalidateQueries({ queryKey: ["materials"] });
       navigate({ to: "/materials/$id", params: { id: row.id } });
     } catch (e: any) {
@@ -98,54 +182,153 @@ function MaterialsPage() {
       toast.error(e?.message ?? "Upload failed");
     } finally {
       setUploading(false);
+      setStepIdx(0);
     }
   }
 
+  async function handleFile(file: File) {
+    if (file.size > 20 * 1024 * 1024) return toast.error("Max 20MB");
+    const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
+    const t = file.name.replace(/\.[^.]+$/, "");
+    if (isText) {
+      const text = await file.text();
+      await runProcess({
+        title: t, subject, fieldCategory: field, isStem: STEM_FIELDS.has(field),
+        text, rawContent: text, fileName: file.name, fileType: file.type,
+      });
+    } else {
+      const fileBase64 = await fileToBase64(file);
+      await runProcess({
+        title: t, subject, fieldCategory: field, isStem: STEM_FIELDS.has(field),
+        fileBase64, mimeType: file.type || "application/pdf",
+        rawContent: `[binary file: ${file.name}]`,
+        fileName: file.name, fileType: file.type,
+      });
+    }
+  }
+
+  async function handlePaste() {
+    if (!title.trim() || !pasteText.trim()) return toast.error("Title and content required");
+    await runProcess({
+      title: title.trim(),
+      subject,
+      fieldCategory: field,
+      isStem: STEM_FIELDS.has(field),
+      text: pasteText,
+      rawContent: pasteText,
+    });
+  }
+
+  const wordCount = pasteText.trim().split(/\s+/).filter(Boolean).length;
+  const readMins = Math.max(1, Math.round(wordCount / 220));
+
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Materials</h1>
-          <p className="text-sm text-muted-foreground mt-1">Upload anything — we adapt it to your learning style.</p>
-        </div>
+      <header>
+        <h1 className="font-display text-2xl font-bold">Materials</h1>
+        <p className="text-sm text-muted-foreground mt-1">Upload anything — AI rewrites it for your style.</p>
       </header>
 
-      <label className={`block rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition ${
-        uploading ? "border-primary/40 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-accent/5"
-      }`}>
-        <input
-          type="file"
-          className="hidden"
-          accept=".pdf,.txt,.md,.doc,.docx,image/*"
-          disabled={uploading}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
-            e.target.value = "";
-          }}
-        />
-        {uploading ? (
-          <>
-            <Loader2 className="h-7 w-7 mx-auto text-primary animate-spin" />
-            <p className="mt-3 text-sm">Processing with Gemini…</p>
-            <p className="text-xs text-muted-foreground">This can take 20–60s for large PDFs.</p>
-          </>
-        ) : (
-          <>
-            <Upload className="h-7 w-7 mx-auto text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">Drop or click to upload</p>
-            <p className="text-xs text-muted-foreground">PDF, TXT, MD, or images. Max 20MB.</p>
-          </>
-        )}
-      </label>
+      {!uploading && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="flex gap-2 border-b border-border pb-2">
+            <TabBtn active={tab === "text"} onClick={() => setTab("text")}>✏️ Text / Paste</TabBtn>
+            <TabBtn active={tab === "file"} onClick={() => setTab("file")}>📎 File Upload</TabBtn>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {tab === "text" && (
+              <input
+                value={title} onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
+                className="md:col-span-3 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+            )}
+            <select value={subject} onChange={(e) => setSubject(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
+            </select>
+            <select value={field} onChange={(e) => setField(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              {FIELDS.map((f) => <option key={f}>{f}</option>)}
+            </select>
+            <div className="text-xs text-muted-foreground self-center">
+              {STEM_FIELDS.has(field) ? "⚗️ STEM — formulas extracted" : "📚 General"}
+            </div>
+          </div>
+
+          {tab === "text" ? (
+            <>
+              <textarea
+                value={pasteText} onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Paste notes, textbook excerpts, lecture notes, or any study material..."
+                rows={8}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">
+                  {wordCount} words · ~{readMins} min read · ~25s processing
+                </div>
+                <button
+                  onClick={handlePaste}
+                  disabled={!pasteText.trim() || !title.trim()}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  Process material
+                </button>
+              </div>
+            </>
+          ) : (
+            <label className="block rounded-xl border-2 border-dashed border-border p-8 text-center cursor-pointer hover:border-primary/40 hover:bg-accent/5 transition">
+              <input
+                type="file" className="hidden"
+                accept=".pdf,.txt,.md,.doc,.docx,image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <Upload className="h-7 w-7 mx-auto text-muted-foreground" />
+              <p className="mt-3 text-sm font-medium">Drop or click to upload</p>
+              <p className="text-xs text-muted-foreground">PDF, DOCX, TXT, MD, or images. Max 20MB.</p>
+            </label>
+          )}
+        </div>
+      )}
+
+      {uploading && (
+        <div className="rounded-xl border border-primary/40 bg-primary/5 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <div>
+              <div className="font-display font-semibold">Processing with AI…</div>
+              <div className="text-xs text-muted-foreground">Ye di adwuma! Working hard for you. Do not close this page.</div>
+            </div>
+          </div>
+          <ul className="space-y-1.5 text-sm">
+            {STEPS.map((s, i) => (
+              <li key={s} className="flex items-center gap-2">
+                {i < stepIdx ? (
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                ) : i === stepIdx ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <span className="h-4 w-4 rounded-full border border-border inline-block" />
+                )}
+                <span className={i <= stepIdx ? "" : "text-muted-foreground"}>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {materials && materials.length > 0 ? (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {materials.map((m) => (
             <li key={m.id}>
               <Link
-                to="/materials/$id"
-                params={{ id: m.id }}
+                to="/materials/$id" params={{ id: m.id }}
                 className="flex items-center gap-4 px-4 py-3 hover:bg-accent/10 transition"
               >
                 <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -163,19 +346,25 @@ function MaterialsPage() {
           ))}
         </ul>
       ) : (
-        <p className="text-center text-sm text-muted-foreground py-8">No materials yet.</p>
+        !uploading && <p className="text-center text-sm text-muted-foreground py-8">No materials yet.</p>
       )}
     </div>
+  );
+}
+
+function TabBtn({ active, children, onClick }: any) {
+  return (
+    <button onClick={onClick}
+      className={`px-3 py-1.5 text-sm rounded-md ${active ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+      {children}
+    </button>
   );
 }
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]); // strip data:...;base64,
-    };
+    reader.onload = () => resolve((reader.result as string).split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
