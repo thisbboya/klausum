@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { NkyinkyimSymbol } from "@/components/adinkra";
+import { KlausumMark } from "@/components/klausum-mark";
 import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,7 +53,7 @@ function AuthLayout() {
     <div className="min-h-screen flex bg-background text-foreground">
       <aside className="hidden md:flex w-60 flex-col border-r border-border/60 bg-card/40 px-3 py-5">
         <Link to="/dashboard" className="mb-8 flex items-center gap-2 px-2 text-primary">
-          <NkyinkyimSymbol size={26} />
+          <KlausumMark size={26} />
           <span className="font-display text-base font-semibold">Klausum</span>
         </Link>
         <nav className="flex flex-col gap-1 text-sm">
@@ -119,7 +119,7 @@ function MobileTopBar({ onSignOut }: { onSignOut: () => void }) {
   return (
     <div className="md:hidden flex items-center justify-between border-b border-border/60 px-4 py-3 bg-card/40">
       <Link to="/dashboard" className="flex items-center gap-2 text-primary">
-        <NkyinkyimSymbol size={22} />
+        <KlausumMark size={22} />
         <span className="font-display text-sm font-semibold">Klausum</span>
       </Link>
       <div className="flex gap-3 text-xs">
