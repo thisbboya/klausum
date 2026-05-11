@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { KlausumMark } from "@/components/klausum-mark";
-import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube } from "lucide-react";
+import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield } from "lucide-react";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -15,6 +16,7 @@ function AuthLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin } = useIsAdmin();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -74,6 +76,7 @@ function AuthLayout() {
           <NavItem to="/exams" icon={GraduationCap} label="Exams" />
           <NavItem to="/tutor" icon={MessagesSquare} label="AI Tutor" />
           <NavItem to="/settings" icon={Settings} label="Settings" />
+          {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}
         </nav>
         <div className="mt-auto px-2 text-xs text-muted-foreground">
           <div className="truncate">{profile?.full_name || user.email}</div>

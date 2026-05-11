@@ -77,7 +77,13 @@ function MaterialsPage() {
     if (!user) return;
     setUploading(true);
     setStepIdx(0);
+    let rowId: string | null = null;
     try {
+      // 1. Get token FIRST so we never create an orphan row
+      const accessToken = await getAccessToken();
+
+      // 2. Insert row
+      const isBinary = !!opts.fileBase64;
       const { data: row, error: insertErr } = await supabase
         .from("study_materials")
         .insert({
@@ -86,7 +92,7 @@ function MaterialsPage() {
           subject: opts.subject,
           field_category: opts.fieldCategory,
           is_stem: opts.isStem,
-          original_content: opts.rawContent,
+          original_content: isBinary ? "" : opts.rawContent,
           file_name: opts.fileName,
           file_type: opts.fileType,
           processing_status: "processing",
@@ -94,14 +100,13 @@ function MaterialsPage() {
         .select()
         .single();
       if (insertErr) throw insertErr;
+      rowId = row.id;
       qc.invalidateQueries({ queryKey: ["materials"] });
 
-      // Animate steps while server runs
       const stepTimer = setInterval(() => {
         setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
       }, 2200);
 
-      const accessToken = await getAccessToken();
       const result = await processFn({
         data: {
           accessToken,
@@ -120,6 +125,7 @@ function MaterialsPage() {
       const { error: updateErr } = await supabase
         .from("study_materials")
         .update({
+          original_content: result.extracted_text || opts.rawContent,
           ai_summary: result.summary,
           key_concepts: result.key_concepts,
           concept_graph: result.concept_graph,
@@ -179,7 +185,15 @@ function MaterialsPage() {
       navigate({ to: "/materials/$id", params: { id: row.id } });
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message ?? "Upload failed");
+      const msg = e?.message ?? "Upload failed";
+      toast.error(msg);
+      if (rowId) {
+        await supabase
+          .from("study_materials")
+          .update({ processing_status: "failed", processing_error: msg })
+          .eq("id", rowId);
+        qc.invalidateQueries({ queryKey: ["materials"] });
+      }
     } finally {
       setUploading(false);
       setStepIdx(0);
