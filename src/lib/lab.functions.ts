@@ -32,6 +32,58 @@ export const debugCode = createServerFn({ method: "POST" })
     return { reply: text };
   });
 
+// Generate unit tests for the code in an idiomatic framework
+const TestsInput = z.object({
+  accessToken: z.string(),
+  language: z.string(),
+  code: z.string().min(1).max(20000),
+});
+const TestsSchema = z.object({
+  framework: z.string().describe("e.g. pytest, vitest, jest, JUnit, Catch2, go test, rust #[test]"),
+  tests: z.string().describe("Complete runnable test file content for the chosen framework."),
+  notes: z.string().describe("1-3 short sentences on what is covered and any edge cases skipped."),
+});
+export const generateTests = createServerFn({ method: "POST" })
+  .inputValidator((d) => TestsInput.parse(d))
+  .handler(async ({ data }) => {
+    await getUserIdFromToken(data.accessToken);
+    const { object } = await generateObject({
+      model: model(),
+      schema: TestsSchema,
+      prompt:
+        `Write thorough unit tests for the following ${data.language} code. ` +
+        `Pick the most idiomatic test framework for that language. Cover happy paths, edge cases, and error cases. ` +
+        `Return a single complete file the student can paste alongside their code.\n\n--- CODE ---\n${data.code}`,
+    });
+    return object;
+  });
+
+// Explain code: structured walkthrough
+const ExplainInput = z.object({
+  accessToken: z.string(),
+  language: z.string(),
+  code: z.string().min(1).max(20000),
+});
+const ExplainSchema = z.object({
+  summary: z.string().describe("2-3 sentence plain-English summary of what the code does."),
+  line_by_line: z.array(z.object({ lines: z.string(), explanation: z.string() })).min(1).max(15),
+  complexity: z.string().describe("Time and space complexity, e.g. 'O(n log n) time, O(n) space'."),
+  suggestions: z.array(z.string()).max(5).default([]).describe("Optional refactor or correctness suggestions."),
+});
+export const explainCode = createServerFn({ method: "POST" })
+  .inputValidator((d) => ExplainInput.parse(d))
+  .handler(async ({ data }) => {
+    await getUserIdFromToken(data.accessToken);
+    const { object } = await generateObject({
+      model: model(),
+      schema: ExplainSchema,
+      prompt:
+        `Explain this ${data.language} code to an undergraduate. ` +
+        `Group consecutive lines that form one logical step. Be precise but accessible.\n\n--- CODE ---\n${data.code}`,
+    });
+    return object;
+  });
+
 // Transcribe + summarize a voice note (text only — student types/dictates summary)
 const TranscriptInput = z.object({
   accessToken: z.string(),
