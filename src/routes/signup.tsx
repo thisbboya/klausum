@@ -28,7 +28,7 @@ function SignupPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Account created — check your email to confirm");
-    navigate({ to: "/" });
+    navigate({ to: "/onboarding" });
   }
 
   async function handleGoogle() {
