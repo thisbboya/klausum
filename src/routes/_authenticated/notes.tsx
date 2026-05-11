@@ -122,6 +122,10 @@ function NoteEditor({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<"cues" | "summary" | "cards" | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [cueMode, setCueMode] = useState<"edit" | "preview">("preview");
+  const [notesMode, setNotesMode] = useState<"edit" | "preview">("edit");
+  const [summaryMode, setSummaryMode] = useState<"edit" | "preview">("preview");
 
   const cuesFn = useServerFn(generateCornellCues);
   const summaryFn = useServerFn(generateCornellSummary);
