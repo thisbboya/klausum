@@ -316,6 +316,8 @@ function MapEditor({ id }: { id: string }) {
         <button onClick={() => addNode("sub")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Sub</button>
         <button onClick={() => addNode("example")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Example</button>
         <button onClick={() => addNode("warning")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Warning</button>
+        <ToolBtn onClick={autoLayout} icon={LayoutGrid}>Auto-layout</ToolBtn>
+        <ToolBtn onClick={exportPng} icon={Download}>Export PNG</ToolBtn>
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden" style={{ height: 560 }}>
@@ -326,7 +328,9 @@ function MapEditor({ id }: { id: string }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeDoubleClick={onNodeDoubleClick}
+          onEdgeDoubleClick={onEdgeDoubleClick}
           onNodeClick={(_, n) => setSelected(n.id)}
+          defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: "oklch(0.6 0.1 260)" } }}
           fitView
         >
           <Background gap={16} color="oklch(0.3 0.02 260)" />
@@ -335,7 +339,7 @@ function MapEditor({ id }: { id: string }) {
         </ReactFlow>
       </div>
 
-      <p className="text-xs text-muted-foreground">Click canvas controls to zoom. Double-click a node to rename. Click a node, then “Expand selected” to grow new branches with AI.</p>
+      <p className="text-xs text-muted-foreground">Double-click a node to rename, an edge to label it. Drag from a node's edge handle to connect. Auto-layout arranges with dagre. Export PNG saves a snapshot.</p>
     </div>
   );
 }
