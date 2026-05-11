@@ -40,6 +40,23 @@ const ProcessedSchema = z
   })
   .passthrough();
 
+type ProcessedResult = {
+  summary: string;
+  key_concepts: { id: string; concept: string; definition: string; example: string; importance: string; bloom_level: number }[];
+  concept_graph: any[];
+  visual: string;
+  auditory: string;
+  reading: string;
+  kinesthetic: string;
+  cornell: { cue_column: string; notes_column: string; summary: string };
+  flashcards: { front: string; back: string; hint: string | null; bloom_level: number; card_type: string; tags: string[] }[];
+  formulas: any[];
+  bloom_questions: Record<string, { question: string; answer: string }[]>;
+  extracted_text: string;
+  word_count: number;
+  estimated_read_minutes: number;
+};
+
 function asText(value: unknown): string {
   if (typeof value === "string") return value.trim();
   if (value == null) return "";
@@ -71,7 +88,23 @@ function firstSentences(text: string, count = 4) {
   return sentences.slice(0, count).join(" ").trim() || "Study material processed successfully.";
 }
 
-function normalizeProcessed(raw: any, sourceText: string, title: string) {
+function extractJson(text: string) {
+  const first = text.indexOf("{");
+  const last = text.lastIndexOf("}");
+  return first >= 0 && last > first ? text.slice(first, last + 1) : null;
+}
+
+function parseObjectText(text: string) {
+  const json = extractJson(text);
+  if (!json) return {};
+  try {
+    return JSON.parse(json);
+  } catch {
+    return {};
+  }
+}
+
+function normalizeProcessed(raw: any, sourceText: string, title: string): ProcessedResult {
   const extracted_text = asText(raw.extracted_text) || sourceText;
   const summary = asText(raw.summary) || firstSentences(extracted_text);
   const words = extracted_text.trim().split(/\s+/).filter(Boolean).length;
@@ -158,37 +191,54 @@ export const processMaterial = createServerFn({ method: "POST" })
     const model = provider(DEFAULT_MODEL);
 
     const stem = data.isStem ?? false;
-    const userParts: any[] = [
-      {
-        type: "text",
-        text:
-          `You are Klausum, an adaptive learning engine. ` +
-          `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract formulas." : "Non-STEM — formulas array should be empty."} ` +
-          `Produce: extracted_text (plain text of the source — for files, transcribe the readable content; for pasted text, echo it cleaned up), summary, 8-15 key concepts (with stable ids c1..cN), concept_graph edges between concepts, ` +
-          `four VARK adaptations (each <600 words, with the special callout tags described in the schema), ` +
-          `Cornell Notes (cue/notes/summary), exactly 15 flashcards distributed 2/3/3/3/2/2 across Bloom L1-L6, ` +
-          `${stem ? "all formulas in LaTeX, " : ""}` +
-          `and a Bloom question bank with exactly 2 questions per level L1-L6.`,
-      },
-    ];
+    let sourceText = data.text?.slice(0, 60000) ?? "";
 
     if (data.fileBase64 && data.mimeType) {
-      userParts.push({ type: "file", data: data.fileBase64, mediaType: data.mimeType });
+      const extraction = await generateText({
+        model,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extract the readable study content from this file as plain text. Keep headings, equations, lists, and important labels. Do not summarize." },
+              { type: "file", data: data.fileBase64, mediaType: data.mimeType },
+            ],
+          },
+        ],
+        maxOutputTokens: 12000,
+        maxRetries: 2,
+      });
+      sourceText = extraction.text.trim() || `No readable text could be extracted from ${data.title}.`;
     } else if (data.text) {
-      userParts.push({ type: "text", text: `\n\n--- MATERIAL ---\n${data.text.slice(0, 60000)}` });
+      sourceText = data.text.slice(0, 60000);
     } else {
       throw new Error("Provide text or file");
     }
 
-    const { object } = await generateObject({
-      model,
-      schema: ProcessedSchema,
-      messages: [{ role: "user", content: userParts }],
-      maxOutputTokens: 16000,
-      maxRetries: 2,
-    });
+    const prompt =
+      `You are Klausum, an adaptive learning engine. Return one valid JSON object only. ` +
+      `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract formulas." : "Non-STEM — formulas array should be empty."} ` +
+      `Keys required: extracted_text, summary, key_concepts, concept_graph, visual, auditory, reading, kinesthetic, cornell, flashcards, formulas, bloom_questions, word_count, estimated_read_minutes. ` +
+      `Create 8-15 key concepts, 6-15 useful flashcards, Cornell notes, and Bloom questions for L1-L6.\n\n--- MATERIAL ---\n${sourceText}`;
 
-    return object;
+    let raw: any = {};
+    try {
+      const { object } = await generateObject({
+        model,
+        schema: ProcessedSchema,
+        prompt,
+        maxOutputTokens: 16000,
+        maxRetries: 2,
+        experimental_repairText: async ({ text }) => extractJson(text),
+      });
+      raw = object;
+    } catch (error) {
+      console.error("Structured material generation failed, retrying as text", error);
+      const retry = await generateText({ model, prompt, maxOutputTokens: 16000, maxRetries: 1 });
+      raw = parseObjectText(retry.text);
+    }
+
+    return normalizeProcessed(raw, sourceText, data.title);
   });
 
 // Feynman-mode evaluator
