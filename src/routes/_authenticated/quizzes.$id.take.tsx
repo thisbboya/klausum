@@ -58,6 +58,23 @@ function TakeQuiz() {
   const total = questions.length;
   const q = questions[idx];
 
+  // Per-question countdown timer
+  useEffect(() => {
+    if (!timerSec || loading || reviewMode) return;
+    setSecLeft(timerSec);
+    const t = setInterval(() => {
+      setSecLeft((s) => {
+        if (s <= 1) {
+          clearInterval(t);
+          if (idx < total - 1) setIdx((i) => i + 1);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [idx, timerSec, loading, total, reviewMode]);
+
   function toggleFlag() {
     const s = new Set(flags);
     s.has(idx) ? s.delete(idx) : s.add(idx);
@@ -145,11 +162,28 @@ function TakeQuiz() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <header>
-        <p className="text-xs text-muted-foreground uppercase tracking-wider">{subject} · {idx + 1} / {total}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">{subject} · {idx + 1} / {total}</p>
+          {timerSec && timerSec > 0 ? (
+            <span className={`inline-flex items-center gap-1 text-xs font-mono ${secLeft <= 5 ? "text-destructive" : "text-muted-foreground"}`}>
+              <Timer className="h-3 w-3" /> {secLeft}s
+            </span>
+          ) : null}
+        </div>
         <h1 className="font-display text-xl font-semibold mt-1">{title}</h1>
         <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
           <div className="h-full bg-primary transition-all" style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
+        {flags.size > 0 && (
+          <div className="mt-2 flex items-center gap-2 text-[11px] text-amber-400">
+            <Flag className="h-3 w-3" /> {flags.size} flagged
+            {!reviewMode && idx === total - 1 && (
+              <button onClick={() => { setReviewMode(true); setIdx(Array.from(flags)[0]); }} className="ml-1 underline">
+                review them
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       <AnimatePresence mode="wait">
