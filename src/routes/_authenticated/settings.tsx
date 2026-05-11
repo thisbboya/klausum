@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { User, GraduationCap, Sliders, Database, LogOut } from "lucide-react";
+import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck } from "lucide-react";
+import { SecurityTab } from "@/components/settings/SecurityTab";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
@@ -12,6 +13,7 @@ const TABS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "learning", label: "Learning", icon: GraduationCap },
   { id: "preferences", label: "Preferences", icon: Sliders },
+  { id: "security", label: "Security", icon: ShieldCheck },
   { id: "data", label: "Account & Data", icon: Database },
 ];
 
@@ -38,6 +40,7 @@ function SettingsPage() {
       {tab === "profile" && <ProfileTab />}
       {tab === "learning" && <LearningTab />}
       {tab === "preferences" && <PreferencesTab />}
+      {tab === "security" && <SecurityTab />}
       {tab === "data" && <DataTab />}
     </div>
   );
