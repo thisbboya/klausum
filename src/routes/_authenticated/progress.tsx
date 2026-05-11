@@ -23,7 +23,7 @@ function ProgressPage() {
     enabled: !!user,
     queryFn: async () => {
       const since = new Date(Date.now() - 90 * 86400_000).toISOString();
-      const [profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions] = await Promise.all([
+      const [profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions, cards] = await Promise.all([
         supabase.from("user_profiles").select("*").eq("id", user!.id).maybeSingle(),
         supabase.from("quiz_attempts").select("*").eq("user_id", user!.id).gte("completed_at", since),
         supabase.from("flashcard_reviews").select("rating, reviewed_at").eq("user_id", user!.id).gte("reviewed_at", since),
