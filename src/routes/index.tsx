@@ -1,12 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
+import { KlausumMark } from "@/components/klausum-mark";
 import {
-  NkyinkyimSymbol,
-  SankofaSymbol,
-  DwennimmenSymbol,
-  AyaSymbol,
-} from "@/components/adinkra";
-import { Brain, Sparkles, Layers, MessagesSquare, Target } from "lucide-react";
+  Brain,
+  Sparkles,
+  Layers,
+  MessagesSquare,
+  Target,
+  Lock,
+  Repeat,
+  Network,
+  Trophy,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -19,7 +24,7 @@ function Landing() {
       <header className="border-b border-border/60 backdrop-blur sticky top-0 z-30 bg-background/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-8">
           <Link to="/" className="flex items-center gap-2 text-primary">
-            <NkyinkyimSymbol size={28} />
+            <KlausumMark size={28} />
             <span className="font-display text-lg font-semibold tracking-tight">
               Klausum
             </span>
@@ -63,13 +68,13 @@ function Landing() {
               Adaptive AI study companion
             </div>
             <h1 className="font-display text-4xl font-bold leading-[1.1] tracking-tight md:text-6xl">
-              Learning that <span className="text-primary">bends to your mind.</span>
+              Your private vault for <span className="text-primary">everything you study.</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-              Upload any PDF, lecture note, or textbook chapter. Klausum
-              rewrites it for the way <em>you</em> learn — visual, auditory,
-              reading, or kinesthetic — then drills you with research-grade
-              spaced-repetition flashcards and a Socratic AI tutor.
+              Upload any PDF, lecture, or textbook chapter. Klausum rewrites it
+              for the way <em>you</em> learn, drills you with FSRS-5 spaced
+              repetition, maps your knowledge gaps, and seals it all behind a
+              Socratic AI tutor — your entire study life in one place.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -120,18 +125,19 @@ function Landing() {
           <div className="grid gap-10 md:grid-cols-2 md:items-center">
             <div>
               <h2 className="font-display text-3xl font-bold md:text-4xl">
-                Built on learning science. Inspired by Adinkra wisdom.
+                Sealed knowledge. Built on learning science.
               </h2>
               <p className="mt-4 text-muted-foreground">
-                <strong className="text-foreground">Nkyinkyim</strong> means
-                adaptability — twisting and turning to fit the path. That's how
-                this app works: it adapts to your mind, your subject, your
-                level, your moment.
+                <strong className="text-foreground">Klausum</strong> comes from
+                the Latin <em>clausum</em> — sealed, closed, kept safe. Every
+                document, note, flashcard, and conversation lives in your
+                private vault, indexed and retrievable for the rest of your
+                study life.
               </p>
               <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
                 <li className="flex gap-3">
                   <span className="mt-0.5 text-primary">→</span>
-                  FSRS-5 spaced repetition (20-30% more efficient than SM-2)
+                  FSRS-5 spaced repetition (20–30% more efficient than SM-2)
                 </li>
                 <li className="flex gap-3">
                   <span className="mt-0.5 text-primary">→</span>
@@ -150,17 +156,17 @@ function Landing() {
             <div className="relative">
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { S: NkyinkyimSymbol, label: "Nkyinkyim", meaning: "adaptability" },
-                  { S: SankofaSymbol, label: "Sankofa", meaning: "learn from the past" },
-                  { S: DwennimmenSymbol, label: "Dwennimmen", meaning: "humility & strength" },
-                  { S: AyaSymbol, label: "Aya", meaning: "endurance" },
+                  { S: Lock, label: "Clausum", meaning: "your sealed vault" },
+                  { S: Repeat, label: "Memoria", meaning: "FSRS-5 recall" },
+                  { S: Network, label: "Nexus", meaning: "knowledge graphs" },
+                  { S: Trophy, label: "Ascensio", meaning: "XP & mastery" },
                 ].map(({ S, label, meaning }) => (
                   <div
                     key={label}
                     className="flex flex-col items-center justify-center rounded-xl border border-border bg-background/60 p-6 text-center"
                   >
                     <div className="text-primary">
-                      <S size={48} />
+                      <S size={48} strokeWidth={1.5} />
                     </div>
                     <div className="mt-3 font-display text-sm font-semibold">{label}</div>
                     <div className="text-xs text-muted-foreground">{meaning}</div>
@@ -174,10 +180,10 @@ function Landing() {
 
       <footer className="border-t border-border/60 py-10 text-center text-sm text-muted-foreground">
         <div className="flex items-center justify-center gap-2 text-primary">
-          <NkyinkyimSymbol size={20} />
+          <KlausumMark size={20} />
           <span className="font-display font-semibold">Klausum</span>
         </div>
-        <p className="mt-2">Learning that bends to your mind.</p>
+        <p className="mt-2">Your private vault for everything you study.</p>
       </footer>
     </div>
   );
@@ -210,7 +216,7 @@ const features = [
     body: "Auto-generated cards span all six Bloom levels: Remember, Understand, Apply, Analyse, Evaluate, Create.",
   },
   {
-    icon: NkyinkyimSymbol as any,
+    icon: KlausumMark as any,
     title: "Built for the long haul",
     body: "XP, streaks, daily goals, and dark-first design. Made to study with for months, not minutes.",
   },
