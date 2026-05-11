@@ -63,7 +63,7 @@ function TakeQuiz() {
     if (!timerSec || loading || reviewMode) return;
     setSecLeft(timerSec);
     const t = setInterval(() => {
-      setSecLeft((s) => {
+      setSecLeft((s: number) => {
         if (s <= 1) {
           clearInterval(t);
           if (idx < total - 1) setIdx((i) => i + 1);
