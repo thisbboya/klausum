@@ -13,12 +13,14 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   const { data } = useQuery({
     queryKey: ["dash", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const [profileRes, materialsRes, cardsRes] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const [profileRes, materialsRes, cardsRes, checkinRes, examsRes] = await Promise.all([
         supabase.from("user_profiles").select("*").eq("id", user!.id).maybeSingle(),
         supabase
           .from("study_materials")
@@ -29,6 +31,19 @@ function Dashboard() {
           .from("flashcards")
           .select("id,next_review_date,fsrs_state")
           .eq("user_id", user!.id),
+        supabase
+          .from("daily_checkins")
+          .select("id,mood,energy")
+          .eq("user_id", user!.id)
+          .eq("check_date", today)
+          .maybeSingle(),
+        supabase
+          .from("exam_countdowns")
+          .select("id,exam_name,subject,exam_date,current_readiness")
+          .eq("user_id", user!.id)
+          .gte("exam_date", today)
+          .order("exam_date", { ascending: true })
+          .limit(3),
       ]);
       const dueCount = (cardsRes.data ?? []).filter((c) => c.next_review_date && isDue(c.next_review_date)).length;
       return {
@@ -36,6 +51,8 @@ function Dashboard() {
         materials: materialsRes.data ?? [],
         totalCards: (cardsRes.data ?? []).length,
         dueCount,
+        checkin: checkinRes.data,
+        exams: examsRes.data ?? [],
       };
     },
   });
