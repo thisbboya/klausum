@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_checkins: {
+        Row: {
+          check_date: string
+          created_at: string | null
+          energy: string
+          id: string
+          mood: number
+          user_id: string
+        }
+        Insert: {
+          check_date?: string
+          created_at?: string | null
+          energy: string
+          id?: string
+          mood: number
+          user_id: string
+        }
+        Update: {
+          check_date?: string
+          created_at?: string | null
+          energy?: string
+          id?: string
+          mood?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      exam_countdowns: {
+        Row: {
+          created_at: string | null
+          current_readiness: number | null
+          exam_date: string
+          exam_name: string
+          exam_type: string | null
+          id: string
+          notes: string | null
+          subject: string | null
+          target_grade: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_readiness?: number | null
+          exam_date: string
+          exam_name: string
+          exam_type?: string | null
+          id?: string
+          notes?: string | null
+          subject?: string | null
+          target_grade?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_readiness?: number | null
+          exam_date?: string
+          exam_name?: string
+          exam_type?: string | null
+          id?: string
+          notes?: string | null
+          subject?: string | null
+          target_grade?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       flashcard_decks: {
         Row: {
           created_at: string | null
@@ -174,11 +240,19 @@ export type Database = {
           adapted_reading: string | null
           adapted_visual: string | null
           ai_summary: string | null
+          bloom_questions: Json | null
+          concept_graph: Json | null
+          cornell_cue: string | null
+          cornell_notes: string | null
+          cornell_summary: string | null
           created_at: string | null
           estimated_read_minutes: number | null
+          field_category: string | null
           file_name: string | null
           file_type: string | null
+          formulas: Json | null
           id: string
+          is_stem: boolean | null
           key_concepts: Json | null
           level: string | null
           original_content: string
@@ -197,11 +271,19 @@ export type Database = {
           adapted_reading?: string | null
           adapted_visual?: string | null
           ai_summary?: string | null
+          bloom_questions?: Json | null
+          concept_graph?: Json | null
+          cornell_cue?: string | null
+          cornell_notes?: string | null
+          cornell_summary?: string | null
           created_at?: string | null
           estimated_read_minutes?: number | null
+          field_category?: string | null
           file_name?: string | null
           file_type?: string | null
+          formulas?: Json | null
           id?: string
+          is_stem?: boolean | null
           key_concepts?: Json | null
           level?: string | null
           original_content: string
@@ -220,11 +302,19 @@ export type Database = {
           adapted_reading?: string | null
           adapted_visual?: string | null
           ai_summary?: string | null
+          bloom_questions?: Json | null
+          concept_graph?: Json | null
+          cornell_cue?: string | null
+          cornell_notes?: string | null
+          cornell_summary?: string | null
           created_at?: string | null
           estimated_read_minutes?: number | null
+          field_category?: string | null
           file_name?: string | null
           file_type?: string | null
+          formulas?: Json | null
           id?: string
+          is_stem?: boolean | null
           key_concepts?: Json | null
           level?: string | null
           original_content?: string
@@ -292,6 +382,7 @@ export type Database = {
           curriculum: string | null
           daily_goal_minutes: number | null
           dark_mode: boolean | null
+          exam_curriculum: string | null
           field_of_study: string | null
           full_name: string
           id: string
@@ -320,6 +411,7 @@ export type Database = {
           curriculum?: string | null
           daily_goal_minutes?: number | null
           dark_mode?: boolean | null
+          exam_curriculum?: string | null
           field_of_study?: string | null
           full_name?: string
           id: string
@@ -348,6 +440,7 @@ export type Database = {
           curriculum?: string | null
           daily_goal_minutes?: number | null
           dark_mode?: boolean | null
+          exam_curriculum?: string | null
           field_of_study?: string | null
           full_name?: string
           id?: string
