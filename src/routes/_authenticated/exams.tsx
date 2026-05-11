@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, Plus, Trash2, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/exams")({ component: ExamsPage });
 
@@ -41,6 +41,32 @@ function ExamsPage() {
   async function updateReadiness(id: string, v: number) {
     await supabase.from("exam_countdowns").update({ current_readiness: v }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["exams", user?.id] });
+  }
+
+  async function autoReadiness(id: string, subject: string) {
+    const subj = (subject || "").trim();
+    // Quiz score average for matching subject quizzes
+    const { data: quizzes } = await supabase.from("quizzes").select("id,subject").eq("user_id", user!.id);
+    const matchingQuizIds = (quizzes ?? []).filter((q: any) => !subj || (q.subject || "").toLowerCase() === subj.toLowerCase()).map((q: any) => q.id);
+    let quizAvg = 0;
+    if (matchingQuizIds.length) {
+      const { data: attempts } = await supabase.from("quiz_attempts").select("score,total").in("quiz_id", matchingQuizIds);
+      const scores = (attempts ?? []).filter((a: any) => a.total > 0).map((a: any) => (a.score / a.total) * 100);
+      if (scores.length) quizAvg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    }
+    // Flashcard retention via decks subject
+    const { data: decks } = await supabase.from("flashcard_decks").select("id,subject").eq("user_id", user!.id);
+    const matchingDeckIds = (decks ?? []).filter((d: any) => !subj || (d.subject || "").toLowerCase() === subj.toLowerCase()).map((d: any) => d.id);
+    let retAvg = 0;
+    if (matchingDeckIds.length) {
+      const { data: cards } = await supabase.from("flashcards").select("fsrs_retrievability").in("deck_id", matchingDeckIds);
+      const rs = (cards ?? []).map((c: any) => (c.fsrs_retrievability ?? 0) * 100).filter((n: number) => n > 0);
+      if (rs.length) retAvg = rs.reduce((a, b) => a + b, 0) / rs.length;
+    }
+    const combined = Math.round(quizAvg && retAvg ? quizAvg * 0.6 + retAvg * 0.4 : (quizAvg || retAvg));
+    if (!combined) return toast.error("No quiz attempts or card reviews for this subject yet");
+    await updateReadiness(id, combined);
+    toast.success(`Readiness: ${combined}% (quizzes ${Math.round(quizAvg)}% · retention ${Math.round(retAvg)}%)`);
   }
 
   return (
@@ -99,9 +125,14 @@ function ExamsPage() {
                   <input type="range" min={0} max={100} value={e.current_readiness ?? 0} onChange={(ev) => updateReadiness(e.id, parseInt(ev.target.value))} className="w-full mt-1" />
                 </div>
                 {e.notes && <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{e.notes}</p>}
-                <button onClick={() => remove(e.id)} className="mt-3 inline-flex items-center gap-1 text-xs text-destructive hover:underline">
-                  <Trash2 className="h-3 w-3" /> Delete
-                </button>
+                <div className="mt-3 flex items-center gap-3">
+                  <button onClick={() => autoReadiness(e.id, e.subject)} className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                    <Sparkles className="h-3 w-3" /> Auto-compute
+                  </button>
+                  <button onClick={() => remove(e.id)} className="inline-flex items-center gap-1 text-xs text-destructive hover:underline">
+                    <Trash2 className="h-3 w-3" /> Delete
+                  </button>
+                </div>
               </li>
             );
           })}
