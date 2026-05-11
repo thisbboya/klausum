@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      code_snippets: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_favorite: boolean
+          language: string
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          language?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          language?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cornell_notes: {
         Row: {
           created_at: string | null
