@@ -73,6 +73,7 @@ function ProgressPage() {
   }));
   const totalCards = cards.length;
   const dueToday = cards.filter((c: any) => c.next_review_date && c.next_review_date <= new Date().toISOString().slice(0, 10) && c.fsrs_state !== "new").length;
+  const leeches = cards.filter((c: any) => (c.fsrs_lapses ?? 0) >= 4).length;
   const totalReviews = reviews.length;
   const correctReviews = reviews.filter((r: any) => r.rating >= 3).length;
   const retention = totalReviews ? Math.round((correctReviews / totalReviews) * 100) : 0;
