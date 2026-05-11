@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Flag, ChevronRight, Loader2 } from "lucide-react";
+import { Flag, ChevronRight, Loader2, Timer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Q = {
@@ -16,22 +16,29 @@ type Q = {
   bloom_level: number;
 };
 
-export const Route = createFileRoute("/_authenticated/quizzes/$id/take")({ component: TakeQuiz });
+type Search = { timer?: number };
+
+export const Route = createFileRoute("/_authenticated/quizzes/$id/take")({
+  validateSearch: (s: Record<string, unknown>): Search => ({ timer: typeof s.timer === "number" ? s.timer : 0 }),
+  component: TakeQuiz,
+});
 
 function TakeQuiz() {
   const { id } = Route.useParams();
+  const { timer: timerSec } = Route.useSearch();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Q[]>([]);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
-  const [materialId, setMaterialId] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [flags, setFlags] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [start] = useState(Date.now());
+  const [secLeft, setSecLeft] = useState(timerSec ?? 0);
+  const [reviewMode, setReviewMode] = useState(false);
 
   useEffect(() => {
     (async () => {
