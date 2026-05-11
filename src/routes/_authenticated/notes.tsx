@@ -5,8 +5,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Sparkles, Wand2, Layers, NotebookPen, ArrowLeft, Loader2 } from "lucide-react";
+import { Plus, Sparkles, Wand2, Layers, NotebookPen, ArrowLeft, Loader2, Eye, Pencil, Download } from "lucide-react";
 import { generateCornellCues, generateCornellSummary, notesToFlashcards } from "@/lib/study.functions";
+import { MarkdownMath } from "@/components/notes/MarkdownMath";
+import { exportNodeToPdf, withPrintableContainer } from "@/lib/pdf-export";
+import { createRoot } from "react-dom/client";
 
 type Search = { id?: string };
 
@@ -119,6 +122,10 @@ function NoteEditor({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<"cues" | "summary" | "cards" | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [cueMode, setCueMode] = useState<"edit" | "preview">("preview");
+  const [notesMode, setNotesMode] = useState<"edit" | "preview">("edit");
+  const [summaryMode, setSummaryMode] = useState<"edit" | "preview">("preview");
 
   const cuesFn = useServerFn(generateCornellCues);
   const summaryFn = useServerFn(generateCornellSummary);
@@ -217,6 +224,25 @@ function NoteEditor({ id }: { id: string }) {
     }
   }
 
+  async function exportPdf() {
+    setExporting(true);
+    try {
+      await withPrintableContainer(async (root) => {
+        await new Promise<void>((resolve) => {
+          const r = createRoot(root);
+          r.render(<PrintableCornell title={title} subject={subject} cue={cue} notes={notes} summary={summary} />);
+          setTimeout(resolve, 500);
+        });
+        await exportNodeToPdf(root, `${(title || "cornell-note").replace(/[^a-z0-9-]+/gi, "-").toLowerCase()}.pdf`);
+      });
+      toast.success("Exported");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (loading) {
     return <div className="text-sm text-muted-foreground">Loading note…</div>;
   }
@@ -249,39 +275,85 @@ function NoteEditor({ id }: { id: string }) {
         <ToolBtn onClick={aiCues} busy={busy === "cues"} icon={Sparkles}>AI Generate Cues</ToolBtn>
         <ToolBtn onClick={aiSummary} busy={busy === "summary"} icon={Wand2}>AI Summarise</ToolBtn>
         <ToolBtn onClick={convertToFlashcards} busy={busy === "cards"} icon={Layers}>Convert to Flashcards</ToolBtn>
+        <ToolBtn onClick={exportPdf} busy={exporting} icon={Download}>Export PDF</ToolBtn>
       </div>
 
       <div className="grid gap-0 rounded-xl border border-border overflow-hidden bg-card">
         <div className="grid md:grid-cols-[260px_1fr]">
-          <div className="border-b md:border-b-0 md:border-r border-border bg-background/40">
-            <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground">Cue Column</div>
-            <textarea
-              value={cue}
-              onChange={(e) => setCue(e.target.value)}
-              placeholder="Questions, keywords, recall triggers…"
-              className="w-full min-h-[280px] md:min-h-[480px] resize-none bg-transparent p-3 text-sm outline-none"
-            />
-          </div>
-          <div>
-            <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground">Notes Column</div>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Main note-taking area. Markdown & $LaTeX$ supported."
-              className="w-full min-h-[280px] md:min-h-[480px] resize-none bg-transparent p-3 text-sm leading-relaxed outline-none"
-            />
-          </div>
-        </div>
-        <div className="border-t border-border bg-primary/5">
-          <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-primary">Summary (5 sentences)</div>
-          <textarea
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="In your own words…"
-            className="w-full min-h-[100px] resize-none bg-transparent p-3 text-sm outline-none"
+          <ColumnPane
+            label="Cue Column"
+            mode={cueMode}
+            setMode={setCueMode}
+            value={cue}
+            onChange={setCue}
+            placeholder="Questions, keywords, recall triggers…"
+            className="border-b md:border-b-0 md:border-r border-border bg-background/40"
+            tone="muted"
+          />
+          <ColumnPane
+            label="Notes Column"
+            mode={notesMode}
+            setMode={setNotesMode}
+            value={notes}
+            onChange={setNotes}
+            placeholder="Main note-taking area. Markdown & $LaTeX$ supported."
+            tone="muted"
           />
         </div>
+        <ColumnPane
+          label="Summary (5 sentences)"
+          mode={summaryMode}
+          setMode={setSummaryMode}
+          value={summary}
+          onChange={setSummary}
+          placeholder="In your own words…"
+          className="border-t border-border bg-primary/5"
+          tone="primary"
+          minH="100px"
+        />
       </div>
+    </div>
+  );
+}
+
+function ColumnPane({
+  label, mode, setMode, value, onChange, placeholder, className, tone, minH,
+}: {
+  label: string;
+  mode: "edit" | "preview";
+  setMode: (m: "edit" | "preview") => void;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  className?: string;
+  tone: "muted" | "primary";
+  minH?: string;
+}) {
+  const minHeight = minH ?? "280px";
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-between px-3 py-2">
+        <span className={`text-[11px] uppercase tracking-wider ${tone === "primary" ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
+        <button
+          onClick={() => setMode(mode === "edit" ? "preview" : "edit")}
+          className="inline-flex items-center gap-1 rounded border border-border/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        >
+          {mode === "edit" ? <><Eye className="h-3 w-3" /> Preview</> : <><Pencil className="h-3 w-3" /> Edit</>}
+        </button>
+      </div>
+      {mode === "edit" ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full resize-none bg-transparent p-3 text-sm leading-relaxed outline-none"
+          style={{ minHeight }}
+        />
+      ) : (
+        <div className="p-3 text-sm" style={{ minHeight }}>
+          <MarkdownMath source={value} />
+        </div>
+      )}
     </div>
   );
 }
@@ -296,5 +368,30 @@ function ToolBtn({ onClick, busy, icon: Icon, children }: any) {
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5 text-primary" />}
       {children}
     </button>
+  );
+}
+
+function PrintableCornell({ title, subject, cue, notes, summary }: { title: string; subject: string; cue: string; notes: string; summary: string }) {
+  return (
+    <div style={{ color: "#0f172a" }}>
+      <div style={{ borderBottom: "2px solid #0f172a", paddingBottom: 8, marginBottom: 12 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{title || "Cornell Note"}</h1>
+        <p style={{ fontSize: 11, color: "#475569", margin: "4px 0 0" }}>{subject} · {new Date().toLocaleDateString()}</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", border: "1px solid #cbd5e1", borderRadius: 6, overflow: "hidden" }}>
+        <div style={{ borderRight: "1px solid #cbd5e1", padding: 10, background: "#f8fafc", fontSize: 12 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", color: "#64748b", marginBottom: 6 }}>Cue</div>
+          <MarkdownMath source={cue} />
+        </div>
+        <div style={{ padding: 10, fontSize: 12 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", color: "#64748b", marginBottom: 6 }}>Notes</div>
+          <MarkdownMath source={notes} />
+        </div>
+      </div>
+      <div style={{ marginTop: 10, padding: 10, border: "1px solid #cbd5e1", borderRadius: 6, background: "#eff6ff", fontSize: 12 }}>
+        <div style={{ fontSize: 10, textTransform: "uppercase", color: "#1d4ed8", marginBottom: 6 }}>Summary</div>
+        <MarkdownMath source={summary} />
+      </div>
+    </div>
   );
 }

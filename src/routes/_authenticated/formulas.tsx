@@ -6,7 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 import { toast } from "sonner";
-import { Plus, Search, Star, Trash2 } from "lucide-react";
+import { Plus, Search, Star, Trash2, Download, Sparkles } from "lucide-react";
+import { ReferenceSheetDialog } from "@/components/formulas/ReferenceSheetDialog";
+import { exportNodeToPdf, withPrintableContainer } from "@/lib/pdf-export";
+import { createRoot } from "react-dom/client";
 
 export const Route = createFileRoute("/_authenticated/formulas")({ component: FormulasPage });
 
@@ -16,6 +19,8 @@ function FormulasPage() {
   const [q, setQ] = useState("");
   const [subj, setSubj] = useState("All");
   const [adding, setAdding] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [form, setForm] = useState({ name: "", latex: "", subject: "General", description: "" });
 
   const { data: formulas = [] } = useQuery({
@@ -53,6 +58,27 @@ function FormulasPage() {
     qc.invalidateQueries({ queryKey: ["formulas", user?.id] });
   }
 
+  async function exportPdf() {
+    if (filtered.length === 0) return toast.error("Nothing to export");
+    setExporting(true);
+    try {
+      await withPrintableContainer(async (root) => {
+        await new Promise<void>((resolve) => {
+          const r = createRoot(root);
+          r.render(<PrintableFormulas formulas={filtered as any} subject={subj} />);
+          // Wait for KaTeX render
+          setTimeout(resolve, 400);
+        });
+        await exportNodeToPdf(root, `formulas-${subj.toLowerCase()}.pdf`);
+      });
+      toast.success("Exported");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between gap-3">
@@ -60,10 +86,25 @@ function FormulasPage() {
           <h1 className="font-display text-3xl font-bold">Formula Library</h1>
           <p className="text-sm text-muted-foreground">Your reference sheet for every subject.</p>
         </div>
-        <button onClick={() => setAdding(!adding)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
-          <Plus className="h-4 w-4" /> Add formula
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={exportPdf} disabled={exporting} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-semibold disabled:opacity-50">
+            <Download className="h-4 w-4" /> {exporting ? "Exporting…" : "Export PDF"}
+          </button>
+          <button onClick={() => setAiOpen(true)} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+            <Sparkles className="h-4 w-4" /> AI Reference Sheet
+          </button>
+          <button onClick={() => setAdding(!adding)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+            <Plus className="h-4 w-4" /> Add formula
+          </button>
+        </div>
       </header>
+
+      <ReferenceSheetDialog
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        subjects={subjects.filter((s) => s !== "All")}
+        existingNames={formulas.map((f: any) => f.name)}
+      />
 
       {adding && (
         <div className="space-y-3 rounded-xl border border-border/60 bg-card/60 p-4">
@@ -137,4 +178,29 @@ function SafeMath({ latex }: { latex: string }) {
   } catch {
     return <code className="text-xs text-red-400">Invalid LaTeX</code>;
   }
+}
+
+function PrintableFormulas({ formulas, subject }: { formulas: any[]; subject: string }) {
+  return (
+    <div style={{ color: "#0f172a" }}>
+      <div style={{ borderBottom: "2px solid #0f172a", paddingBottom: 8, marginBottom: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Formula Reference Sheet</h1>
+        <p style={{ fontSize: 12, color: "#475569", margin: "4px 0 0" }}>
+          Subject: {subject} · {formulas.length} formulas · Generated {new Date().toLocaleDateString()}
+        </p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {formulas.map((f) => (
+          <div key={f.id} style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: 10, background: "#f8fafc", breakInside: "avoid" }}>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{f.name}</div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", color: "#64748b", letterSpacing: 0.5 }}>{f.subject}</div>
+            <div style={{ background: "#fff", padding: 8, borderRadius: 4, margin: "6px 0", overflow: "hidden" }}>
+              <SafeMath latex={f.latex} />
+            </div>
+            {f.description && <p style={{ fontSize: 11, color: "#475569", margin: 0 }}>{f.description}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
