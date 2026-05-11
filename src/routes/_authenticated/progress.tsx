@@ -34,6 +34,7 @@ function ProgressPage() {
         supabase.from("formulas").select("id").eq("user_id", user!.id),
         supabase.from("study_rooms").select("id").eq("host_id", user!.id),
         supabase.from("tutor_sessions").select("id, mode").eq("user_id", user!.id),
+        supabase.from("flashcards").select("fsrs_stability, fsrs_state, fsrs_lapses, next_review_date").eq("user_id", user!.id),
       ]);
       return {
         profile: profile.data,
@@ -46,6 +47,7 @@ function ProgressPage() {
         formulas: formulas.data ?? [],
         rooms: rooms.data ?? [],
         tutorSessions: tutorSessions.data ?? [],
+        cards: cards.data ?? [],
       };
     },
   });
