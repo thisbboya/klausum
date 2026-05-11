@@ -1,0 +1,1 @@
+ALTER TABLE public.knowledge_gaps ADD COLUMN IF NOT EXISTS hit_count integer NOT NULL DEFAULT 0;

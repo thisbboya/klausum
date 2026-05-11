@@ -322,6 +322,7 @@ export type Database = {
           bloom_level: number | null
           confidence: number | null
           created_at: string | null
+          hit_count: number
           id: string
           resolved_at: string | null
           severity: string | null
@@ -336,6 +337,7 @@ export type Database = {
           bloom_level?: number | null
           confidence?: number | null
           created_at?: string | null
+          hit_count?: number
           id?: string
           resolved_at?: string | null
           severity?: string | null
@@ -350,6 +352,7 @@ export type Database = {
           bloom_level?: number | null
           confidence?: number | null
           created_at?: string | null
+          hit_count?: number
           id?: string
           resolved_at?: string | null
           severity?: string | null
