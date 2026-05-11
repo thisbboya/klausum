@@ -43,6 +43,32 @@ function ExamsPage() {
     qc.invalidateQueries({ queryKey: ["exams", user?.id] });
   }
 
+  async function autoReadiness(id: string, subject: string) {
+    const subj = (subject || "").trim();
+    // Quiz score average for matching subject quizzes
+    const { data: quizzes } = await supabase.from("quizzes").select("id,subject").eq("user_id", user!.id);
+    const matchingQuizIds = (quizzes ?? []).filter((q: any) => !subj || (q.subject || "").toLowerCase() === subj.toLowerCase()).map((q: any) => q.id);
+    let quizAvg = 0;
+    if (matchingQuizIds.length) {
+      const { data: attempts } = await supabase.from("quiz_attempts").select("score,total").in("quiz_id", matchingQuizIds);
+      const scores = (attempts ?? []).filter((a: any) => a.total > 0).map((a: any) => (a.score / a.total) * 100);
+      if (scores.length) quizAvg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    }
+    // Flashcard retention via decks subject
+    const { data: decks } = await supabase.from("flashcard_decks").select("id,subject").eq("user_id", user!.id);
+    const matchingDeckIds = (decks ?? []).filter((d: any) => !subj || (d.subject || "").toLowerCase() === subj.toLowerCase()).map((d: any) => d.id);
+    let retAvg = 0;
+    if (matchingDeckIds.length) {
+      const { data: cards } = await supabase.from("flashcards").select("fsrs_retrievability").in("deck_id", matchingDeckIds);
+      const rs = (cards ?? []).map((c: any) => (c.fsrs_retrievability ?? 0) * 100).filter((n: number) => n > 0);
+      if (rs.length) retAvg = rs.reduce((a, b) => a + b, 0) / rs.length;
+    }
+    const combined = Math.round(quizAvg && retAvg ? quizAvg * 0.6 + retAvg * 0.4 : (quizAvg || retAvg));
+    if (!combined) return toast.error("No quiz attempts or card reviews for this subject yet");
+    await updateReadiness(id, combined);
+    toast.success(`Readiness: ${combined}% (quizzes ${Math.round(quizAvg)}% · retention ${Math.round(retAvg)}%)`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
