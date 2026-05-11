@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Network, ArrowLeft, Sparkles, Loader2, Wand2 } from "lucide-react";
+import { Plus, Network, ArrowLeft, Sparkles, Loader2, Wand2, LayoutGrid, Download } from "lucide-react";
 import ReactFlow, {
   Background,
   Controls,
@@ -13,6 +13,7 @@ import ReactFlow, {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  MarkerType,
   type Node,
   type Edge,
   type Connection,
@@ -20,6 +21,8 @@ import ReactFlow, {
   type EdgeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import dagre from "dagre";
+import { toPng } from "html-to-image";
 import { generateMindMap, expandMindMapNode } from "@/lib/study.functions";
 
 type Search = { id?: string };
