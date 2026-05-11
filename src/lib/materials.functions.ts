@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
 import { getUserIdFromToken } from "./server-auth";
@@ -21,77 +21,134 @@ const ProcessInput = z.object({
   mimeType: z.string().optional(),
 });
 
-const ProcessedSchema = z.object({
-  summary: z.string().describe("3-5 sentence summary"),
-  key_concepts: z
-    .array(
-      z.object({
-        id: z.string(),
-        concept: z.string(),
-        definition: z.string(),
-        example: z.string(),
-        importance: z.enum(["high", "medium", "low"]),
-        bloom_level: z.number().int().min(1).max(6),
+const ProcessedSchema = z
+  .object({
+    summary: z.any().optional(),
+    key_concepts: z.any().optional(),
+    concept_graph: z.any().optional(),
+    visual: z.any().optional(),
+    auditory: z.any().optional(),
+    reading: z.any().optional(),
+    kinesthetic: z.any().optional(),
+    cornell: z.any().optional(),
+    flashcards: z.any().optional(),
+    formulas: z.any().optional(),
+    bloom_questions: z.any().optional(),
+    extracted_text: z.any().optional(),
+    word_count: z.any().optional(),
+    estimated_read_minutes: z.any().optional(),
+  })
+  .passthrough();
+
+function asText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (value == null) return "";
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "";
+  }
+}
+
+function asArray(value: unknown): any[] {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object") return Object.values(value as Record<string, unknown>);
+  return [];
+}
+
+function asObject(value: unknown): Record<string, any> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, any>) : {};
+}
+
+function bloomLevel(value: unknown, fallback = 1) {
+  const n = Number(asText(value).replace(/[^0-9]/g, "")) || fallback;
+  return Math.min(6, Math.max(1, Math.round(n)));
+}
+
+function firstSentences(text: string, count = 4) {
+  const sentences = text.replace(/\s+/g, " ").match(/[^.!?]+[.!?]+/g) ?? [text.slice(0, 700)];
+  return sentences.slice(0, count).join(" ").trim() || "Study material processed successfully.";
+}
+
+function normalizeProcessed(raw: any, sourceText: string, title: string) {
+  const extracted_text = asText(raw.extracted_text) || sourceText;
+  const summary = asText(raw.summary) || firstSentences(extracted_text);
+  const words = extracted_text.trim().split(/\s+/).filter(Boolean).length;
+  const key_concepts = asArray(raw.key_concepts)
+    .map((c, i) => {
+      const o = asObject(c);
+      return {
+        id: asText(o.id) || `c${i + 1}`,
+        concept: asText(o.concept ?? o.term ?? o.name) || `Key idea ${i + 1}`,
+        definition: asText(o.definition ?? o.explanation ?? o.description) || firstSentences(summary, 1),
+        example: asText(o.example) || "Review the source material for an example.",
+        importance: ["high", "medium", "low"].includes(asText(o.importance).toLowerCase()) ? asText(o.importance).toLowerCase() : "medium",
+        bloom_level: bloomLevel(o.bloom_level, Math.min(6, i + 1)),
+      };
+    })
+    .filter((c) => c.concept)
+    .slice(0, 15);
+
+  if (key_concepts.length === 0) {
+    key_concepts.push({ id: "c1", concept: title, definition: summary, example: "Use this as the anchor topic for review.", importance: "high", bloom_level: 2 });
+  }
+
+  const flashcards = asArray(raw.flashcards)
+    .map((c, i) => {
+      const o = asObject(c);
+      return {
+        front: asText(o.front ?? o.question) || `What is ${key_concepts[i % key_concepts.length]?.concept}?`,
+        back: asText(o.back ?? o.answer) || key_concepts[i % key_concepts.length]?.definition || summary,
+        hint: asText(o.hint) || null,
+        bloom_level: bloomLevel(o.bloom_level, (i % 6) + 1),
+        card_type: ["standard", "formula", "code"].includes(asText(o.card_type)) ? asText(o.card_type) : "standard",
+        tags: asArray(o.tags).map(asText).filter(Boolean),
+      };
+    })
+    .filter((c) => c.front && c.back)
+    .slice(0, 20);
+
+  while (flashcards.length < 6) {
+    const c = key_concepts[flashcards.length % key_concepts.length];
+    flashcards.push({ front: `Explain: ${c.concept}`, back: c.definition, hint: c.example, bloom_level: bloomLevel(c.bloom_level, (flashcards.length % 6) + 1), card_type: "standard", tags: [] });
+  }
+
+  const bloomRaw = asObject(raw.bloom_questions);
+  const bloom_questions: Record<string, { question: string; answer: string }[]> = {};
+  for (const level of ["L1", "L2", "L3", "L4", "L5", "L6"]) {
+    bloom_questions[level] = asArray(bloomRaw[level])
+      .map((q) => {
+        const o = asObject(q);
+        return { question: asText(o.question ?? o.front), answer: asText(o.answer ?? o.back) };
       })
-    )
-    .min(5)
-    .max(15),
-  concept_graph: z
-    .array(
-      z.object({
-        source_id: z.string(),
-        target_id: z.string(),
-        relationship: z.enum(["depends_on", "causes", "contrasts", "part_of", "precedes"]),
-      })
-    )
-    .default([]),
-  visual: z.string().describe("VISUAL adaptation. Use [DIAGRAM: desc], [KEY TERM: term], comparison tables, headers, end with VISUAL SUMMARY table."),
-  auditory: z.string().describe("AUDITORY adaptation. Conversational. Insert [SAY THIS ALOUD: ...] at least 4 times. End each section with [VERBAL SUMMARY: ...]."),
-  reading: z.string().describe("READING/WRITING adaptation. Hierarchical I>A>1, prose, [WRITE THIS DOWN: ...] prompts."),
-  kinesthetic: z.string().describe("KINESTHETIC adaptation. [TRY THIS: ...], [REAL WORLD: ...], step-by-step worked examples."),
-  cornell: z.object({
-    cue_column: z.string(),
-    notes_column: z.string(),
-    summary: z.string(),
-  }),
-  flashcards: z
-    .array(
-      z.object({
-        front: z.string(),
-        back: z.string(),
-        hint: z.string().nullable().default(null),
-        bloom_level: z.number().int().min(1).max(6),
-        card_type: z.enum(["standard", "formula", "code"]).default("standard"),
-        tags: z.array(z.string()).default([]),
-      })
-    )
-    .min(6)
-    .max(20)
-    .describe("Aim for ~15 cards: 2x L1, 3x L2, 3x L3, 3x L4, 2x L5, 2x L6"),
-  formulas: z
-    .array(
-      z.object({
-        name: z.string(),
-        latex: z.string(),
-        variables: z
-          .array(z.object({ symbol: z.string(), unit: z.string(), meaning: z.string() }))
-          .default([]),
-      })
-    )
-    .default([])
-    .describe("Empty array if no formulas. Otherwise extract all equations in LaTeX."),
-  bloom_questions: z.object({
-    L1: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
-    L2: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
-    L3: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
-    L4: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
-    L5: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
-    L6: z.array(z.object({ question: z.string(), answer: z.string() })).min(1).max(3),
-  }),
-  extracted_text: z.string().describe("Plain-text transcription of the source content (extracted from the file or echoed back from pasted text). At least 200 chars unless the source is shorter."),
-  word_count: z.number().int(),
-  estimated_read_minutes: z.number().int(),
-});
+      .filter((q) => q.question && q.answer)
+      .slice(0, 3);
+    if (bloom_questions[level].length === 0) bloom_questions[level].push({ question: `${level}: What should you understand about ${title}?`, answer: summary });
+  }
+
+  const cornell = asObject(raw.cornell);
+  return {
+    summary,
+    key_concepts,
+    concept_graph: asArray(raw.concept_graph).slice(0, 30),
+    visual: asText(raw.visual) || `[KEY TERM: ${key_concepts[0].concept}]\n\n${summary}`,
+    auditory: asText(raw.auditory) || `[SAY THIS ALOUD: ${firstSentences(summary, 1)}]\n\n[VERBAL SUMMARY: ${summary}]`,
+    reading: asText(raw.reading) || `I. ${title}\n\nA. ${summary}\n\n[WRITE THIS DOWN: ${key_concepts[0].concept}]`,
+    kinesthetic: asText(raw.kinesthetic) || `[TRY THIS: Teach the main idea in your own words.]\n\n[REAL WORLD: Connect ${key_concepts[0].concept} to a practical example.]`,
+    cornell: {
+      cue_column: asText(cornell.cue_column ?? cornell.cues) || key_concepts.map((c) => c.concept).join("\n"),
+      notes_column: asText(cornell.notes_column ?? cornell.notes) || summary,
+      summary: asText(cornell.summary) || summary,
+    },
+    flashcards,
+    formulas: asArray(raw.formulas).slice(0, 30),
+    bloom_questions,
+    extracted_text,
+    word_count: Number(raw.word_count) || words,
+    estimated_read_minutes: Number(raw.estimated_read_minutes) || Math.max(1, Math.round(words / 220)),
+  };
+}
 
 export const processMaterial = createServerFn({ method: "POST" })
   .inputValidator((d) => ProcessInput.parse(d))
