@@ -125,12 +125,59 @@ function TakeQuiz() {
       return;
     }
 
-    // Insert knowledge gaps from wrong answers
+    // Reconcile against existing open gaps
+    const { data: openGaps } = await supabase
+      .from("knowledge_gaps")
+      .select("id, topic, severity, hit_count, confidence")
+      .eq("user_id", user.id)
+      .eq("status", "open");
+    const openList = (openGaps ?? []) as Array<{ id: string; topic: string; severity: string; hit_count: number | null; confidence: number | null }>;
+    const matchedTopics = new Set<string>();
+
+    // Bump hit_count + escalate severity for wrong answers matching open gaps
+    for (const w of wrong) {
+      const t = String(w.topic ?? "").toLowerCase();
+      if (!t) continue;
+      const match = openList.find((g) => {
+        const gt = String(g.topic ?? "").toLowerCase();
+        return gt === t || gt.includes(t) || t.includes(gt);
+      });
+      if (match) {
+        matchedTopics.add(t);
+        const newHits = (match.hit_count ?? 0) + 1;
+        const nextSev = newHits >= 3 ? "critical" : newHits >= 2 ? "moderate" : match.severity;
+        await supabase
+          .from("knowledge_gaps")
+          .update({ hit_count: newHits, severity: nextSev, confidence: Math.max(0, (match.confidence ?? 30) - 10) })
+          .eq("id", match.id);
+      }
+    }
+
+    // Bump confidence (and auto-resolve at >=80) for correct answers matching open gaps
+    for (const t of correctTopics) {
+      const match = openList.find((g) => {
+        const gt = String(g.topic ?? "").toLowerCase();
+        return gt === t || gt.includes(t) || t.includes(gt);
+      });
+      if (match) {
+        const newConf = Math.min(100, (match.confidence ?? 30) + 15);
+        const patch: Record<string, unknown> = { confidence: newConf };
+        if (newConf >= 80) {
+          patch.status = "resolved";
+          patch.resolved_at = new Date().toISOString();
+        }
+        await supabase.from("knowledge_gaps").update(patch).eq("id", match.id);
+      }
+    }
+
+    // Insert brand-new gaps for unmatched wrong answers
     if (wrong.length) {
       const seen = new Set<string>();
       const gapsRows = wrong
         .filter((w) => {
-          const k = `${w.topic}|${w.bloom}`;
+          const t = String(w.topic ?? "").toLowerCase();
+          if (!t || matchedTopics.has(t)) return false;
+          const k = `${t}|${w.bloom}`;
           if (seen.has(k)) return false;
           seen.add(k);
           return true;
@@ -143,6 +190,7 @@ function TakeQuiz() {
           severity: w.bloom >= 4 ? "critical" : "moderate",
           source: "quiz",
           source_id: id,
+          hit_count: 1,
         }));
       if (gapsRows.length) await supabase.from("knowledge_gaps").insert(gapsRows);
     }
