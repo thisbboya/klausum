@@ -161,11 +161,9 @@ function TakeQuiz() {
       });
       if (match) {
         const newConf = Math.min(100, (match.confidence ?? 30) + 15);
-        const patch: Record<string, unknown> = { confidence: newConf };
-        if (newConf >= 80) {
-          patch.status = "resolved";
-          patch.resolved_at = new Date().toISOString();
-        }
+        const patch = newConf >= 80
+          ? { confidence: newConf, status: "resolved", resolved_at: new Date().toISOString() }
+          : { confidence: newConf };
         await supabase.from("knowledge_gaps").update(patch).eq("id", match.id);
       }
     }
