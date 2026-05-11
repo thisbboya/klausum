@@ -53,9 +53,27 @@ function ProgressPage() {
   });
 
   if (!data) return <div className="text-sm text-muted-foreground">Loading…</div>;
-  const { profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions } = data;
+  const { profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions, cards } = data;
 
-  const totalReviews = reviews.length;
+  // FSRS card health bins (by stability days)
+  const healthBins = [
+    { label: "New", min: -1, max: 0.001, color: "bg-muted text-muted-foreground" },
+    { label: "Learning", min: 0.001, max: 7, color: "bg-amber-500/20 text-amber-400" },
+    { label: "Young", min: 7, max: 21, color: "bg-sky-500/20 text-sky-400" },
+    { label: "Mature", min: 21, max: 90, color: "bg-emerald-500/20 text-emerald-400" },
+    { label: "Mastered", min: 90, max: Infinity, color: "bg-primary/25 text-primary" },
+  ];
+  const healthData = healthBins.map((b) => ({
+    ...b,
+    count: cards.filter((c: any) => {
+      const s = c.fsrs_stability ?? 0;
+      if (b.label === "New") return c.fsrs_state === "new" || s === 0;
+      return s > b.min && s <= b.max && c.fsrs_state !== "new";
+    }).length,
+  }));
+  const totalCards = cards.length;
+  const dueToday = cards.filter((c: any) => c.next_review_date && c.next_review_date <= new Date().toISOString().slice(0, 10) && c.fsrs_state !== "new").length;
+  const leeches = cards.filter((c: any) => (c.fsrs_lapses ?? 0) >= 4).length;
   const correctReviews = reviews.filter((r: any) => r.rating >= 3).length;
   const retention = totalReviews ? Math.round((correctReviews / totalReviews) * 100) : 0;
 
