@@ -8,6 +8,7 @@ import {
   Link,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 import appCss from "../styles.css?url";
 
@@ -124,6 +125,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster richColors position="top-right" />
+      <InstallPrompt />
     </QueryClientProvider>
   );
 }
