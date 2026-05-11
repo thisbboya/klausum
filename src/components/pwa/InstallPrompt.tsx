@@ -77,7 +77,7 @@ export function InstallPrompt() {
           {deferred ? <Download className="h-5 w-5" /> : <Share className="h-5 w-5" />}
         </div>
         <div className="flex-1 text-sm">
-          <div className="font-semibold">Install NkyinkyimIQ</div>
+          <div className="font-semibold">Install Klausum</div>
           {deferred ? (
             <p className="mt-1 text-muted-foreground">
               Add it to your device for a faster, app-like experience.

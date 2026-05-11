@@ -104,7 +104,7 @@ export const processMaterial = createServerFn({ method: "POST" })
       {
         type: "text",
         text:
-          `You are NkyinkyimIQ, an adaptive learning engine. ` +
+          `You are Klausum, an adaptive learning engine. ` +
           `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract formulas." : "Non-STEM — formulas array should be empty."} ` +
           `Produce: summary, 8-15 key concepts (with stable ids c1..cN), concept_graph edges between concepts, ` +
           `four VARK adaptations (each <600 words, with the special callout tags described in the schema), ` +

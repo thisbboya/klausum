@@ -9,8 +9,8 @@ export const LEVELS = [
   { xp: 5500, name: "Academic Warrior" },
   { xp: 8000, name: "Distinction Seeker" },
   { xp: 12000, name: "First Class Mind" },
-  { xp: 18000, name: "NkyinkyimIQ Master" },
-  { xp: 25000, name: "NkyinkyimIQ Legend" },
+  { xp: 18000, name: "Klausum Master" },
+  { xp: 25000, name: "Klausum Legend" },
 ];
 
 export function levelFor(xp: number) {

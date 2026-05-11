@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { NkyinkyimSymbol } from "@/components/adinkra";
+import { KlausumMark } from "@/components/klausum-mark";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
@@ -235,8 +235,8 @@ function Onboarding() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="px-6 py-4 flex items-center gap-2 text-primary">
-        <NkyinkyimSymbol size={24} />
-        <span className="font-display font-semibold">NkyinkyimIQ</span>
+        <KlausumMark size={24} />
+        <span className="font-display font-semibold">Klausum</span>
       </header>
 
       <div className="mx-auto w-full max-w-xl px-4 pb-16 flex-1 flex flex-col justify-center">
@@ -333,7 +333,7 @@ function Onboarding() {
                 disabled={submitting}
                 className="mt-6 w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {submitting ? "Setting up…" : "Finish & enter NkyinkyimIQ"}
+                {submitting ? "Setting up…" : "Finish & enter Klausum"}
               </button>
             </div>
           )}

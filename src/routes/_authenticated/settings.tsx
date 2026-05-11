@@ -213,7 +213,7 @@ function DataTab() {
       const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `nkyinkyimiq-export-${Date.now()}.json`; a.click();
+      a.href = url; a.download = `klausum-export-${Date.now()}.json`; a.click();
       URL.revokeObjectURL(url);
       toast.success("Export downloaded");
     } catch (e: any) {

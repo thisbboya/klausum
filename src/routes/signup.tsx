@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { NkyinkyimSymbol } from "@/components/adinkra";
+import { KlausumMark } from "@/components/klausum-mark";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({ component: SignupPage });
@@ -43,8 +43,8 @@ function SignupPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 text-primary">
-          <NkyinkyimSymbol size={32} />
-          <span className="font-display text-lg font-semibold">NkyinkyimIQ</span>
+          <KlausumMark size={32} />
+          <span className="font-display text-lg font-semibold">Klausum</span>
         </Link>
         <h1 className="text-center font-display text-2xl font-semibold">Start learning</h1>
         <p className="mt-1 text-center text-sm text-muted-foreground">Free forever for students</p>
