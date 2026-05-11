@@ -66,7 +66,7 @@ function TakeQuiz() {
       setSecLeft((s: number) => {
         if (s <= 1) {
           clearInterval(t);
-          if (idx < total - 1) setIdx((i) => i + 1);
+          if (idx < total - 1) setIdx((i: number) => i + 1);
           return 0;
         }
         return s - 1;
