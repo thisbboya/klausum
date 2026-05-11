@@ -14,13 +14,395 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      flashcard_decks: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          material_id: string | null
+          subject: string | null
+          title: string
+          total_cards: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          material_id?: string | null
+          subject?: string | null
+          title: string
+          total_cards?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          material_id?: string | null
+          subject?: string | null
+          title?: string
+          total_cards?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_decks_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_reviews: {
+        Row: {
+          card_id: string
+          id: number
+          rating: number
+          reviewed_at: string | null
+          stability_after: number | null
+          stability_before: number | null
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          id?: number
+          rating: number
+          reviewed_at?: string | null
+          stability_after?: number | null
+          stability_before?: number | null
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          id?: number
+          rating?: number
+          reviewed_at?: string | null
+          stability_after?: number | null
+          stability_before?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_reviews_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          back: string
+          bloom_level: number | null
+          created_at: string | null
+          deck_id: string
+          front: string
+          fsrs_difficulty: number | null
+          fsrs_lapses: number | null
+          fsrs_repetitions: number | null
+          fsrs_retrievability: number | null
+          fsrs_stability: number | null
+          fsrs_state: string | null
+          hint: string | null
+          id: string
+          last_rating: number | null
+          last_review_date: string | null
+          next_review_date: string | null
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          back: string
+          bloom_level?: number | null
+          created_at?: string | null
+          deck_id: string
+          front: string
+          fsrs_difficulty?: number | null
+          fsrs_lapses?: number | null
+          fsrs_repetitions?: number | null
+          fsrs_retrievability?: number | null
+          fsrs_stability?: number | null
+          fsrs_state?: string | null
+          hint?: string | null
+          id?: string
+          last_rating?: number | null
+          last_review_date?: string | null
+          next_review_date?: string | null
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          back?: string
+          bloom_level?: number | null
+          created_at?: string | null
+          deck_id?: string
+          front?: string
+          fsrs_difficulty?: number | null
+          fsrs_lapses?: number | null
+          fsrs_repetitions?: number | null
+          fsrs_retrievability?: number | null
+          fsrs_stability?: number | null
+          fsrs_state?: string | null
+          hint?: string | null
+          id?: string
+          last_rating?: number | null
+          last_review_date?: string | null
+          next_review_date?: string | null
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_materials: {
+        Row: {
+          adapted_auditory: string | null
+          adapted_kinesthetic: string | null
+          adapted_reading: string | null
+          adapted_visual: string | null
+          ai_summary: string | null
+          created_at: string | null
+          estimated_read_minutes: number | null
+          file_name: string | null
+          file_type: string | null
+          id: string
+          key_concepts: Json | null
+          level: string | null
+          original_content: string
+          processing_error: string | null
+          processing_status: string | null
+          subject: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          word_count: number | null
+        }
+        Insert: {
+          adapted_auditory?: string | null
+          adapted_kinesthetic?: string | null
+          adapted_reading?: string | null
+          adapted_visual?: string | null
+          ai_summary?: string | null
+          created_at?: string | null
+          estimated_read_minutes?: number | null
+          file_name?: string | null
+          file_type?: string | null
+          id?: string
+          key_concepts?: Json | null
+          level?: string | null
+          original_content: string
+          processing_error?: string | null
+          processing_status?: string | null
+          subject?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          word_count?: number | null
+        }
+        Update: {
+          adapted_auditory?: string | null
+          adapted_kinesthetic?: string | null
+          adapted_reading?: string | null
+          adapted_visual?: string | null
+          ai_summary?: string | null
+          created_at?: string | null
+          estimated_read_minutes?: number | null
+          file_name?: string | null
+          file_type?: string | null
+          id?: string
+          key_concepts?: Json | null
+          level?: string | null
+          original_content?: string
+          processing_error?: string | null
+          processing_status?: string | null
+          subject?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          word_count?: number | null
+        }
+        Relationships: []
+      }
+      tutor_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          material_id: string | null
+          message_count: number | null
+          messages: Json | null
+          mode: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          material_id?: string | null
+          message_count?: number | null
+          messages?: Json | null
+          mode?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          material_id?: string | null
+          message_count?: number | null
+          messages?: Json | null
+          mode?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_sessions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          auditory_score: number | null
+          avatar_url: string | null
+          country: string | null
+          created_at: string | null
+          curriculum: string | null
+          daily_goal_minutes: number | null
+          dark_mode: boolean | null
+          field_of_study: string | null
+          full_name: string
+          id: string
+          kinesthetic_score: number | null
+          last_study_date: string | null
+          level: string | null
+          longest_streak: number | null
+          onboarding_completed: boolean | null
+          preferred_session_minutes: number | null
+          primary_style: string | null
+          programme: string | null
+          reading_score: number | null
+          school: string | null
+          secondary_style: string | null
+          streak_days: number | null
+          updated_at: string | null
+          vark_completed: boolean | null
+          visual_score: number | null
+          xp_total: number | null
+        }
+        Insert: {
+          auditory_score?: number | null
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          curriculum?: string | null
+          daily_goal_minutes?: number | null
+          dark_mode?: boolean | null
+          field_of_study?: string | null
+          full_name?: string
+          id: string
+          kinesthetic_score?: number | null
+          last_study_date?: string | null
+          level?: string | null
+          longest_streak?: number | null
+          onboarding_completed?: boolean | null
+          preferred_session_minutes?: number | null
+          primary_style?: string | null
+          programme?: string | null
+          reading_score?: number | null
+          school?: string | null
+          secondary_style?: string | null
+          streak_days?: number | null
+          updated_at?: string | null
+          vark_completed?: boolean | null
+          visual_score?: number | null
+          xp_total?: number | null
+        }
+        Update: {
+          auditory_score?: number | null
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          curriculum?: string | null
+          daily_goal_minutes?: number | null
+          dark_mode?: boolean | null
+          field_of_study?: string | null
+          full_name?: string
+          id?: string
+          kinesthetic_score?: number | null
+          last_study_date?: string | null
+          level?: string | null
+          longest_streak?: number | null
+          onboarding_completed?: boolean | null
+          preferred_session_minutes?: number | null
+          primary_style?: string | null
+          programme?: string | null
+          reading_score?: number | null
+          school?: string | null
+          secondary_style?: string | null
+          streak_days?: number | null
+          updated_at?: string | null
+          vark_completed?: boolean | null
+          visual_score?: number | null
+          xp_total?: number | null
+        }
+        Relationships: []
+      }
+      xp_events: {
+        Row: {
+          action: string
+          created_at: string | null
+          description: string | null
+          id: string
+          user_id: string
+          xp_amount: number
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          user_id: string
+          xp_amount: number
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          user_id?: string
+          xp_amount?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_xp: { Args: { _amount: number }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
