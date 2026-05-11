@@ -91,6 +91,7 @@ function TakeQuiz() {
     let score = 0;
     const bloom: Record<string, { right: number; total: number }> = {};
     const wrong: { topic: string; bloom: number }[] = [];
+    const correctTopics: string[] = [];
     questions.forEach((qq, i) => {
       const got = answers[i];
       const right = got === qq.correct;
@@ -98,8 +99,10 @@ function TakeQuiz() {
       const k = `L${qq.bloom_level}`;
       bloom[k] = bloom[k] ?? { right: 0, total: 0 };
       bloom[k].total += 1;
-      if (right) bloom[k].right += 1;
-      else wrong.push({ topic: qq.topic, bloom: qq.bloom_level });
+      if (right) {
+        bloom[k].right += 1;
+        if (qq.topic) correctTopics.push(String(qq.topic).toLowerCase());
+      } else wrong.push({ topic: qq.topic, bloom: qq.bloom_level });
     });
 
     const duration = Math.round((Date.now() - start) / 1000);
