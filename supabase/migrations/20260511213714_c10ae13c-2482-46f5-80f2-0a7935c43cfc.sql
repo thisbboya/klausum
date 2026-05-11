@@ -1,0 +1,2 @@
+CREATE OR REPLACE FUNCTION public.touch_code_snippets() RETURNS TRIGGER LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;
+REVOKE EXECUTE ON FUNCTION public.touch_code_snippets() FROM PUBLIC, anon, authenticated;
