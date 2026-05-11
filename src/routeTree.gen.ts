@@ -16,6 +16,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
+import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
@@ -28,6 +29,7 @@ import { Route as AuthenticatedMindmapsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedGapsRouteImport } from './routes/_authenticated/gaps'
 import { Route as AuthenticatedFormulasRouteImport } from './routes/_authenticated/formulas'
+import { Route as AuthenticatedExamsRouteImport } from './routes/_authenticated/exams'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
@@ -67,6 +69,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
 const AuthenticatedVoiceRoute = AuthenticatedVoiceRouteImport.update({
   id: '/voice',
   path: '/voice',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTutorRoute = AuthenticatedTutorRouteImport.update({
@@ -129,6 +136,11 @@ const AuthenticatedFormulasRoute = AuthenticatedFormulasRouteImport.update({
   path: '/formulas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedExamsRoute = AuthenticatedExamsRouteImport.update({
+  id: '/exams',
+  path: '/exams',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -170,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/exams': typeof AuthenticatedExamsRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
   '/materials': typeof AuthenticatedMaterialsRouteWithChildren
@@ -182,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tutor': typeof AuthenticatedTutorRoute
+  '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -196,6 +210,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/exams': typeof AuthenticatedExamsRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
   '/materials': typeof AuthenticatedMaterialsRouteWithChildren
@@ -208,6 +223,7 @@ export interface FileRoutesByTo {
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tutor': typeof AuthenticatedTutorRoute
+  '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -224,6 +240,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/codelab': typeof AuthenticatedCodelabRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/exams': typeof AuthenticatedExamsRoute
   '/_authenticated/formulas': typeof AuthenticatedFormulasRoute
   '/_authenticated/gaps': typeof AuthenticatedGapsRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRouteWithChildren
@@ -236,6 +253,7 @@ export interface FileRoutesById {
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
+  '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -252,6 +270,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/codelab'
     | '/dashboard'
+    | '/exams'
     | '/formulas'
     | '/gaps'
     | '/materials'
@@ -264,6 +283,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/tutor'
+    | '/videos'
     | '/voice'
     | '/api/chat'
     | '/materials/$id'
@@ -278,6 +298,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/codelab'
     | '/dashboard'
+    | '/exams'
     | '/formulas'
     | '/gaps'
     | '/materials'
@@ -290,6 +311,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/tutor'
+    | '/videos'
     | '/voice'
     | '/api/chat'
     | '/materials/$id'
@@ -305,6 +327,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/codelab'
     | '/_authenticated/dashboard'
+    | '/_authenticated/exams'
     | '/_authenticated/formulas'
     | '/_authenticated/gaps'
     | '/_authenticated/materials'
@@ -317,6 +340,7 @@ export interface FileRouteTypes {
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
     | '/_authenticated/tutor'
+    | '/_authenticated/videos'
     | '/_authenticated/voice'
     | '/api/chat'
     | '/_authenticated/materials/$id'
@@ -383,6 +407,13 @@ declare module '@tanstack/react-router' {
       path: '/voice'
       fullPath: '/voice'
       preLoaderRoute: typeof AuthenticatedVoiceRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/videos': {
+      id: '/_authenticated/videos'
+      path: '/videos'
+      fullPath: '/videos'
+      preLoaderRoute: typeof AuthenticatedVideosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tutor': {
@@ -467,6 +498,13 @@ declare module '@tanstack/react-router' {
       path: '/formulas'
       fullPath: '/formulas'
       preLoaderRoute: typeof AuthenticatedFormulasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/exams': {
+      id: '/_authenticated/exams'
+      path: '/exams'
+      fullPath: '/exams'
+      preLoaderRoute: typeof AuthenticatedExamsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -555,6 +593,7 @@ const AuthenticatedRoomsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedCodelabRoute: typeof AuthenticatedCodelabRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedExamsRoute: typeof AuthenticatedExamsRoute
   AuthenticatedFormulasRoute: typeof AuthenticatedFormulasRoute
   AuthenticatedGapsRoute: typeof AuthenticatedGapsRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRouteWithChildren
@@ -567,12 +606,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
+  AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedVoiceRoute: typeof AuthenticatedVoiceRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCodelabRoute: AuthenticatedCodelabRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedExamsRoute: AuthenticatedExamsRoute,
   AuthenticatedFormulasRoute: AuthenticatedFormulasRoute,
   AuthenticatedGapsRoute: AuthenticatedGapsRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRouteWithChildren,
@@ -585,6 +626,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
+  AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedVoiceRoute: AuthenticatedVoiceRoute,
 }
 
