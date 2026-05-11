@@ -5,8 +5,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Sparkles, Wand2, Layers, NotebookPen, ArrowLeft, Loader2 } from "lucide-react";
+import { Plus, Sparkles, Wand2, Layers, NotebookPen, ArrowLeft, Loader2, Eye, Pencil, Download } from "lucide-react";
 import { generateCornellCues, generateCornellSummary, notesToFlashcards } from "@/lib/study.functions";
+import { MarkdownMath } from "@/components/notes/MarkdownMath";
+import { exportNodeToPdf, withPrintableContainer } from "@/lib/pdf-export";
+import { createRoot } from "react-dom/client";
 
 type Search = { id?: string };
 
