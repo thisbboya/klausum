@@ -21,6 +21,42 @@ const QUESTIONS: Q[] = [
     ],
   },
   {
+    q: "You remember a movie scene best by:",
+    options: [
+      { label: "Picturing the scene in your head", style: "visual" },
+      { label: "Recalling the dialogue or music", style: "auditory" },
+      { label: "Remembering the subtitles or script", style: "reading" },
+      { label: "Re-enacting what the character did", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "When assembling something from instructions, you:",
+    options: [
+      { label: "Look at the diagrams first", style: "visual" },
+      { label: "Ask someone to walk you through it", style: "auditory" },
+      { label: "Read every step before starting", style: "reading" },
+      { label: "Just start and learn as you go", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "Which type of class would you choose?",
+    options: [
+      { label: "One with lots of slides and visuals", style: "visual" },
+      { label: "One that's discussion-heavy", style: "auditory" },
+      { label: "One based on textbooks and essays", style: "reading" },
+      { label: "One with labs and field work", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "When stuck on a math problem, you:",
+    options: [
+      { label: "Draw it out", style: "visual" },
+      { label: "Talk through it out loud", style: "auditory" },
+      { label: "Re-read the textbook", style: "reading" },
+      { label: "Try plugging in numbers", style: "kinesthetic" },
+    ],
+  },
+  {
     q: "You're given directions to a new place. You prefer:",
     options: [
       { label: "A map", style: "visual" },
@@ -81,6 +117,69 @@ const QUESTIONS: Q[] = [
       { label: "Audio lecture or interview", style: "auditory" },
       { label: "Long-form article with examples", style: "reading" },
       { label: "Interactive simulation or coding sandbox", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "You learn a new app fastest by:",
+    options: [
+      { label: "Watching the UI tour", style: "visual" },
+      { label: "Hearing a friend describe it", style: "auditory" },
+      { label: "Reading the documentation", style: "reading" },
+      { label: "Tapping every button to see what happens", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "Your favourite kind of textbook page has:",
+    options: [
+      { label: "Plenty of diagrams and figures", style: "visual" },
+      { label: "Quoted dialogue or case interviews", style: "auditory" },
+      { label: "Dense, well-structured prose", style: "reading" },
+      { label: "Worked exercises you copy step by step", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "Group project — you naturally take on:",
+    options: [
+      { label: "Designing the slides / visuals", style: "visual" },
+      { label: "Presenting and explaining", style: "auditory" },
+      { label: "Writing the report", style: "reading" },
+      { label: "Building the prototype", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "Music while studying:",
+    options: [
+      { label: "Helps if there are visuals on screen", style: "visual" },
+      { label: "Yes, lyrics and all", style: "auditory" },
+      { label: "Distracting — silence please", style: "reading" },
+      { label: "Background fine if I'm doing", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "When recalling a past event, you remember:",
+    options: [
+      { label: "What it looked like", style: "visual" },
+      { label: "What was said", style: "auditory" },
+      { label: "Notes or messages from then", style: "reading" },
+      { label: "What you were doing", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "A new word sticks when you:",
+    options: [
+      { label: "See it written with imagery", style: "visual" },
+      { label: "Hear it pronounced", style: "auditory" },
+      { label: "Read its definition twice", style: "reading" },
+      { label: "Use it in a sentence yourself", style: "kinesthetic" },
+    ],
+  },
+  {
+    q: "When teaching a friend, you tend to:",
+    options: [
+      { label: "Sketch on paper", style: "visual" },
+      { label: "Explain verbally", style: "auditory" },
+      { label: "Send them a written summary", style: "reading" },
+      { label: "Show them how to do it", style: "kinesthetic" },
     ],
   },
 ];
@@ -161,7 +260,7 @@ function Onboarding() {
             <div className="text-center">
               <h1 className="font-display text-3xl font-bold">Akwaaba — welcome.</h1>
               <p className="mt-3 text-muted-foreground">
-                We'll ask 8 quick questions to discover how you learn best, then tailor every lesson to your mind.
+                We'll ask {QUESTIONS.length} quick questions to discover how you learn best, then tailor every lesson to your mind.
               </p>
               <button
                 onClick={() => setStep(1)}
