@@ -473,6 +473,73 @@ export type Database = {
         }
         Relationships: []
       }
+      room_members: {
+        Row: {
+          display_name: string | null
+          id: string
+          joined_at: string | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          display_name?: string | null
+          id?: string
+          joined_at?: string | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string | null
+          id?: string
+          joined_at?: string | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_messages: {
+        Row: {
+          body: string
+          created_at: string | null
+          display_name: string | null
+          id: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedule_blocks: {
         Row: {
           block_type: string | null
@@ -611,6 +678,39 @@ export type Database = {
         }
         Relationships: []
       }
+      study_rooms: {
+        Row: {
+          created_at: string | null
+          host_id: string
+          id: string
+          is_active: boolean | null
+          join_code: string | null
+          name: string
+          pomodoro_state: Json | null
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          host_id: string
+          id?: string
+          is_active?: boolean | null
+          join_code?: string | null
+          name: string
+          pomodoro_state?: Json | null
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          host_id?: string
+          id?: string
+          is_active?: boolean | null
+          join_code?: string | null
+          name?: string
+          pomodoro_state?: Json | null
+          subject?: string | null
+        }
+        Relationships: []
+      }
       tutor_sessions: {
         Row: {
           created_at: string | null
@@ -742,6 +842,42 @@ export type Database = {
           vark_completed?: boolean | null
           visual_score?: number | null
           xp_total?: number | null
+        }
+        Relationships: []
+      }
+      voice_notes: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          key_points: Json | null
+          subject: string | null
+          summary: string | null
+          title: string
+          transcript: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          key_points?: Json | null
+          subject?: string | null
+          summary?: string | null
+          title?: string
+          transcript?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          key_points?: Json | null
+          subject?: string | null
+          summary?: string | null
+          title?: string
+          transcript?: string | null
+          user_id?: string
         }
         Relationships: []
       }

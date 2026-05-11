@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { NkyinkyimSymbol } from "@/components/adinkra";
-import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock } from "lucide-react";
+import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -67,6 +67,9 @@ function AuthLayout() {
           <NavItem to="/progress" icon={TrendingUp} label="Progress" />
           <NavItem to="/formulas" icon={Sigma} label="Formulas" />
           <NavItem to="/schedule" icon={CalendarClock} label="Schedule" />
+          <NavItem to="/codelab" icon={Code2} label="Code Lab" />
+          <NavItem to="/rooms" icon={Users} label="Rooms" />
+          <NavItem to="/voice" icon={Mic} label="Voice" />
           <NavItem to="/tutor" icon={MessagesSquare} label="AI Tutor" />
           <NavItem to="/settings" icon={Settings} label="Settings" />
         </nav>
