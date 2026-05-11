@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Network, ArrowLeft, Sparkles, Loader2, Wand2 } from "lucide-react";
+import { Plus, Network, ArrowLeft, Sparkles, Loader2, Wand2, LayoutGrid, Download } from "lucide-react";
 import ReactFlow, {
   Background,
   Controls,
@@ -13,6 +13,7 @@ import ReactFlow, {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  MarkerType,
   type Node,
   type Edge,
   type Connection,
@@ -20,6 +21,8 @@ import ReactFlow, {
   type EdgeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import dagre from "dagre";
+import { toPng } from "html-to-image";
 import { generateMindMap, expandMindMapNode } from "@/lib/study.functions";
 
 type Search = { id?: string };
@@ -174,12 +177,25 @@ function MapEditor({ id }: { id: string }) {
 
   const onNodesChange = useCallback((c: NodeChange[]) => setNodes((n) => applyNodeChanges(c, n)), []);
   const onEdgesChange = useCallback((c: EdgeChange[]) => setEdges((e) => applyEdgeChanges(c, e)), []);
-  const onConnect = useCallback((c: Connection) => setEdges((e) => addEdge({ ...c, id: `e${Date.now()}` }, e)), []);
+  const onConnect = useCallback(
+    (c: Connection) =>
+      setEdges((e) =>
+        addEdge({ ...c, id: `e${Date.now()}`, markerEnd: { type: MarkerType.ArrowClosed }, label: "" }, e),
+      ),
+    [],
+  );
 
   function onNodeDoubleClick(_: any, node: Node) {
     const fresh = window.prompt("Edit label", (node.data as any).label);
     if (fresh) {
       setNodes((ns) => ns.map((n) => (n.id === node.id ? { ...n, data: { ...n.data, label: fresh } } : n)));
+    }
+  }
+
+  function onEdgeDoubleClick(_: any, edge: Edge) {
+    const fresh = window.prompt("Edge label (e.g. 'causes', 'depends on')", typeof edge.label === "string" ? edge.label : "");
+    if (fresh !== null) {
+      setEdges((es) => es.map((e) => (e.id === edge.id ? { ...e, label: fresh } : e)));
     }
   }
 
@@ -189,6 +205,36 @@ function MapEditor({ id }: { id: string }) {
       ...n,
       { id, data: { label: "New", type }, position: { x: 400 + Math.random() * 200, y: 200 + Math.random() * 200 }, style: NODE_STYLE[type] },
     ]);
+  }
+
+  function autoLayout() {
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 90 });
+    g.setDefaultEdgeLabel(() => ({}));
+    nodes.forEach((n) => g.setNode(n.id, { width: 160, height: 60 }));
+    edges.forEach((e) => g.setEdge(e.source, e.target));
+    dagre.layout(g);
+    setNodes((ns) =>
+      ns.map((n) => {
+        const p = g.node(n.id);
+        return p ? { ...n, position: { x: p.x - 80, y: p.y - 30 } } : n;
+      }),
+    );
+    toast.success("Auto-laid out");
+  }
+
+  async function exportPng() {
+    const target = document.querySelector(".react-flow") as HTMLElement | null;
+    if (!target) return;
+    try {
+      const dataUrl = await toPng(target, { backgroundColor: "#0a0a0f", pixelRatio: 2 });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${title || "mindmap"}.png`;
+      a.click();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Export failed");
+    }
   }
 
   async function aiGenerate() {
@@ -270,6 +316,8 @@ function MapEditor({ id }: { id: string }) {
         <button onClick={() => addNode("sub")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Sub</button>
         <button onClick={() => addNode("example")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Example</button>
         <button onClick={() => addNode("warning")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Warning</button>
+        <ToolBtn onClick={autoLayout} icon={LayoutGrid}>Auto-layout</ToolBtn>
+        <ToolBtn onClick={exportPng} icon={Download}>Export PNG</ToolBtn>
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden" style={{ height: 560 }}>
@@ -280,7 +328,9 @@ function MapEditor({ id }: { id: string }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeDoubleClick={onNodeDoubleClick}
+          onEdgeDoubleClick={onEdgeDoubleClick}
           onNodeClick={(_, n) => setSelected(n.id)}
+          defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: "oklch(0.6 0.1 260)" } }}
           fitView
         >
           <Background gap={16} color="oklch(0.3 0.02 260)" />
@@ -289,7 +339,7 @@ function MapEditor({ id }: { id: string }) {
         </ReactFlow>
       </div>
 
-      <p className="text-xs text-muted-foreground">Click canvas controls to zoom. Double-click a node to rename. Click a node, then “Expand selected” to grow new branches with AI.</p>
+      <p className="text-xs text-muted-foreground">Double-click a node to rename, an edge to label it. Drag from a node's edge handle to connect. Auto-layout arranges with dagre. Export PNG saves a snapshot.</p>
     </div>
   );
 }
