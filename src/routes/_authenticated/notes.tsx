@@ -224,7 +224,24 @@ function NoteEditor({ id }: { id: string }) {
     }
   }
 
-  if (loading) {
+  async function exportPdf() {
+    setExporting(true);
+    try {
+      await withPrintableContainer(async (root) => {
+        await new Promise<void>((resolve) => {
+          const r = createRoot(root);
+          r.render(<PrintableCornell title={title} subject={subject} cue={cue} notes={notes} summary={summary} />);
+          setTimeout(resolve, 500);
+        });
+        await exportNodeToPdf(root, `${(title || "cornell-note").replace(/[^a-z0-9-]+/gi, "-").toLowerCase()}.pdf`);
+      });
+      toast.success("Exported");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
     return <div className="text-sm text-muted-foreground">Loading note…</div>;
   }
 
