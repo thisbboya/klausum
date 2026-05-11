@@ -23,7 +23,7 @@ function ProgressPage() {
     enabled: !!user,
     queryFn: async () => {
       const since = new Date(Date.now() - 90 * 86400_000).toISOString();
-      const [profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions] = await Promise.all([
+      const [profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions, cards] = await Promise.all([
         supabase.from("user_profiles").select("*").eq("id", user!.id).maybeSingle(),
         supabase.from("quiz_attempts").select("*").eq("user_id", user!.id).gte("completed_at", since),
         supabase.from("flashcard_reviews").select("rating, reviewed_at").eq("user_id", user!.id).gte("reviewed_at", since),
@@ -34,6 +34,7 @@ function ProgressPage() {
         supabase.from("formulas").select("id").eq("user_id", user!.id),
         supabase.from("study_rooms").select("id").eq("host_id", user!.id),
         supabase.from("tutor_sessions").select("id, mode").eq("user_id", user!.id),
+        supabase.from("flashcards").select("fsrs_stability, fsrs_state, fsrs_lapses, next_review_date").eq("user_id", user!.id),
       ]);
       return {
         profile: profile.data,
@@ -46,13 +47,33 @@ function ProgressPage() {
         formulas: formulas.data ?? [],
         rooms: rooms.data ?? [],
         tutorSessions: tutorSessions.data ?? [],
+        cards: cards.data ?? [],
       };
     },
   });
 
   if (!data) return <div className="text-sm text-muted-foreground">Loading…</div>;
-  const { profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions } = data;
+  const { profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions, cards } = data;
 
+  // FSRS card health bins (by stability days)
+  const healthBins = [
+    { label: "New", min: -1, max: 0.001, color: "bg-muted text-muted-foreground" },
+    { label: "Learning", min: 0.001, max: 7, color: "bg-amber-500/20 text-amber-400" },
+    { label: "Young", min: 7, max: 21, color: "bg-sky-500/20 text-sky-400" },
+    { label: "Mature", min: 21, max: 90, color: "bg-emerald-500/20 text-emerald-400" },
+    { label: "Mastered", min: 90, max: Infinity, color: "bg-primary/25 text-primary" },
+  ];
+  const healthData = healthBins.map((b) => ({
+    ...b,
+    count: cards.filter((c: any) => {
+      const s = c.fsrs_stability ?? 0;
+      if (b.label === "New") return c.fsrs_state === "new" || s === 0;
+      return s > b.min && s <= b.max && c.fsrs_state !== "new";
+    }).length,
+  }));
+  const totalCards = cards.length;
+  const dueToday = cards.filter((c: any) => c.next_review_date && c.next_review_date <= new Date().toISOString().slice(0, 10) && c.fsrs_state !== "new").length;
+  const leeches = cards.filter((c: any) => (c.fsrs_lapses ?? 0) >= 4).length;
   const totalReviews = reviews.length;
   const correctReviews = reviews.filter((r: any) => r.rating >= 3).length;
   const retention = totalReviews ? Math.round((correctReviews / totalReviews) * 100) : 0;
@@ -289,6 +310,30 @@ function ProgressPage() {
           <CoverageBlock label="In progress" value={coverage.inProgress} color="bg-amber-500/15 text-amber-400 border-amber-500/30" />
           <CoverageBlock label="Not started" value={coverage.notStarted} color="bg-muted/40 text-muted-foreground border-border" />
         </div>
+      </Card>
+
+      {/* FSRS Card Health */}
+      <Card title="Flashcard health">
+        <div className="mb-4 grid grid-cols-3 gap-3 text-center">
+          <div><div className="text-2xl font-bold">{totalCards}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Total cards</div></div>
+          <div><div className="text-2xl font-bold text-amber-400">{dueToday}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Due today</div></div>
+          <div><div className="text-2xl font-bold text-rose-400">{leeches}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Leeches (≥4 lapses)</div></div>
+        </div>
+        <div className="space-y-2">
+          {healthData.map((h) => {
+            const pct = totalCards ? (h.count / totalCards) * 100 : 0;
+            return (
+              <div key={h.label} className="flex items-center gap-3">
+                <div className="w-20 text-xs font-medium">{h.label}</div>
+                <div className="flex-1 h-6 rounded bg-muted/30 overflow-hidden relative">
+                  <div className={`h-full ${h.color.split(" ")[0]} transition-all`} style={{ width: `${pct}%` }} />
+                  <div className="absolute inset-0 flex items-center justify-end pr-2 text-[11px] font-mono">{h.count}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {totalCards === 0 && <p className="text-xs text-muted-foreground text-center mt-3">No flashcards yet — generate some from a study material.</p>}
       </Card>
 
       {/* Achievements */}
