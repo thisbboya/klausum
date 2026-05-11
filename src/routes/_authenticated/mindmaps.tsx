@@ -177,12 +177,25 @@ function MapEditor({ id }: { id: string }) {
 
   const onNodesChange = useCallback((c: NodeChange[]) => setNodes((n) => applyNodeChanges(c, n)), []);
   const onEdgesChange = useCallback((c: EdgeChange[]) => setEdges((e) => applyEdgeChanges(c, e)), []);
-  const onConnect = useCallback((c: Connection) => setEdges((e) => addEdge({ ...c, id: `e${Date.now()}` }, e)), []);
+  const onConnect = useCallback(
+    (c: Connection) =>
+      setEdges((e) =>
+        addEdge({ ...c, id: `e${Date.now()}`, markerEnd: { type: MarkerType.ArrowClosed }, label: "" }, e),
+      ),
+    [],
+  );
 
   function onNodeDoubleClick(_: any, node: Node) {
     const fresh = window.prompt("Edit label", (node.data as any).label);
     if (fresh) {
       setNodes((ns) => ns.map((n) => (n.id === node.id ? { ...n, data: { ...n.data, label: fresh } } : n)));
+    }
+  }
+
+  function onEdgeDoubleClick(_: any, edge: Edge) {
+    const fresh = window.prompt("Edge label (e.g. 'causes', 'depends on')", typeof edge.label === "string" ? edge.label : "");
+    if (fresh !== null) {
+      setEdges((es) => es.map((e) => (e.id === edge.id ? { ...e, label: fresh } : e)));
     }
   }
 
@@ -192,6 +205,36 @@ function MapEditor({ id }: { id: string }) {
       ...n,
       { id, data: { label: "New", type }, position: { x: 400 + Math.random() * 200, y: 200 + Math.random() * 200 }, style: NODE_STYLE[type] },
     ]);
+  }
+
+  function autoLayout() {
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 90 });
+    g.setDefaultEdgeLabel(() => ({}));
+    nodes.forEach((n) => g.setNode(n.id, { width: 160, height: 60 }));
+    edges.forEach((e) => g.setEdge(e.source, e.target));
+    dagre.layout(g);
+    setNodes((ns) =>
+      ns.map((n) => {
+        const p = g.node(n.id);
+        return p ? { ...n, position: { x: p.x - 80, y: p.y - 30 } } : n;
+      }),
+    );
+    toast.success("Auto-laid out");
+  }
+
+  async function exportPng() {
+    const target = document.querySelector(".react-flow") as HTMLElement | null;
+    if (!target) return;
+    try {
+      const dataUrl = await toPng(target, { backgroundColor: "#0a0a0f", pixelRatio: 2 });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${title || "mindmap"}.png`;
+      a.click();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Export failed");
+    }
   }
 
   async function aiGenerate() {
