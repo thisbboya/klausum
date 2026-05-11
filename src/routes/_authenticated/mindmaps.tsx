@@ -162,11 +162,11 @@ function MapEditor({ id }: { id: string }) {
   useEffect(() => {
     if (loading) return;
     const t = window.setTimeout(async () => {
-      const nodesPayload = nodes.map((n) => ({ id: n.id, label: (n.data as any).label, type: (n.data as any).type, position: n.position }));
-      const edgesPayload = edges.map((e) => ({ id: e.id, source: e.source, target: e.target, label: e.label }));
+      const nodesPayload = nodes.map((n) => ({ id: n.id, label: (n.data as any).label, type: (n.data as any).type, position: { x: n.position.x, y: n.position.y } }));
+      const edgesPayload = edges.map((e) => ({ id: e.id, source: e.source, target: e.target, label: typeof e.label === "string" ? e.label : "" }));
       await supabase
         .from("mind_maps")
-        .update({ title, subject, nodes: nodesPayload, edges: edgesPayload, updated_at: new Date().toISOString() })
+        .update({ title, subject, nodes: nodesPayload as any, edges: edgesPayload as any, updated_at: new Date().toISOString() })
         .eq("id", id);
     }, 1500);
     return () => window.clearTimeout(t);
