@@ -122,7 +122,7 @@ function GapsPage() {
       const { error: cErr } = await supabase.from("flashcards").insert(rows);
       if (cErr) throw cErr;
       toast.success(`${r.cards.length} cards ready`);
-      nav({ to: "/flashcards/$id", params: { id: deck.id } });
+      nav({ to: "/review" });
     } catch (e: any) {
       toast.error(e.message ?? "Failed");
     } finally {
