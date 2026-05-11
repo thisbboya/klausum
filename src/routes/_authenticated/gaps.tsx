@@ -289,7 +289,6 @@ function GapsPage() {
                     </button>
                     <Link
                       to="/tutor"
-                      search={{ topic: g.topic, subject: g.subject } as any}
                       className="inline-flex items-center gap-1 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40"
                     >
                       <MessagesSquare className="h-3.5 w-3.5" /> Tutor
