@@ -20,7 +20,7 @@ function LoginPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Welcome back");
-    navigate({ to: "/" });
+    navigate({ to: "/dashboard" });
   }
 
   async function handleGoogle() {
