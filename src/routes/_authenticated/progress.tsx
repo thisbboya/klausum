@@ -312,6 +312,30 @@ function ProgressPage() {
         </div>
       </Card>
 
+      {/* FSRS Card Health */}
+      <Card title="Flashcard health">
+        <div className="mb-4 grid grid-cols-3 gap-3 text-center">
+          <div><div className="text-2xl font-bold">{totalCards}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Total cards</div></div>
+          <div><div className="text-2xl font-bold text-amber-400">{dueToday}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Due today</div></div>
+          <div><div className="text-2xl font-bold text-rose-400">{leeches}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Leeches (≥4 lapses)</div></div>
+        </div>
+        <div className="space-y-2">
+          {healthData.map((h) => {
+            const pct = totalCards ? (h.count / totalCards) * 100 : 0;
+            return (
+              <div key={h.label} className="flex items-center gap-3">
+                <div className="w-20 text-xs font-medium">{h.label}</div>
+                <div className="flex-1 h-6 rounded bg-muted/30 overflow-hidden relative">
+                  <div className={`h-full ${h.color.split(" ")[0]} transition-all`} style={{ width: `${pct}%` }} />
+                  <div className="absolute inset-0 flex items-center justify-end pr-2 text-[11px] font-mono">{h.count}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {totalCards === 0 && <p className="text-xs text-muted-foreground text-center mt-3">No flashcards yet — generate some from a study material.</p>}
+      </Card>
+
       {/* Achievements */}
       <Card title="Achievements">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
