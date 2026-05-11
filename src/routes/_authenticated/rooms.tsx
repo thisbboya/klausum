@@ -77,7 +77,10 @@ function RoomsPage() {
                   Join <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
-              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> {new Date(r.created_at).toLocaleDateString()}</div>
+              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {new Date(r.created_at).toLocaleDateString()}</span>
+                {r.join_code && <span className="rounded bg-background/60 px-1.5 py-0.5 font-mono">{r.join_code}</span>}
+              </div>
             </li>
           ))}
         </ul>
