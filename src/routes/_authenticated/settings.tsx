@@ -161,6 +161,7 @@ function LearningTab() {
 function PreferencesTab() {
   const { user } = useAuth();
   const { data: profile, refetch } = useProfile();
+  const { theme, setTheme } = useTheme();
   const [form, setForm] = useState({ daily_goal_minutes: 60, preferred_session_minutes: 25, dark_mode: true });
   const [saving, setSaving] = useState(false);
   useEffect(() => {
@@ -174,9 +175,17 @@ function PreferencesTab() {
   async function save() {
     setSaving(true);
     await supabase.from("user_profiles").update(form).eq("id", user!.id);
+    // Apply theme immediately so the toggle takes effect on this device
+    setTheme(form.dark_mode ? "dark" : "light");
     setSaving(false);
     toast.success("Saved");
     refetch();
+  }
+
+  function onToggleDark(checked: boolean) {
+    setForm({ ...form, dark_mode: checked });
+    // Live-preview the theme change without waiting for Save
+    setTheme(checked ? "dark" : "light");
   }
 
   return (
@@ -188,8 +197,8 @@ function PreferencesTab() {
         <input type="number" min={5} max={120} value={form.preferred_session_minutes} onChange={(e) => setForm({ ...form, preferred_session_minutes: parseInt(e.target.value) || 25 })} className="input" />
       </Field>
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={form.dark_mode} onChange={(e) => setForm({ ...form, dark_mode: e.target.checked })} />
-        Dark mode
+        <input type="checkbox" checked={form.dark_mode} onChange={(e) => onToggleDark(e.target.checked)} />
+        Dark mode <span className="text-xs text-muted-foreground">(currently {theme})</span>
       </label>
       <button onClick={save} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
