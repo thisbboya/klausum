@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { KlausumMark } from "@/components/klausum-mark";
 import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { MobileNav } from "@/components/mobile-nav";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
