@@ -66,7 +66,57 @@
 :root {
   --radius: 0.75rem;
 
-  /* Dark by default */
+  /* Light theme (default) */
+  --background: oklch(0.985 0.005 250);
+  --foreground: oklch(0.18 0.03 260);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.03 260);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.03 260);
+
+  --surface-2: oklch(0.96 0.005 250);
+  --surface-3: oklch(0.93 0.01 250);
+
+  --primary: oklch(0.7 0.16 78);           /* Ghana gold (slightly darker for light bg contrast) */
+  --primary-foreground: oklch(0.18 0.03 260);
+
+  --secondary: oklch(0.94 0.01 250);
+  --secondary-foreground: oklch(0.18 0.03 260);
+
+  --muted: oklch(0.95 0.005 250);
+  --muted-foreground: oklch(0.45 0.02 255);
+
+  --accent: oklch(0.7 0.16 78);
+  --accent-foreground: oklch(0.18 0.03 260);
+
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 250);
+
+  --border: oklch(0.88 0.01 250);
+  --input: oklch(0.92 0.01 250);
+  --ring: oklch(0.7 0.16 78);
+
+  --navy: oklch(0.32 0.07 260);
+
+  /* VARK */
+  --visual: oklch(0.55 0.18 250);
+  --auditory: oklch(0.55 0.22 295);
+  --reading: oklch(0.55 0.17 155);
+  --kinesthetic: oklch(0.65 0.16 60);
+
+  /* Bloom */
+  --bloom-1: oklch(0.55 0.02 260);
+  --bloom-2: oklch(0.55 0.18 250);
+  --bloom-3: oklch(0.55 0.17 155);
+  --bloom-4: oklch(0.65 0.16 60);
+  --bloom-5: oklch(0.6 0.22 25);
+  --bloom-6: oklch(0.55 0.22 295);
+}
+
+.dark {
+  /* Dark theme overrides */
   --background: oklch(0.18 0.03 260);
   --foreground: oklch(0.97 0.005 250);
 
@@ -79,7 +129,7 @@
   --surface-2: oklch(0.27 0.03 260);
   --surface-3: oklch(0.31 0.03 260);
 
-  --primary: oklch(0.78 0.16 78);          /* Ghana gold */
+  --primary: oklch(0.78 0.16 78);
   --primary-foreground: oklch(0.2 0.04 260);
 
   --secondary: oklch(0.32 0.05 260);
@@ -98,16 +148,11 @@
   --input: oklch(0.32 0.03 260);
   --ring: oklch(0.78 0.16 78);
 
-  /* Brand navy (used for hero gradients, accents) */
-  --navy: oklch(0.32 0.07 260);
+  --visual: oklch(0.65 0.18 250);
+  --auditory: oklch(0.62 0.22 295);
+  --reading: oklch(0.7 0.17 155);
+  --kinesthetic: oklch(0.75 0.16 60);
 
-  /* VARK */
-  --visual: oklch(0.65 0.18 250);          /* blue */
-  --auditory: oklch(0.62 0.22 295);        /* purple */
-  --reading: oklch(0.7 0.17 155);          /* green */
-  --kinesthetic: oklch(0.75 0.16 60);      /* amber */
-
-  /* Bloom */
   --bloom-1: oklch(0.6 0.02 260);
   --bloom-2: oklch(0.65 0.18 250);
   --bloom-3: oklch(0.7 0.17 155);
@@ -122,6 +167,9 @@
   }
 
   html {
+    color-scheme: light;
+  }
+  html.dark {
     color-scheme: dark;
   }
 
