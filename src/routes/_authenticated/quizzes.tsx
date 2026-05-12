@@ -45,7 +45,14 @@ function QuizzesPage() {
   }
   function normalize() {
     const sum = bloom.reduce((a, b) => a + b, 0) || 1;
-    setBloom(bloom.map((v) => Math.round((v / sum) * 100)));
+    const scaled = bloom.map((v) => Math.round((v / sum) * 100));
+    // Make sure the values total exactly 100 — push the remainder into the largest bucket.
+    const diff = 100 - scaled.reduce((a, b) => a + b, 0);
+    if (diff !== 0) {
+      const maxIdx = scaled.indexOf(Math.max(...scaled));
+      scaled[maxIdx] = Math.max(0, scaled[maxIdx] + diff);
+    }
+    setBloom(scaled);
   }
 
   const { data: quizzes } = useQuery({
@@ -77,8 +84,8 @@ function QuizzesPage() {
 
   async function generate() {
     if (!session || !user) return;
-    if (showAdvanced && Math.abs(bloomTotal - 100) > 2) {
-      return toast.error(`Bloom distribution must total 100% (currently ${bloomTotal}%)`);
+    if (showAdvanced && Math.abs(bloomTotal - 100) > 3) {
+      return toast.error(`Bloom distribution must total ~100% (currently ${bloomTotal}%). Click Normalize.`);
     }
     let context: string | undefined;
     let useTopic = topic.trim();
@@ -106,6 +113,10 @@ function QuizzesPage() {
           bloomDistribution: showAdvanced ? bloom : undefined,
         },
       });
+      if (!r?.questions || r.questions.length === 0) {
+        toast.error("AI returned no questions. Try a different topic or fewer questions.");
+        return;
+      }
       const { data: quiz, error } = await supabase
         .from("quizzes")
         .insert({
