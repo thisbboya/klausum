@@ -66,11 +66,17 @@ function CodeLab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ language: lang.piston, version: lang.version, files: [{ content: code }], stdin }),
       });
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        throw new Error(`Sandbox responded ${r.status}${txt ? `: ${txt.slice(0, 200)}` : ""}`);
+      }
       const j = await r.json();
       const out = (j.run?.stdout ?? "") + (j.run?.stderr ? `\n[stderr]\n${j.run.stderr}` : "") + (j.compile?.stderr ? `\n[compile]\n${j.compile.stderr}` : "");
       setOutput(out || "(no output)");
     } catch (e: any) {
-      setOutput("Run failed: " + e.message);
+      const msg = e?.message ?? String(e);
+      setOutput(`Run failed: ${msg}\n\nThe public code sandbox (Piston) may be busy or rate-limited. Try again in a few seconds, or use Explain / Generate tests / Hint — those use Klausum's own AI.`);
+      toast.error("Public sandbox busy — try again or use the AI tools");
     } finally {
       setRunning(false);
     }
