@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck } from "lucide-react";
 import { SecurityTab } from "@/components/settings/SecurityTab";
+import { useTheme } from "@/components/theme-provider";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
