@@ -84,8 +84,8 @@ function QuizzesPage() {
 
   async function generate() {
     if (!session || !user) return;
-    if (showAdvanced && Math.abs(bloomTotal - 100) > 2) {
-      return toast.error(`Bloom distribution must total 100% (currently ${bloomTotal}%)`);
+    if (showAdvanced && Math.abs(bloomTotal - 100) > 3) {
+      return toast.error(`Bloom distribution must total ~100% (currently ${bloomTotal}%). Click Normalize.`);
     }
     let context: string | undefined;
     let useTopic = topic.trim();
@@ -113,6 +113,10 @@ function QuizzesPage() {
           bloomDistribution: showAdvanced ? bloom : undefined,
         },
       });
+      if (!r?.questions || r.questions.length === 0) {
+        toast.error("AI returned no questions. Try a different topic or fewer questions.");
+        return;
+      }
       const { data: quiz, error } = await supabase
         .from("quizzes")
         .insert({
