@@ -80,22 +80,33 @@ function AuthLayout() {
           <NavItem to="/settings" icon={Settings} label="Settings" />
           {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}
         </nav>
-        <div className="mt-auto px-2 text-xs text-muted-foreground">
-          <div className="truncate">{profile?.full_name || user.email}</div>
+        <div className="mt-auto px-2 text-xs text-muted-foreground space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="truncate">{profile?.full_name || user.email}</div>
+            <ThemeToggle />
+          </div>
           <button
             onClick={async () => {
               await supabase.auth.signOut();
               toast.success("Signed out");
               navigate({ to: "/" });
             }}
-            className="mt-2 flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>
         </div>
       </aside>
       <main className="flex-1 min-w-0">
-        <MobileTopBar onSignOut={async () => { await supabase.auth.signOut(); navigate({ to: "/" }); }} />
+        <MobileNav
+          userLabel={profile?.full_name || user.email || ""}
+          isAdmin={isAdmin}
+          onSignOut={async () => {
+            await supabase.auth.signOut();
+            toast.success("Signed out");
+            navigate({ to: "/" });
+          }}
+        />
         <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
           <Outlet />
         </div>
@@ -117,23 +128,5 @@ function NavItem({ to, icon: Icon, label }: { to: string; icon: any; label: stri
       <Icon className="h-4 w-4" />
       {label}
     </Link>
-  );
-}
-
-function MobileTopBar({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <div className="md:hidden flex items-center justify-between border-b border-border/60 px-4 py-3 bg-card/40">
-      <Link to="/dashboard" className="flex items-center gap-2 text-primary">
-        <KlausumMark size={22} />
-        <span className="font-display text-sm font-semibold">Klausum</span>
-      </Link>
-      <div className="flex gap-3 text-xs">
-        <Link to="/dashboard">Home</Link>
-        <Link to="/materials">Materials</Link>
-        <Link to="/review">Review</Link>
-        <Link to="/tutor">Tutor</Link>
-        <button onClick={onSignOut} className="text-muted-foreground">Out</button>
-      </div>
-    </div>
   );
 }
