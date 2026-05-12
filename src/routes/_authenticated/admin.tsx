@@ -92,21 +92,25 @@ function UsersTab() {
   const setRoleFn = useServerFn(adminSetRole);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: async () => fn({ data: { accessToken: await getAccessToken() } }),
   });
 
   async function toggleAdmin(userId: string, makeAdmin: boolean) {
+    setPendingId(userId);
     try {
       await setRoleFn({
         data: { accessToken: await getAccessToken(), userId, role: "admin", enabled: makeAdmin },
       });
       toast.success(makeAdmin ? "Admin granted" : "Admin removed");
-      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      await qc.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
+    } finally {
+      setPendingId(null);
     }
   }
 
@@ -129,6 +133,17 @@ function UsersTab() {
         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
       />
       {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
+      {error && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm flex items-center justify-between">
+          <span>Failed to load users: {(error as any)?.message ?? "unknown error"}</span>
+          <button
+            onClick={() => refetch()}
+            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/10"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <div className="rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 text-xs text-muted-foreground">
@@ -144,6 +159,7 @@ function UsersTab() {
           <tbody>
             {users.map((u) => {
               const isAdmin = u.roles.includes("admin");
+              const pending = pendingId === u.id;
               return (
                 <tr key={u.id} className="border-t border-border">
                   <td className="px-3 py-2">
@@ -163,18 +179,20 @@ function UsersTab() {
                   <td className="px-3 py-2 text-right">
                     <button
                       onClick={() => toggleAdmin(u.id, !isAdmin)}
-                      className="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/10"
+                      disabled={pending}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/10 disabled:opacity-50"
                     >
+                      {pending && <Loader2 className="h-3 w-3 animate-spin" />}
                       {isAdmin ? "Remove admin" : "Make admin"}
                     </button>
                   </td>
                 </tr>
               );
             })}
-            {!isLoading && users.length === 0 && (
+            {!isLoading && !error && users.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  No users found.
+                  {isFetching ? "Loading…" : "No users found."}
                 </td>
               </tr>
             )}
