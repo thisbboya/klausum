@@ -108,9 +108,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('klausum-theme')||'dark';var r=document.documentElement;if(t==='dark'){r.classList.add('dark');}else{r.classList.remove('dark');}r.style.colorScheme=t;}catch(e){}})();`,
+          }}
+        />
       </head>
       <body className="bg-background text-foreground">
         {children}
@@ -124,9 +129,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster richColors position="top-right" />
-      <InstallPrompt />
+      <ThemeProvider>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+        <InstallPrompt />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
