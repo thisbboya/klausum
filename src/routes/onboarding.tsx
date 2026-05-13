@@ -229,7 +229,7 @@ function Onboarding() {
     setSubmitting(false);
     if (error) return toast.error(error.message);
     toast.success(`Your primary style: ${primary}!`);
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/companion-select" });
   }
 
   return (
