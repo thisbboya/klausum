@@ -6,6 +6,9 @@ import { Flame, Sparkles, BookOpen, Brain, MessagesSquare, Plus, CalendarClock }
 import { isDue } from "@/lib/fsrs";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
+import { WeeklyConsistency } from "@/components/weekly-consistency";
+import { CompanionHero } from "@/components/companion-hero";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
