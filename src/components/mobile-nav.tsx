@@ -4,6 +4,7 @@ import { Menu, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { KlausumMark } from "@/components/klausum-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { StudentBadge } from "@/components/student-badge";
 import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic,
@@ -36,10 +37,12 @@ export function MobileNav({
   onSignOut,
   userLabel,
   isAdmin,
+  level,
 }: {
   onSignOut: () => void;
   userLabel: string;
   isAdmin: boolean;
+  level?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -53,6 +56,7 @@ export function MobileNav({
         <span className="font-display text-sm font-semibold">Klausum</span>
       </Link>
       <div className="flex items-center gap-2">
+        <StudentBadge level={level} />
         <ThemeToggle />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>

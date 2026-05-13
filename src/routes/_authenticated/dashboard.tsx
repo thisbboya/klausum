@@ -6,6 +6,9 @@ import { Flame, Sparkles, BookOpen, Brain, MessagesSquare, Plus, CalendarClock }
 import { isDue } from "@/lib/fsrs";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
+import { WeeklyConsistency } from "@/components/weekly-consistency";
+import { CompanionHero } from "@/components/companion-hero";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -60,11 +63,11 @@ function Dashboard() {
   const profile = data?.profile;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <ProfileCompletionBanner level={profile?.level} />
+
       <header>
-        <p className="text-sm text-muted-foreground">
-          {greeting()},
-        </p>
+        <p className="text-sm text-muted-foreground">{greeting()},</p>
         <h1 className="font-display text-3xl font-bold mt-1">
           {profile?.full_name?.split(" ")[0] || "Student"}.
         </h1>
@@ -80,12 +83,23 @@ function Dashboard() {
         )}
       </header>
 
+      <CompanionHero
+        companionId={profile?.companion_id}
+        companionName={profile?.companion_name}
+        streak={profile?.streak_days}
+        due={data?.dueCount}
+        hasGap={false}
+      />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat icon={Flame} label="Streak" value={`${profile?.streak_days ?? 0}d`} />
         <Stat icon={Sparkles} label="XP" value={profile?.xp_total ?? 0} />
         <Stat icon={Brain} label="Due cards" value={data?.dueCount ?? 0} accent />
         <Stat icon={BookOpen} label="Total cards" value={data?.totalCards ?? 0} />
       </div>
+
+      <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
+
 
       <section className="grid gap-4 md:grid-cols-3">
         <ActionCard

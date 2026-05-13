@@ -8,6 +8,7 @@ import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, Not
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
+import { StudentBadge } from "@/components/student-badge";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -82,9 +83,12 @@ function AuthLayout() {
         </nav>
         <div className="mt-auto px-2 text-xs text-muted-foreground space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <div className="truncate">{profile?.full_name || user.email}</div>
+            <div className="truncate flex items-center gap-2">
+              <span className="truncate">{profile?.full_name || user.email}</span>
+            </div>
             <ThemeToggle />
           </div>
+          <StudentBadge level={profile?.level} />
           <button
             onClick={async () => {
               await supabase.auth.signOut();
@@ -100,6 +104,7 @@ function AuthLayout() {
       <main className="flex-1 min-w-0">
         <MobileNav
           userLabel={profile?.full_name || user.email || ""}
+          level={profile?.level}
           isAdmin={isAdmin}
           onSignOut={async () => {
             await supabase.auth.signOut();
