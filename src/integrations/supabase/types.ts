@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenge_completions: {
+        Row: {
+          challenge_key: string
+          completed_at: string | null
+          id: string
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          challenge_key: string
+          completed_at?: string | null
+          id?: string
+          user_id: string
+          xp_awarded: number
+        }
+        Update: {
+          challenge_key?: string
+          completed_at?: string | null
+          id?: string
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
       code_snippets: {
         Row: {
           code: string
@@ -308,6 +332,53 @@ export type Database = {
           },
         ]
       }
+      focus_sessions: {
+        Row: {
+          actual_minutes: number | null
+          completed: boolean | null
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          material_id: string | null
+          planned_minutes: number | null
+          session_type: string | null
+          started_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actual_minutes?: number | null
+          completed?: boolean | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          material_id?: string | null
+          planned_minutes?: number | null
+          session_type?: string | null
+          started_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actual_minutes?: number | null
+          completed?: boolean | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          material_id?: string | null
+          planned_minutes?: number | null
+          session_type?: string | null
+          started_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "focus_sessions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formulas: {
         Row: {
           category: string | null
@@ -350,6 +421,30 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           variables?: Json | null
+        }
+        Relationships: []
+      }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string | null
+          id: string
+          requester_id: string
+          status: string | null
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string | null
+          id?: string
+          requester_id: string
+          status?: string | null
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string | null
+          id?: string
+          requester_id?: string
+          status?: string | null
         }
         Relationships: []
       }
@@ -401,6 +496,27 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_weekly: {
+        Row: {
+          id: string
+          user_id: string
+          week_start: string
+          xp_this_week: number | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          week_start: string
+          xp_this_week?: number | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          week_start?: string
+          xp_this_week?: number | null
+        }
+        Relationships: []
+      }
       mind_maps: {
         Row: {
           created_at: string | null
@@ -434,6 +550,33 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      monthly_usage: {
+        Row: {
+          ai_messages_used: number | null
+          id: string
+          month_year: string
+          updated_at: string | null
+          user_id: string
+          youtube_videos_used: number | null
+        }
+        Insert: {
+          ai_messages_used?: number | null
+          id?: string
+          month_year: string
+          updated_at?: string | null
+          user_id: string
+          youtube_videos_used?: number | null
+        }
+        Update: {
+          ai_messages_used?: number | null
+          id?: string
+          month_year?: string
+          updated_at?: string | null
+          user_id?: string
+          youtube_videos_used?: number | null
         }
         Relationships: []
       }
@@ -657,6 +800,68 @@ export type Database = {
         }
         Relationships: []
       }
+      study_group_members: {
+        Row: {
+          group_id: string
+          joined_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          joined_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_groups: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          description: string | null
+          id: string
+          invite_code: string | null
+          member_count: number | null
+          name: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          description?: string | null
+          id?: string
+          invite_code?: string | null
+          member_count?: number | null
+          name: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          description?: string | null
+          id?: string
+          invite_code?: string | null
+          member_count?: number | null
+          name?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
       study_materials: {
         Row: {
           adapted_auditory: string | null
@@ -786,6 +991,77 @@ export type Database = {
         }
         Relationships: []
       }
+      timetable_events: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          location: string | null
+          start_time: string
+          subject_id: string | null
+          subject_name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          location?: string | null
+          start_time: string
+          subject_id?: string | null
+          subject_name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          location?: string | null
+          start_time?: string
+          subject_id?: string | null
+          subject_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_events_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_subjects: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tutor_sessions: {
         Row: {
           created_at: string | null
@@ -834,6 +1110,9 @@ export type Database = {
         Row: {
           auditory_score: number | null
           avatar_url: string | null
+          cohort_units: number | null
+          companion_id: number | null
+          companion_name: string | null
           country: string | null
           created_at: string | null
           curriculum: string | null
@@ -842,7 +1121,9 @@ export type Database = {
           exam_curriculum: string | null
           field_of_study: string | null
           full_name: string
+          handle: string | null
           id: string
+          is_day1_pioneer: boolean | null
           kinesthetic_score: number | null
           last_study_date: string | null
           level: string | null
@@ -863,6 +1144,9 @@ export type Database = {
         Insert: {
           auditory_score?: number | null
           avatar_url?: string | null
+          cohort_units?: number | null
+          companion_id?: number | null
+          companion_name?: string | null
           country?: string | null
           created_at?: string | null
           curriculum?: string | null
@@ -871,7 +1155,9 @@ export type Database = {
           exam_curriculum?: string | null
           field_of_study?: string | null
           full_name?: string
+          handle?: string | null
           id: string
+          is_day1_pioneer?: boolean | null
           kinesthetic_score?: number | null
           last_study_date?: string | null
           level?: string | null
@@ -892,6 +1178,9 @@ export type Database = {
         Update: {
           auditory_score?: number | null
           avatar_url?: string | null
+          cohort_units?: number | null
+          companion_id?: number | null
+          companion_name?: string | null
           country?: string | null
           created_at?: string | null
           curriculum?: string | null
@@ -900,7 +1189,9 @@ export type Database = {
           exam_curriculum?: string | null
           field_of_study?: string | null
           full_name?: string
+          handle?: string | null
           id?: string
+          is_day1_pioneer?: boolean | null
           kinesthetic_score?: number | null
           last_study_date?: string | null
           level?: string | null
@@ -1009,6 +1300,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_monthly_usage: {
+        Args: { p_user_id: string }
+        Returns: {
+          ai_messages_used: number
+          youtube_videos_used: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1016,7 +1314,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_ai_messages: { Args: { p_user_id: string }; Returns: undefined }
       increment_xp: { Args: { _amount: number }; Returns: undefined }
+      increment_youtube_videos: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      is_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      update_weekly_leaderboard: {
+        Args: { p_user_id: string; p_xp: number }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
