@@ -37,10 +37,12 @@ export function MobileNav({
   onSignOut,
   userLabel,
   isAdmin,
+  level,
 }: {
   onSignOut: () => void;
   userLabel: string;
   isAdmin: boolean;
+  level?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -54,6 +56,7 @@ export function MobileNav({
         <span className="font-display text-sm font-semibold">Klausum</span>
       </Link>
       <div className="flex items-center gap-2">
+        <StudentBadge level={level} />
         <ThemeToggle />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
