@@ -8,6 +8,7 @@ import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, Not
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
+import { StudentBadge } from "@/components/student-badge";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
