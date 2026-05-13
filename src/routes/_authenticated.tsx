@@ -104,6 +104,7 @@ function AuthLayout() {
       <main className="flex-1 min-w-0">
         <MobileNav
           userLabel={profile?.full_name || user.email || ""}
+          level={profile?.level}
           isAdmin={isAdmin}
           onSignOut={async () => {
             await supabase.auth.signOut();
