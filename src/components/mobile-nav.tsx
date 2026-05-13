@@ -4,6 +4,7 @@ import { Menu, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { KlausumMark } from "@/components/klausum-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { StudentBadge } from "@/components/student-badge";
 import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic,
