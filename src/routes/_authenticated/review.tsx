@@ -1,3 +1,4 @@
+import { awardXp } from "@/lib/xp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,7 +106,8 @@ function ReviewPage() {
       stability_before: state.stability, stability_after: next.stability,
     });
 
-    const xp = supabase.rpc("increment_xp", { _amount: rating === 1 ? 1 : rating === 4 ? 5 : 2 });
+    const xpAmount = rating === 1 ? 1 : rating === 4 ? 5 : 2;
+    const xp = awardXp({ userId: user.id, amount: xpAmount, action: "card_reviewed", description: `Rated ${rating}` });
 
     const [u, r] = await Promise.all([updates, review, xp]);
     if (u.error || r.error) toast.error((u.error || r.error)!.message);
@@ -130,7 +132,7 @@ function ReviewPage() {
         },
       });
       setFeedback(result);
-      await supabase.rpc("increment_xp", { _amount: 15 });
+      if (user) await awardXp({ userId: user.id, amount: 15, action: "feynman_session", description: current.front });
     } catch (e: any) {
       toast.error(e?.message ?? "Evaluation failed");
     } finally {

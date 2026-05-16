@@ -1,3 +1,4 @@
+import { awardXp } from "@/lib/xp";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -179,7 +180,7 @@ function MaterialsPage() {
       const { error: cardsErr } = await supabase.from("flashcards").insert(cardRows);
       if (cardsErr) throw cardsErr;
 
-      await supabase.rpc("increment_xp", { _amount: 30 });
+      await awardXp({ userId: user!.id, amount: 30, action: "material_uploaded", description: title });
       toast.success("Material ready · 15 flashcards generated");
       qc.invalidateQueries({ queryKey: ["materials"] });
       navigate({ to: "/materials/$id", params: { id: row.id } });

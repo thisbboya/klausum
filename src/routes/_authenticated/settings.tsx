@@ -1,12 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck } from "lucide-react";
+import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck, Bell, Sparkles, Crown, Users } from "lucide-react";
 import { SecurityTab } from "@/components/settings/SecurityTab";
 import { useTheme } from "@/components/theme-provider";
+import { CompanionSVG, getCompanion } from "@/components/companion-svg";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
@@ -71,15 +72,24 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function ProfileTab() {
   const { user } = useAuth();
   const { data: profile, refetch } = useProfile();
-  const [form, setForm] = useState({ full_name: "", country: "", school: "", level: "", field_of_study: "" });
+  const [form, setForm] = useState({ full_name: "", handle: "", country: "", school: "", level: "", field_of_study: "" });
   const [saving, setSaving] = useState(false);
   useEffect(() => {
-    if (profile) setForm({ full_name: profile.full_name ?? "", country: profile.country ?? "", school: profile.school ?? "", level: profile.level ?? "", field_of_study: profile.field_of_study ?? "" });
+    if (profile) setForm({
+      full_name: profile.full_name ?? "",
+      handle: profile.handle ?? "",
+      country: profile.country ?? "",
+      school: profile.school ?? "",
+      level: profile.level ?? "",
+      field_of_study: profile.field_of_study ?? "",
+    });
   }, [profile]);
 
   async function save() {
     setSaving(true);
-    const { error } = await supabase.from("user_profiles").update(form).eq("id", user!.id);
+    const cleanHandle = form.handle.replace(/^@/, "").toLowerCase().replace(/[^a-z0-9_]/g, "");
+    const payload = { ...form, handle: cleanHandle || null };
+    const { error } = await supabase.from("user_profiles").update(payload).eq("id", user!.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Saved");
@@ -87,23 +97,160 @@ function ProfileTab() {
   }
 
   return (
-    <div className="max-w-lg space-y-3">
-      <Field label="Email"><input value={user?.email ?? ""} disabled className="input opacity-60" /></Field>
-      <Field label="Full name"><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="input" /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Country"><input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="input" /></Field>
-        <Field label="School"><input value={form.school} onChange={(e) => setForm({ ...form, school: e.target.value })} className="input" /></Field>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Level">
-          <select value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} className="input">
-            <option value="">—</option><option>JHS</option><option>SHS</option><option>University</option><option>Professional</option><option>Other</option>
-          </select>
+    <div className="space-y-6 max-w-2xl">
+      {/* Identity card */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Identity</h2>
+        <Field label="Email"><input value={user?.email ?? ""} disabled className="input opacity-60" /></Field>
+        <Field label="Full name"><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="input" /></Field>
+        <Field label="@handle (unique, lowercase a-z, 0-9, _)">
+          <div className="flex items-center rounded-lg border border-border bg-background pl-2">
+            <span className="text-muted-foreground text-sm">@</span>
+            <input
+              value={form.handle}
+              onChange={(e) => setForm({ ...form, handle: e.target.value.replace(/^@/, "") })}
+              placeholder="kojo_studies"
+              className="flex-1 bg-transparent px-1 py-2 text-sm outline-none"
+            />
+          </div>
         </Field>
-        <Field label="Field of study"><input value={form.field_of_study} onChange={(e) => setForm({ ...form, field_of_study: e.target.value })} className="input" /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Country"><input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="input" /></Field>
+          <Field label="School"><input value={form.school} onChange={(e) => setForm({ ...form, school: e.target.value })} className="input" /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Level">
+            <select value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} className="input">
+              <option value="">—</option><option>JHS</option><option>SHS</option><option>University</option><option>Professional</option><option>Other</option>
+            </select>
+          </Field>
+          <Field label="Field of study"><input value={form.field_of_study} onChange={(e) => setForm({ ...form, field_of_study: e.target.value })} className="input" /></Field>
+        </div>
+        <button onClick={save} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
       </div>
-      <button onClick={save} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+
+      <CompanionCard profile={profile} />
+      <PlanCard userId={user?.id} />
+      <CohortCard profile={profile} />
+      <NotificationsCard />
+
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
+    </div>
+  );
+}
+
+function CompanionCard({ profile }: { profile: any }) {
+  const c = getCompanion(profile?.companion_id ?? 1);
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 p-4 flex items-center gap-4">
+      <CompanionSVG id={c.id} size={56} />
+      <div className="flex-1 min-w-0">
+        <div className="text-xs uppercase text-muted-foreground">Your companion</div>
+        <div className="font-bold">{profile?.companion_name ?? c.name}</div>
+        <div className="text-xs text-muted-foreground">{c.trait}</div>
+      </div>
+      <Link to="/companion-select" className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary inline-flex items-center gap-1">
+        <Sparkles className="h-3 w-3" /> Change
+      </Link>
+    </div>
+  );
+}
+
+function PlanCard({ userId }: { userId?: string }) {
+  const { data: usage } = useQuery({
+    queryKey: ["usage", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const month = new Date().toISOString().slice(0, 7);
+      const { data } = await supabase.from("monthly_usage").select("*").eq("user_id", userId!).eq("month_year", month).maybeSingle();
+      return data;
+    },
+  });
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Crown className="h-4 w-4 text-primary" />
+          <span className="font-semibold">Free plan</span>
+        </div>
+        <span className="text-xs text-muted-foreground">This month</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="rounded-lg border border-border/40 p-3">
+          <div className="text-xs text-muted-foreground">AI messages</div>
+          <div className="font-mono text-lg">{usage?.ai_messages_used ?? 0}</div>
+        </div>
+        <div className="rounded-lg border border-border/40 p-3">
+          <div className="text-xs text-muted-foreground">YouTube videos</div>
+          <div className="font-mono text-lg">{usage?.youtube_videos_used ?? 0}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CohortCard({ profile }: { profile: any }) {
+  if (!profile) return null;
+  const memberSince = profile.created_at ? new Date(profile.created_at).toLocaleDateString() : "—";
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Users className="h-4 w-4 text-primary" />
+        <span className="font-semibold">Klausum cohort</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <div className="text-xs text-muted-foreground">Member since</div>
+          <div className="font-medium">{memberSince}</div>
+          {profile.is_day1_pioneer && <div className="text-xs text-primary mt-0.5">Day 1 pioneer ⭐</div>}
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">Cohort units</div>
+          <div className="font-mono text-lg">{profile.cohort_units ?? 0}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsCard() {
+  const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
+  useEffect(() => {
+    if (typeof Notification === "undefined") setPerm("unsupported");
+    else setPerm(Notification.permission);
+  }, []);
+
+  async function enable() {
+    if (typeof Notification === "undefined") return toast.error("Notifications not supported on this device");
+    const result = await Notification.requestPermission();
+    setPerm(result);
+    if (result === "granted") toast.success("Notifications enabled");
+    else if (result === "denied") toast.error("Permission denied — enable in browser settings");
+  }
+
+  const labels: Record<string, string> = {
+    granted: "Enabled",
+    denied: "Blocked by browser",
+    default: "Not enabled",
+    unsupported: "Not supported on this device",
+  };
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-primary" />
+          <div>
+            <div className="font-semibold">Notifications</div>
+            <div className="text-xs text-muted-foreground">{labels[perm]}</div>
+          </div>
+        </div>
+        {perm !== "granted" && perm !== "unsupported" && (
+          <button onClick={enable} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+            Enable
+          </button>
+        )}
+      </div>
     </div>
   );
 }

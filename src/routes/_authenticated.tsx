@@ -9,6 +9,8 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
 import { StudentBadge } from "@/components/student-badge";
+import { FloatingCompanion } from "@/components/floating-companion";
+import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -112,10 +114,14 @@ function AuthLayout() {
             navigate({ to: "/" });
           }}
         />
-        <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
+        <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10 space-y-4">
+          {profile && !profile.level && location.pathname !== "/settings" && (
+            <ProfileCompletionBanner level={profile?.level} />
+          )}
           <Outlet />
         </div>
       </main>
+      <FloatingCompanion companionId={profile?.companion_id} companionName={profile?.companion_name} />
     </div>
   );
 }
