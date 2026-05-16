@@ -9,6 +9,8 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
 import { StudentBadge } from "@/components/student-badge";
+import { FloatingCompanion } from "@/components/floating-companion";
+import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
