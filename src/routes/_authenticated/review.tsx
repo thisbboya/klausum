@@ -1,3 +1,4 @@
+import { awardXp } from "@/lib/xp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,7 +132,7 @@ function ReviewPage() {
         },
       });
       setFeedback(result);
-      await awardXp({ userId: user.id, amount: 15, action: "feynman_session", description: current.front });
+      if (user) await awardXp({ userId: user.id, amount: 15, action: "feynman_session", description: current.front });
     } catch (e: any) {
       toast.error(e?.message ?? "Evaluation failed");
     } finally {

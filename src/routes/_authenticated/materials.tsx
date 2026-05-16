@@ -1,3 +1,4 @@
+import { awardXp } from "@/lib/xp";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
