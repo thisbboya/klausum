@@ -195,8 +195,7 @@ function TakeQuiz() {
 
     // Award XP
     const xp = Math.round((score / total) * 75);
-    await supabase.rpc("increment_xp", { _amount: xp });
-    await supabase.from("xp_events").insert({ user_id: user.id, action: "quiz_completed", xp_amount: xp, description: `${score}/${total} on ${title}` });
+    await awardXp({ userId: user.id, amount: xp, action: "quiz_completed", description: `${score}/${total} on ${title}` });
 
     setSubmitting(false);
     navigate({ to: "/quizzes/$id/results", params: { id }, search: { attempt: attempt.id } });
