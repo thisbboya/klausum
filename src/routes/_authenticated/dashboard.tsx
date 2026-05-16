@@ -64,7 +64,6 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <ProfileCompletionBanner level={profile?.level} />
 
       <header>
         <p className="text-sm text-muted-foreground">{greeting()},</p>
