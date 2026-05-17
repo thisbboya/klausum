@@ -3,12 +3,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen } from "lucide-react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { FocusTimer } from "@/components/focus-timer";
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
@@ -80,11 +81,14 @@ function MaterialDetail() {
             <span>{material.word_count ?? "—"} words · {material.estimated_read_minutes ?? "—"} min</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <FocusTimer materialId={material.id} />
           <Link to="/tutor" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10">🧠 Tutor</Link>
           {deck && <Link to="/review" className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">⚡ Review {deck.total_cards}</Link>}
         </div>
       </header>
+
+      <YouTubeLinks text={[material.ai_summary, material.adapted_reading].filter(Boolean).join("\n")} />
 
       {!isReady ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
@@ -113,6 +117,28 @@ function MaterialDetail() {
           {tab === "questions" && <BloomTab questions={material.bloom_questions as any} />}
         </>
       )}
+    </div>
+  );
+}
+
+function YouTubeLinks({ text }: { text: string }) {
+  const links = useMemo(() => {
+    const re = /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]+|youtu\.be\/[\w-]+)/g;
+    return Array.from(new Set(text.match(re) ?? [])).slice(0, 5);
+  }, [text]);
+  if (links.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-border bg-card/50 p-3">
+      <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+        <Youtube className="h-3.5 w-3.5 text-red-500" /> Related videos
+      </h3>
+      <ul className="space-y-1">
+        {links.map((url) => (
+          <li key={url}>
+            <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline break-all">{url}</a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -9,11 +9,27 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { Send, MessagesSquare, Sparkles } from "lucide-react";
+import { Send, MessagesSquare, Sparkles, Square, RotateCcw, Lightbulb, ListOrdered, HelpCircle, Baby } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tutor")({
   component: Tutor,
 });
+
+const LOADING_MESSAGES = [
+  "Thinking…",
+  "Connecting the dots…",
+  "Looking that up…",
+  "Working through it…",
+  "Building your answer…",
+  "Almost there…",
+];
+
+const QUICK_ACTIONS = [
+  { icon: Baby, label: "Explain like I'm 12", prompt: "Explain this like I'm 12 years old, using a simple analogy." },
+  { icon: Lightbulb, label: "Give an example", prompt: "Give me a concrete worked example of this." },
+  { icon: ListOrdered, label: "Step by step", prompt: "Walk me through this step by step." },
+  { icon: HelpCircle, label: "Quiz me", prompt: "Ask me 3 short questions to test my understanding of this topic." },
+];
 
 function Tutor() {
   const { user } = useAuth();
@@ -23,10 +39,21 @@ function Tutor() {
   const [materialContext, setMaterialContext] = useState<string>("");
   const [materialId, setMaterialId] = useState<string>("");
   const [materials, setMaterials] = useState<{ id: string; title: string; ai_summary: string | null; adapted_reading: string | null }[]>([]);
+  const [loadingIdx, setLoadingIdx] = useState(0);
+  const [msgsThisMonth, setMsgsThisMonth] = useState<number>(0);
 
   useEffect(() => {
     getAccessToken().then(setToken).catch(() => {});
   }, []);
+
+  const refreshUsage = async () => {
+    if (!user) return;
+    const { data } = await supabase.rpc("get_monthly_usage", { p_user_id: user.id });
+    const row = Array.isArray(data) ? data[0] : data;
+    setMsgsThisMonth(row?.ai_messages_used ?? 0);
+  };
+
+  useEffect(() => { refreshUsage(); }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -54,9 +81,14 @@ function Tutor() {
     [mode, materialContext, token]
   );
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport,
     onError: (e) => console.error(e),
+    onFinish: () => {
+      if (user) {
+        supabase.rpc("increment_ai_messages", { p_user_id: user.id }).then(() => refreshUsage());
+      }
+    },
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -66,10 +98,27 @@ function Tutor() {
 
   const isLoading = status === "submitted" || status === "streaming";
 
+  useEffect(() => {
+    if (!isLoading) return;
+    const id = setInterval(() => setLoadingIdx((i) => (i + 1) % LOADING_MESSAGES.length), 1800);
+    return () => clearInterval(id);
+  }, [isLoading]);
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!input.trim() || !token) return;
     sendMessage({ text: input.trim() });
+    setInput("");
+  }
+
+  function quickAction(prompt: string) {
+    if (!token || isLoading) return;
+    sendMessage({ text: prompt });
+  }
+
+  function resetChat() {
+    if (isLoading) stop();
+    setMessages([]);
     setInput("");
   }
 
@@ -80,13 +129,15 @@ function Tutor() {
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <MessagesSquare className="h-5 w-5 text-primary" /> AI Tutor
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">Ask anything. Math & code rendered.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {msgsThisMonth} message{msgsThisMonth === 1 ? "" : "s"} this month
+          </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <select
             value={materialId}
             onChange={(e) => setMaterialId(e.target.value)}
-            className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+            className="rounded-md border border-border bg-background px-2 py-1.5 text-xs max-w-[180px]"
           >
             <option value="">No material context</option>
             {materials.map((m) => (
@@ -94,17 +145,39 @@ function Tutor() {
             ))}
           </select>
           <ModePill mode={mode} setMode={setMode} />
+          {messages.length > 0 && (
+            <button
+              onClick={resetChat}
+              title="Reset chat"
+              className="rounded-md border border-border px-2 py-1.5 hover:bg-accent/10 flex items-center gap-1"
+            >
+              <RotateCcw className="h-3 w-3" /> Reset
+            </button>
+          )}
         </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto rounded-xl border border-border bg-card/30 p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground py-20">
+          <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground py-12">
             <Sparkles className="h-8 w-8 text-primary mb-2" />
             <p className="text-sm">Ask a question to begin.</p>
             {mode === "socratic" && (
               <p className="text-xs mt-1">Socratic mode: I'll only ask questions back.</p>
             )}
+            <div className="mt-6 grid grid-cols-2 gap-2 max-w-md w-full px-4">
+              {QUICK_ACTIONS.map((a) => (
+                <button
+                  key={a.label}
+                  onClick={() => quickAction(a.prompt)}
+                  disabled={!token}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-left hover:border-primary hover:bg-primary/5 transition disabled:opacity-50"
+                >
+                  <a.icon className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span>{a.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.map((m) => {
@@ -129,9 +202,35 @@ function Tutor() {
             </div>
           );
         })}
+        {isLoading && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground italic px-2">
+            <div className="flex gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse [animation-delay:120ms]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse [animation-delay:240ms]" />
+            </div>
+            {LOADING_MESSAGES[loadingIdx]}
+          </div>
+        )}
       </div>
 
-      <form onSubmit={submit} className="mt-4 flex gap-2">
+      {messages.length > 0 && !isLoading && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {QUICK_ACTIONS.map((a) => (
+            <button
+              key={a.label}
+              onClick={() => quickAction(a.prompt)}
+              disabled={!token}
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs hover:border-primary hover:bg-primary/5 disabled:opacity-50"
+            >
+              <a.icon className="h-3 w-3 text-primary" />
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={submit} className="mt-3 flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -139,13 +238,24 @@ function Tutor() {
           className="flex-1 rounded-lg border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
           disabled={isLoading || !token}
         />
-        <button
-          type="submit"
-          disabled={isLoading || !input.trim() || !token}
-          className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          <Send className="h-4 w-4" />
-        </button>
+        {isLoading ? (
+          <button
+            type="button"
+            onClick={() => stop()}
+            className="rounded-lg bg-destructive px-4 py-3 text-sm font-semibold text-destructive-foreground hover:opacity-90"
+            title="Stop generating"
+          >
+            <Square className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!input.trim() || !token}
+            className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        )}
       </form>
     </div>
   );
