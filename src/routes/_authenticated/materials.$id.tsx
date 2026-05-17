@@ -81,11 +81,14 @@ function MaterialDetail() {
             <span>{material.word_count ?? "—"} words · {material.estimated_read_minutes ?? "—"} min</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <FocusTimer materialId={material.id} />
           <Link to="/tutor" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10">🧠 Tutor</Link>
           {deck && <Link to="/review" className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">⚡ Review {deck.total_cards}</Link>}
         </div>
       </header>
+
+      <YouTubeLinks text={[material.ai_summary, material.adapted_reading].filter(Boolean).join("\n")} />
 
       {!isReady ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
