@@ -121,6 +121,28 @@ function MaterialDetail() {
   );
 }
 
+function YouTubeLinks({ text }: { text: string }) {
+  const links = useMemo(() => {
+    const re = /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]+|youtu\.be\/[\w-]+)/g;
+    return Array.from(new Set(text.match(re) ?? [])).slice(0, 5);
+  }, [text]);
+  if (links.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-border bg-card/50 p-3">
+      <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+        <Youtube className="h-3.5 w-3.5 text-red-500" /> Related videos
+      </h3>
+      <ul className="space-y-1">
+        {links.map((url) => (
+          <li key={url}>
+            <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline break-all">{url}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function SummaryTab({ material }: { material: any }) {
   return (
     <div className="space-y-5">
