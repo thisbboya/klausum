@@ -3,12 +3,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen } from "lucide-react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { FocusTimer } from "@/components/focus-timer";
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
