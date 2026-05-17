@@ -35,14 +35,18 @@ export function FocusTimer({ materialId }: { materialId?: string }) {
   async function persist() {
     if (!user || seconds < 30) return;
     try {
+      const minutes = Math.max(1, Math.round(seconds / 60));
       await supabase.from("focus_sessions").insert({
         user_id: user.id,
         material_id: materialId ?? null,
-        duration_seconds: seconds,
+        actual_minutes: minutes,
+        completed: true,
         started_at: new Date(startedAt.current ?? Date.now() - seconds * 1000).toISOString(),
+        ended_at: new Date().toISOString(),
+        session_type: "focus",
       });
-      const xp = Math.min(60, Math.floor(seconds / 60) * 2);
-      if (xp > 0) await awardXp(user.id, xp, "focus_session", { duration: seconds });
+      const xp = Math.min(60, minutes * 2);
+      if (xp > 0) await awardXp({ userId: user.id, amount: xp, action: "focus_session", description: `${minutes}m focus` });
     } catch (e) {
       console.error(e);
     }
