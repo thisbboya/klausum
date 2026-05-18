@@ -148,6 +148,8 @@ function SchedulePage() {
         </div>
       )}
 
+      <AvailabilityGrid />
+
       <Pomodoro />
 
       {view !== "list" && (
