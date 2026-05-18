@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { KlausumMark } from "@/components/klausum-mark";
-import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield } from "lucide-react";
+import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
@@ -77,6 +77,7 @@ function AuthLayout() {
           <NavItem to="/timetable" icon={CalendarClock} label="Timetable" />
           <NavItem to="/codelab" icon={Code2} label="Code Lab" />
           <NavItem to="/rooms" icon={Users} label="Rooms" />
+          <NavItem to="/community" icon={Trophy} label="Community" />
           <NavItem to="/voice" icon={Mic} label="Voice" />
           <NavItem to="/videos" icon={Youtube} label="Videos" />
           <NavItem to="/exams" icon={GraduationCap} label="Exams" />
