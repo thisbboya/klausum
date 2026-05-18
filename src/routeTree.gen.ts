@@ -19,6 +19,7 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
+import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated/timetable'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/rooms'
@@ -86,6 +87,11 @@ const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
 const AuthenticatedTutorRoute = AuthenticatedTutorRouteImport.update({
   id: '/tutor',
   path: '/tutor',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTimetableRoute = AuthenticatedTimetableRouteImport.update({
+  id: '/timetable',
+  path: '/timetable',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByTo {
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/_authenticated/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/timetable'
     | '/tutor'
     | '/videos'
     | '/voice'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/timetable'
     | '/tutor'
     | '/videos'
     | '/voice'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rooms'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
+    | '/_authenticated/timetable'
     | '/_authenticated/tutor'
     | '/_authenticated/videos'
     | '/_authenticated/voice'
@@ -453,6 +465,13 @@ declare module '@tanstack/react-router' {
       path: '/tutor'
       fullPath: '/tutor'
       preLoaderRoute: typeof AuthenticatedTutorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/timetable': {
+      id: '/_authenticated/timetable'
+      path: '/timetable'
+      fullPath: '/timetable'
+      preLoaderRoute: typeof AuthenticatedTimetableRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -645,6 +664,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRoomsRoute: typeof AuthenticatedRoomsRouteWithChildren
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedVoiceRoute: typeof AuthenticatedVoiceRoute
@@ -666,6 +686,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRoomsRoute: AuthenticatedRoomsRouteWithChildren,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedVoiceRoute: AuthenticatedVoiceRoute,
