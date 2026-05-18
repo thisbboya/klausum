@@ -1109,6 +1109,7 @@ export type Database = {
       user_profiles: {
         Row: {
           auditory_score: number | null
+          available_hours: Json | null
           avatar_url: string | null
           cohort_units: number | null
           companion_id: number | null
@@ -1136,6 +1137,7 @@ export type Database = {
           school: string | null
           secondary_style: string | null
           streak_days: number | null
+          study_intensity: string | null
           updated_at: string | null
           vark_completed: boolean | null
           visual_score: number | null
@@ -1143,6 +1145,7 @@ export type Database = {
         }
         Insert: {
           auditory_score?: number | null
+          available_hours?: Json | null
           avatar_url?: string | null
           cohort_units?: number | null
           companion_id?: number | null
@@ -1170,6 +1173,7 @@ export type Database = {
           school?: string | null
           secondary_style?: string | null
           streak_days?: number | null
+          study_intensity?: string | null
           updated_at?: string | null
           vark_completed?: boolean | null
           visual_score?: number | null
@@ -1177,6 +1181,7 @@ export type Database = {
         }
         Update: {
           auditory_score?: number | null
+          available_hours?: Json | null
           avatar_url?: string | null
           cohort_units?: number | null
           companion_id?: number | null
@@ -1204,6 +1209,7 @@ export type Database = {
           school?: string | null
           secondary_style?: string | null
           streak_days?: number | null
+          study_intensity?: string | null
           updated_at?: string | null
           vark_completed?: boolean | null
           visual_score?: number | null

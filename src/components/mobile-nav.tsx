@@ -24,6 +24,7 @@ const LINKS: NavLink[] = [
   { to: "/progress", label: "Progress", icon: TrendingUp },
   { to: "/formulas", label: "Formulas", icon: Sigma },
   { to: "/schedule", label: "Schedule", icon: CalendarClock },
+  { to: "/timetable", label: "Timetable", icon: CalendarClock },
   { to: "/codelab", label: "Code Lab", icon: Code2 },
   { to: "/rooms", label: "Rooms", icon: Users },
   { to: "/voice", label: "Voice", icon: Mic },

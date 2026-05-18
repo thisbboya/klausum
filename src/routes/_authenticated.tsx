@@ -74,6 +74,7 @@ function AuthLayout() {
           <NavItem to="/progress" icon={TrendingUp} label="Progress" />
           <NavItem to="/formulas" icon={Sigma} label="Formulas" />
           <NavItem to="/schedule" icon={CalendarClock} label="Schedule" />
+          <NavItem to="/timetable" icon={CalendarClock} label="Timetable" />
           <NavItem to="/codelab" icon={Code2} label="Code Lab" />
           <NavItem to="/rooms" icon={Users} label="Rooms" />
           <NavItem to="/voice" icon={Mic} label="Voice" />
