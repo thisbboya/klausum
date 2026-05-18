@@ -27,6 +27,7 @@ const LINKS: NavLink[] = [
   { to: "/timetable", label: "Timetable", icon: CalendarClock },
   { to: "/codelab", label: "Code Lab", icon: Code2 },
   { to: "/rooms", label: "Rooms", icon: Users },
+  { to: "/community", label: "Community", icon: Trophy },
   { to: "/voice", label: "Voice", icon: Mic },
   { to: "/videos", label: "Videos", icon: Youtube },
   { to: "/exams", label: "Exams", icon: GraduationCap },
