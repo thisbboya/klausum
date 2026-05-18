@@ -33,6 +33,7 @@ import { Route as AuthenticatedGapsRouteImport } from './routes/_authenticated/g
 import { Route as AuthenticatedFormulasRouteImport } from './routes/_authenticated/formulas'
 import { Route as AuthenticatedExamsRouteImport } from './routes/_authenticated/exams'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
@@ -159,6 +160,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCommunityRoute = AuthenticatedCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCodelabRoute = AuthenticatedCodelabRouteImport.update({
   id: '/codelab',
   path: '/codelab',
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/codelab': typeof AuthenticatedCodelabRoute
+  '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
   '/formulas': typeof AuthenticatedFormulasRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/codelab': typeof AuthenticatedCodelabRoute
+  '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
   '/formulas': typeof AuthenticatedFormulasRoute
@@ -265,6 +273,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/codelab': typeof AuthenticatedCodelabRoute
+  '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/exams': typeof AuthenticatedExamsRoute
   '/_authenticated/formulas': typeof AuthenticatedFormulasRoute
@@ -298,6 +307,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/codelab'
+    | '/community'
     | '/dashboard'
     | '/exams'
     | '/formulas'
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/codelab'
+    | '/community'
     | '/dashboard'
     | '/exams'
     | '/formulas'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/admin'
     | '/_authenticated/codelab'
+    | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/exams'
     | '/_authenticated/formulas'
@@ -565,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/community': {
+      id: '/_authenticated/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof AuthenticatedCommunityRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/codelab': {
       id: '/_authenticated/codelab'
       path: '/codelab'
@@ -651,6 +670,7 @@ const AuthenticatedRoomsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCodelabRoute: typeof AuthenticatedCodelabRoute
+  AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExamsRoute: typeof AuthenticatedExamsRoute
   AuthenticatedFormulasRoute: typeof AuthenticatedFormulasRoute
@@ -673,6 +693,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCodelabRoute: AuthenticatedCodelabRoute,
+  AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExamsRoute: AuthenticatedExamsRoute,
   AuthenticatedFormulasRoute: AuthenticatedFormulasRoute,
