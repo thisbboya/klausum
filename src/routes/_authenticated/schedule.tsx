@@ -8,6 +8,7 @@ import { generatePlan } from "@/lib/coach.functions";
 import { getAccessToken } from "@/lib/auth-helper";
 import { toast } from "sonner";
 import { Sparkles, Plus, Play, Pause, RotateCcw, Trash2, CheckCircle2, ChevronLeft, ChevronRight, Maximize2, Minimize2, X } from "lucide-react";
+import { AvailabilityGrid } from "@/components/availability-grid";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
