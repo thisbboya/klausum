@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CompanionSelectRouteImport } from './routes/companion-select'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UHandleRouteImport } from './routes/u.$handle'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
@@ -68,6 +69,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UHandleRoute = UHandleRouteImport.update({
+  id: '/u/$handle',
+  path: '/u/$handle',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
@@ -258,6 +265,7 @@ export interface FileRoutesByTo {
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/u/$handle': typeof UHandleRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/_authenticated/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
@@ -326,6 +335,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/voice'
     | '/api/chat'
+    | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
     | '/quizzes/$id/results'
@@ -358,6 +368,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/voice'
     | '/api/chat'
+    | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
     | '/quizzes/$id/results'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/_authenticated/videos'
     | '/_authenticated/voice'
     | '/api/chat'
+    | '/u/$handle'
     | '/_authenticated/materials/$id'
     | '/_authenticated/rooms/$id'
     | '/_authenticated/quizzes/$id/results'
@@ -405,6 +417,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
   ApiChatRoute: typeof ApiChatRoute
+  UHandleRoute: typeof UHandleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -449,6 +462,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$handle': {
+      id: '/u/$handle'
+      path: '/u/$handle'
+      fullPath: '/u/$handle'
+      preLoaderRoute: typeof UHandleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -725,6 +745,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
   ApiChatRoute: ApiChatRoute,
+  UHandleRoute: UHandleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
