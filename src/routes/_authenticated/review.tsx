@@ -271,12 +271,17 @@ function ReviewPage() {
         <h2 className="font-display text-2xl font-bold">Out of hearts</h2>
         <p className="mt-2 text-sm text-muted-foreground">Take a short break. They refill in:</p>
         <div className="mt-4 font-mono text-3xl text-primary">{m}:{s.toString().padStart(2, "0")}</div>
-        <button
-          onClick={() => { setHearts(3); setPausedUntil(null); }}
-          className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
-        >
-          Refill now (skip break)
-        </button>
+        <div className="mt-6 flex flex-col gap-2 max-w-xs mx-auto">
+          <Link to="/quizzes" className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
+            Take a quiz to refill ❤️
+          </Link>
+          <button
+            onClick={() => { setHearts(3); setPausedUntil(null); }}
+            className="rounded-lg border border-border px-5 py-2.5 text-sm font-medium hover:bg-accent/10"
+          >
+            Skip break
+          </button>
+        </div>
       </div>
     );
   }
