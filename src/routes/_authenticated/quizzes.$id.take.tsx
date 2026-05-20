@@ -212,6 +212,11 @@ function TakeQuiz() {
     const xp = Math.round((score / total) * 75);
     await awardXp({ userId: user.id, amount: xp, action: "quiz_completed", description: `${score}/${total} on ${title}` });
 
+    // Refill review hearts if user scored >= 70%
+    if (total > 0 && score / total >= 0.7) {
+      try { localStorage.setItem("klausum:heartsRefilledAt", String(Date.now())); } catch {}
+    }
+
     setSubmitting(false);
     navigate({ to: "/quizzes/$id/results", params: { id }, search: { attempt: attempt.id } });
   }
