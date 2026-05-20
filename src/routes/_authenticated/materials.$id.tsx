@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen, Youtube } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network } from "lucide-react";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
@@ -23,6 +24,7 @@ const TABS = [
   { key: "reading", label: "📖 Reading", color: "text-[color:var(--color-reading)]" },
   { key: "kinesthetic", label: "⚡ Kinesthetic", color: "text-[color:var(--color-kinesthetic)]" },
   { key: "cornell", label: "📓 Cornell", color: "text-foreground" },
+  { key: "graph", label: "🕸️ Concept Graph", color: "text-foreground" },
   { key: "formulas", label: "🧮 Formulas", color: "text-foreground" },
   { key: "questions", label: "🎯 Bloom Q&A", color: "text-foreground" },
 ] as const;
@@ -30,6 +32,7 @@ const TABS = [
 function MaterialDetail() {
   const { id } = Route.useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("summary");
 
   const { data: material, isLoading } = useQuery({
@@ -55,9 +58,33 @@ function MaterialDetail() {
     if (!material) return TABS;
     return TABS.filter((t) => {
       if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0;
+      if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
       return true;
     });
   }, [material]);
+
+  async function handleDelete() {
+    if (!material) return;
+    if (!confirm(`Delete "${material.title}"? This also removes its flashcards and notes.`)) return;
+    const { error } = await supabase.from("study_materials").delete().eq("id", material.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Material deleted");
+      navigate({ to: "/materials" });
+    }
+  }
+
+  function handleDownload() {
+    if (!material) return;
+    const content = material.original_content ?? "";
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${material.title.replace(/[^a-z0-9-_]+/gi, "_")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (isLoading) {
     return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-muted-foreground" /></div>;
@@ -86,6 +113,12 @@ function MaterialDetail() {
           <FocusTimer materialId={material.id} />
           <Link to="/tutor" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10">🧠 Tutor</Link>
           {deck && <Link to="/review" className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">⚡ Review {deck.total_cards}</Link>}
+          <button onClick={handleDownload} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10 inline-flex items-center gap-1.5" title="Download original">
+            <Download className="h-3.5 w-3.5" /> Download
+          </button>
+          <button onClick={handleDelete} className="rounded-lg border border-destructive/40 text-destructive px-3 py-2 text-xs hover:bg-destructive/10 inline-flex items-center gap-1.5" title="Delete material">
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </button>
         </div>
       </header>
 
@@ -112,9 +145,10 @@ function MaterialDetail() {
           {tab === "summary" && <SummaryTab material={material} />}
           {tab === "original" && <OriginalTab material={material} />}
           {(tab === "visual" || tab === "auditory" || tab === "reading" || tab === "kinesthetic") && (
-            <CalloutMarkdown text={(material as any)[`adapted_${tab}`] ?? ""} />
+            <AdaptationTab text={(material as any)[`adapted_${tab}`] ?? ""} />
           )}
           {tab === "cornell" && <CornellTab material={material} />}
+          {tab === "graph" && <ConceptGraphTab graph={material.concept_graph as any[]} concepts={material.key_concepts as any[]} />}
           {tab === "formulas" && <FormulasTab formulas={material.formulas as any[]} />}
           {tab === "questions" && <BloomTab questions={material.bloom_questions as any} />}
         </>
@@ -297,6 +331,72 @@ function BloomTab({ questions }: { questions: Record<string, { question: string;
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+function AdaptationTab({ text }: { text: string }) {
+  const [speaking, setSpeaking] = useState(false);
+  useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch {} }, []);
+  function toggleSpeak() {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      toast.error("Text-to-speech not supported in this browser");
+      return;
+    }
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const clean = text
+      .replace(/\[[A-Z ]+:\s*([^\]]+)\]/g, "$1")
+      .replace(/[#*_`>]/g, "")
+      .slice(0, 32000);
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.rate = 0.95;
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    window.speechSynthesis.speak(utter);
+    setSpeaking(true);
+  }
+  if (!text) return <p className="text-muted-foreground text-sm">No adaptation available.</p>;
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button
+          onClick={toggleSpeak}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/10"
+        >
+          {speaking ? <><Pause className="h-3.5 w-3.5" /> Stop reading</> : <><Volume2 className="h-3.5 w-3.5" /> Read aloud</>}
+        </button>
+      </div>
+      <CalloutMarkdown text={text} />
+    </div>
+  );
+}
+
+function ConceptGraphTab({ graph, concepts }: { graph: any[]; concepts: any[] }) {
+  if (!graph?.length) return <p className="text-muted-foreground text-sm">No concept graph generated.</p>;
+  const nameOf = (id: string) => {
+    const c = (concepts ?? []).find((x: any) => x.id === id);
+    return c?.concept ?? c?.term ?? id;
+  };
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+        <Network className="h-3.5 w-3.5" /> {graph.length} relationships between concepts
+      </p>
+      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+        {graph.map((e: any, i: number) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <span className="font-medium truncate flex-1">{nameOf(e.source_id ?? e.source)}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary whitespace-nowrap">
+              {(e.relationship ?? e.type ?? "related").replace(/_/g, " ")}
+            </span>
+            <span className="font-medium truncate flex-1 text-right">{nameOf(e.target_id ?? e.target)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

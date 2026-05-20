@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
+import { Upload, FileText, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { processMaterial } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";
@@ -341,10 +341,10 @@ function MaterialsPage() {
       {materials && materials.length > 0 ? (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {materials.map((m) => (
-            <li key={m.id}>
+            <li key={m.id} className="group flex items-center">
               <Link
                 to="/materials/$id" params={{ id: m.id }}
-                className="flex items-center gap-4 px-4 py-3 hover:bg-accent/10 transition"
+                className="flex items-center gap-4 px-4 py-3 hover:bg-accent/10 transition flex-1 min-w-0"
               >
                 <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="min-w-0 flex-1">
@@ -357,6 +357,21 @@ function MaterialsPage() {
                   {m.processing_status}
                 </span>
               </Link>
+              <button
+                onClick={async () => {
+                  if (!confirm(`Delete "${m.title}"? This also removes its flashcards and notes.`)) return;
+                  const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
+                  if (error) toast.error(error.message);
+                  else {
+                    toast.success("Material deleted");
+                    qc.invalidateQueries({ queryKey: ["materials"] });
+                  }
+                }}
+                className="px-3 py-3 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition"
+                aria-label="Delete material"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </li>
           ))}
         </ul>
