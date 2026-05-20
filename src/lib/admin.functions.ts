@@ -10,8 +10,6 @@ function admin() {
 async function requireAdmin(token: string) {
   const userId = await getUserIdFromToken(token);
   const sa = admin();
-  const { data: authUser, error: authError } = await sa.auth.admin.getUserById(userId);
-  if (authError || authUser.user?.email?.toLowerCase() !== "sadickabbeyquaye@gmail.com") throw new Error("Admin only");
   const { data, error } = await sa
     .from("user_roles")
     .select("role")
@@ -21,6 +19,7 @@ async function requireAdmin(token: string) {
   if (error || !data) throw new Error("Admin only");
   return userId;
 }
+
 
 const TokenInput = z.object({ accessToken: z.string() });
 
