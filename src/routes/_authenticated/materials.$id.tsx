@@ -334,3 +334,69 @@ function BloomTab({ questions }: { questions: Record<string, { question: string;
     </div>
   );
 }
+
+function AdaptationTab({ text }: { text: string }) {
+  const [speaking, setSpeaking] = useState(false);
+  useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch {} }, []);
+  function toggleSpeak() {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      toast.error("Text-to-speech not supported in this browser");
+      return;
+    }
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const clean = text
+      .replace(/\[[A-Z ]+:\s*([^\]]+)\]/g, "$1")
+      .replace(/[#*_`>]/g, "")
+      .slice(0, 32000);
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.rate = 0.95;
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    window.speechSynthesis.speak(utter);
+    setSpeaking(true);
+  }
+  if (!text) return <p className="text-muted-foreground text-sm">No adaptation available.</p>;
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button
+          onClick={toggleSpeak}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/10"
+        >
+          {speaking ? <><Pause className="h-3.5 w-3.5" /> Stop reading</> : <><Volume2 className="h-3.5 w-3.5" /> Read aloud</>}
+        </button>
+      </div>
+      <CalloutMarkdown text={text} />
+    </div>
+  );
+}
+
+function ConceptGraphTab({ graph, concepts }: { graph: any[]; concepts: any[] }) {
+  if (!graph?.length) return <p className="text-muted-foreground text-sm">No concept graph generated.</p>;
+  const nameOf = (id: string) => {
+    const c = (concepts ?? []).find((x: any) => x.id === id);
+    return c?.concept ?? c?.term ?? id;
+  };
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+        <Network className="h-3.5 w-3.5" /> {graph.length} relationships between concepts
+      </p>
+      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+        {graph.map((e: any, i: number) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <span className="font-medium truncate flex-1">{nameOf(e.source_id ?? e.source)}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary whitespace-nowrap">
+              {(e.relationship ?? e.type ?? "related").replace(/_/g, " ")}
+            </span>
+            <span className="font-medium truncate flex-1 text-right">{nameOf(e.target_id ?? e.target)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
