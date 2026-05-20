@@ -10,6 +10,7 @@ import { checkAndApplyStreakFreeze } from "@/lib/streak-freeze";
 
 import { WeeklyConsistency } from "@/components/weekly-consistency";
 import { CompanionHero } from "@/components/companion-hero";
+import { LeaguesCard } from "@/components/leagues-card";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
