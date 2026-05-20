@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/materials/$id")({
 
 const TABS = [
   { key: "summary", label: "Summary", color: "text-foreground" },
+  { key: "original", label: "📄 Original", color: "text-foreground" },
   { key: "visual", label: "👁️ Visual", color: "text-[color:var(--color-visual)]" },
   { key: "auditory", label: "🎧 Auditory", color: "text-[color:var(--color-auditory)]" },
   { key: "reading", label: "📖 Reading", color: "text-[color:var(--color-reading)]" },
@@ -109,6 +110,7 @@ function MaterialDetail() {
           </div>
 
           {tab === "summary" && <SummaryTab material={material} />}
+          {tab === "original" && <OriginalTab material={material} />}
           {(tab === "visual" || tab === "auditory" || tab === "reading" || tab === "kinesthetic") && (
             <CalloutMarkdown text={(material as any)[`adapted_${tab}`] ?? ""} />
           )}
@@ -116,6 +118,7 @@ function MaterialDetail() {
           {tab === "formulas" && <FormulasTab formulas={material.formulas as any[]} />}
           {tab === "questions" && <BloomTab questions={material.bloom_questions as any} />}
         </>
+
       )}
     </div>
   );
@@ -164,6 +167,28 @@ function SummaryTab({ material }: { material: any }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function OriginalTab({ material }: { material: any }) {
+  const content = material.original_content ?? "";
+  if (!content) return <p className="text-muted-foreground text-sm">No original content stored.</p>;
+  const words = material.word_count ?? content.split(/\s+/).filter(Boolean).length;
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>{words} words{material.file_name ? ` · ${material.file_name}` : ""}</span>
+        <button
+          onClick={() => { navigator.clipboard.writeText(content); }}
+          className="rounded-md border border-border px-2 py-1 hover:bg-accent/10"
+        >Copy all</button>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-5 md:p-6 max-h-[70vh] overflow-auto">
+        <article className="prose prose-invert prose-sm md:prose-base max-w-none whitespace-pre-wrap">
+          {content}
+        </article>
+      </div>
     </div>
   );
 }
