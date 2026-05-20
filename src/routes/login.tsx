@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { KlausumMark } from "@/components/klausum-mark";
 import { toast } from "sonner";
 
@@ -18,17 +17,15 @@ function LoginPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        toast.error("Please verify your email first");
+        return navigate({ to: "/signup" });
+      }
+      return toast.error(error.message);
+    }
     toast.success("Welcome back");
     navigate({ to: "/dashboard" });
-  }
-
-  async function handleGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) return toast.error(String(result.error));
-    if (!result.redirected) navigate({ to: "/" });
   }
 
   return (
@@ -41,26 +38,15 @@ function LoginPage() {
         <h1 className="text-center font-display text-2xl font-semibold">Welcome back</h1>
         <p className="mt-1 text-center text-sm text-muted-foreground">Log in to keep learning</p>
 
-        <button
-          onClick={handleGoogle}
-          className="mt-6 w-full rounded-lg border border-border bg-background py-2.5 text-sm font-medium hover:bg-accent/10"
-        >
-          Continue with Google
-        </button>
-
-        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" />or<div className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={handleEmail} className="space-y-3">
+        <form onSubmit={handleEmail} className="mt-6 space-y-3">
           <input
             type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder="you@example.com" maxLength={255}
             className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
           <input
             type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password" minLength={6}
+            placeholder="Password" minLength={6} maxLength={72}
             className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
           <button
