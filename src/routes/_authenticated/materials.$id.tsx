@@ -32,6 +32,7 @@ const TABS = [
 function MaterialDetail() {
   const { id } = Route.useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("summary");
 
   const { data: material, isLoading } = useQuery({
@@ -57,9 +58,33 @@ function MaterialDetail() {
     if (!material) return TABS;
     return TABS.filter((t) => {
       if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0;
+      if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
       return true;
     });
   }, [material]);
+
+  async function handleDelete() {
+    if (!material) return;
+    if (!confirm(`Delete "${material.title}"? This also removes its flashcards and notes.`)) return;
+    const { error } = await supabase.from("study_materials").delete().eq("id", material.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Material deleted");
+      navigate({ to: "/materials" });
+    }
+  }
+
+  function handleDownload() {
+    if (!material) return;
+    const content = material.original_content ?? "";
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${material.title.replace(/[^a-z0-9-_]+/gi, "_")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (isLoading) {
     return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-muted-foreground" /></div>;
