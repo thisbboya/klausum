@@ -16,6 +16,6 @@ export function useIsAdmin() {
       return fn({ data: { accessToken } });
     },
   });
-  const isOwnerAccount = user?.email?.toLowerCase() === "sadickabbeyquaye@gmail.com";
-  return { isAdmin: !!isOwnerAccount && !!q.data?.roles.includes("admin"), isLoading: q.isLoading };
+  return { isAdmin: !!q.data?.roles.includes("admin"), isLoading: q.isLoading };
+
 }

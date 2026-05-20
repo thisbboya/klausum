@@ -10,8 +10,6 @@ function admin() {
 async function requireAdmin(token: string) {
   const userId = await getUserIdFromToken(token);
   const sa = admin();
-  const { data: authUser, error: authError } = await sa.auth.admin.getUserById(userId);
-  if (authError || authUser.user?.email?.toLowerCase() !== "sadickabbeyquaye@gmail.com") throw new Error("Admin only");
   const { data, error } = await sa
     .from("user_roles")
     .select("role")
@@ -22,6 +20,7 @@ async function requireAdmin(token: string) {
   return userId;
 }
 
+
 const TokenInput = z.object({ accessToken: z.string() });
 
 export const getMyRoles = createServerFn({ method: "POST" })
@@ -29,10 +28,9 @@ export const getMyRoles = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const userId = await getUserIdFromToken(data.accessToken);
     const sa = admin();
-    const { data: authUser } = await sa.auth.admin.getUserById(userId);
-    if (authUser.user?.email?.toLowerCase() !== "sadickabbeyquaye@gmail.com") return { roles: [] };
     const { data: rows } = await sa.from("user_roles").select("role").eq("user_id", userId);
     return { roles: (rows ?? []).map((r) => r.role as string) };
+
   });
 
 export const adminListUsers = createServerFn({ method: "POST" })
