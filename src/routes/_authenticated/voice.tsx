@@ -21,23 +21,76 @@ function VoicePage() {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("General");
   const [busy, setBusy] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [mode, setMode] = useState<"browser" | "record">("browser");
   const recRef = useRef<any>(null);
+  const mediaRecRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
   const supportsSR = typeof window !== "undefined" && (("webkitSpeechRecognition" in window) || ("SpeechRecognition" in window));
 
-  const { data: notes = [] } = useQuery({
-    queryKey: ["voice", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase.from("voice_notes").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
+  useEffect(() => { if (!supportsSR) setMode("record"); }, [supportsSR]);
+
+  function startTimer() {
+    setSeconds(0);
+    timerRef.current = window.setInterval(() => setSeconds((s) => s + 1), 1000);
+  }
+  function stopTimer() { if (timerRef.current) clearInterval(timerRef.current); }
+
+  async function startRecord() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+        : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
+      const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType || "audio/webm" });
+        await uploadForTranscription(blob);
+      };
+      mr.start();
+      mediaRecRef.current = mr;
+      setRecording(true);
+      startTimer();
+    } catch (e: any) {
+      toast.error("Mic permission denied or unavailable: " + (e?.message ?? "error"));
+    }
+  }
+
+  function stopRecord() {
+    mediaRecRef.current?.stop();
+    setRecording(false);
+    stopTimer();
+  }
+
+  async function uploadForTranscription(blob: Blob) {
+    setTranscribing(true);
+    try {
+      const ext = (blob.type.includes("mp4") ? "m4a" : "webm");
+      const fd = new FormData();
+      fd.append("audio", new File([blob], `note.${ext}`, { type: blob.type }));
+      const r = await fetch("/api/transcribe", { method: "POST", body: fd });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error ?? "Transcription failed");
+      setTranscript((prev) => (prev ? prev + " " : "") + (j.text ?? ""));
+      toast.success("Transcribed");
+    } catch (e: any) {
+      toast.error(e.message ?? "Transcription failed");
+    } finally {
+      setTranscribing(false);
+    }
+  }
 
   function start() {
+    if (mode === "record") return startRecord();
     if (!supportsSR) {
-      toast.error("Voice transcription not supported in this browser. Try Chrome.");
-      return;
+      toast.message("Switching to recording mode (browser STT unsupported)");
+      setMode("record");
+      return startRecord();
     }
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const rec = new SR();
