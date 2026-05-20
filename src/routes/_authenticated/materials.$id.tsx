@@ -110,6 +110,7 @@ function MaterialDetail() {
           </div>
 
           {tab === "summary" && <SummaryTab material={material} />}
+          {tab === "original" && <OriginalTab material={material} />}
           {(tab === "visual" || tab === "auditory" || tab === "reading" || tab === "kinesthetic") && (
             <CalloutMarkdown text={(material as any)[`adapted_${tab}`] ?? ""} />
           )}
@@ -117,6 +118,7 @@ function MaterialDetail() {
           {tab === "formulas" && <FormulasTab formulas={material.formulas as any[]} />}
           {tab === "questions" && <BloomTab questions={material.bloom_questions as any} />}
         </>
+
       )}
     </div>
   );
