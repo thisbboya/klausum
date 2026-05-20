@@ -41,6 +41,8 @@ function TakeQuiz() {
   const [start] = useState(Date.now());
   const [secLeft, setSecLeft] = useState(timerSec ?? 0);
   const [reviewMode, setReviewMode] = useState(false);
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [flash, setFlash] = useState<"green" | "red" | null>(null);
 
   useEffect(() => {
     (async () => {
