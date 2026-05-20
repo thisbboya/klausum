@@ -171,6 +171,28 @@ function SummaryTab({ material }: { material: any }) {
   );
 }
 
+function OriginalTab({ material }: { material: any }) {
+  const content = material.original_content ?? "";
+  if (!content) return <p className="text-muted-foreground text-sm">No original content stored.</p>;
+  const words = material.word_count ?? content.split(/\s+/).filter(Boolean).length;
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>{words} words{material.file_name ? ` · ${material.file_name}` : ""}</span>
+        <button
+          onClick={() => { navigator.clipboard.writeText(content); }}
+          className="rounded-md border border-border px-2 py-1 hover:bg-accent/10"
+        >Copy all</button>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-5 md:p-6 max-h-[70vh] overflow-auto">
+        <article className="prose prose-invert prose-sm md:prose-base max-w-none whitespace-pre-wrap">
+          {content}
+        </article>
+      </div>
+    </div>
+  );
+}
+
 // Replace [TAG: ...] with semantic blocks before markdown rendering.
 function preprocessCallouts(text: string): string {
   if (!text) return "";
