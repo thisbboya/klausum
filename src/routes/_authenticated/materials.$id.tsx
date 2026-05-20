@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen, Youtube } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network } from "lucide-react";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
@@ -23,6 +24,7 @@ const TABS = [
   { key: "reading", label: "📖 Reading", color: "text-[color:var(--color-reading)]" },
   { key: "kinesthetic", label: "⚡ Kinesthetic", color: "text-[color:var(--color-kinesthetic)]" },
   { key: "cornell", label: "📓 Cornell", color: "text-foreground" },
+  { key: "graph", label: "🕸️ Concept Graph", color: "text-foreground" },
   { key: "formulas", label: "🧮 Formulas", color: "text-foreground" },
   { key: "questions", label: "🎯 Bloom Q&A", color: "text-foreground" },
 ] as const;
