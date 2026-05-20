@@ -61,26 +61,23 @@ function CodeLab() {
     setRunning(true);
     setOutput("Running…");
     try {
-      const r = await fetch("https://emkc.org/api/v2/piston/execute", {
+      const r = await fetch("/api/run-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: lang.piston, version: lang.version, files: [{ content: code }], stdin }),
+        body: JSON.stringify({ language: lang.piston, version: lang.version, code, stdin }),
       });
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        throw new Error(`Sandbox responded ${r.status}${txt ? `: ${txt.slice(0, 200)}` : ""}`);
-      }
       const j = await r.json();
-      const out = (j.run?.stdout ?? "") + (j.run?.stderr ? `\n[stderr]\n${j.run.stderr}` : "") + (j.compile?.stderr ? `\n[compile]\n${j.compile.stderr}` : "");
-      setOutput(out || "(no output)");
+      if (!j.ok) throw new Error(j.error ?? `Sandbox ${r.status}`);
+      setOutput(j.output || "(no output)");
     } catch (e: any) {
       const msg = e?.message ?? String(e);
       setOutput(`Run failed: ${msg}\n\nThe public code sandbox (Piston) may be busy or rate-limited. Try again in a few seconds, or use Explain / Generate tests / Hint — those use Klausum's own AI.`);
-      toast.error("Public sandbox busy — try again or use the AI tools");
+      toast.error("Sandbox busy — try again or use the AI tools");
     } finally {
       setRunning(false);
     }
   }
+
 
   async function runDebug() {
     setAiBusy("debug");
