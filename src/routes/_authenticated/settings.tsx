@@ -354,6 +354,24 @@ function PreferencesTab() {
   );
 }
 
+function SoundsToggle() {
+  const [on, setOn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const v = localStorage.getItem("sounds_enabled");
+    return v === null ? true : v === "true";
+  });
+  function toggle(checked: boolean) {
+    setOn(checked);
+    if (typeof window !== "undefined") localStorage.setItem("sounds_enabled", checked ? "true" : "false");
+  }
+  return (
+    <label className="flex items-center gap-2 text-sm">
+      <input type="checkbox" checked={on} onChange={(e) => toggle(e.target.checked)} />
+      🔊 Sound effects
+    </label>
+  );
+}
+
 function DataTab() {
   const { user } = useAuth();
   const navigate = useNavigate();
