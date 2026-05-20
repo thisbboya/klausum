@@ -16,6 +16,7 @@ import { Route as CompanionSelectRouteImport } from './routes/companion-select'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UHandleRouteImport } from './routes/u.$handle'
+import { Route as ApiYoutubeSearchRouteImport } from './routes/api/youtube-search'
 import { Route as ApiRunCodeRouteImport } from './routes/api/run-code'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
@@ -75,6 +76,11 @@ const IndexRoute = IndexRouteImport.update({
 const UHandleRoute = UHandleRouteImport.update({
   id: '/u/$handle',
   path: '/u/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiYoutubeSearchRoute = ApiYoutubeSearchRouteImport.update({
+  id: '/api/youtube-search',
+  path: '/api/youtube-search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRunCodeRoute = ApiRunCodeRouteImport.update({
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
+  '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -273,6 +280,7 @@ export interface FileRoutesByTo {
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
+  '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -309,6 +317,7 @@ export interface FileRoutesById {
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
+  '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -345,6 +354,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/api/chat'
     | '/api/run-code'
+    | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/api/chat'
     | '/api/run-code'
+    | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/_authenticated/voice'
     | '/api/chat'
     | '/api/run-code'
+    | '/api/youtube-search'
     | '/u/$handle'
     | '/_authenticated/materials/$id'
     | '/_authenticated/rooms/$id'
@@ -430,6 +442,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiRunCodeRoute: typeof ApiRunCodeRoute
+  ApiYoutubeSearchRoute: typeof ApiYoutubeSearchRoute
   UHandleRoute: typeof UHandleRoute
 }
 
@@ -482,6 +495,13 @@ declare module '@tanstack/react-router' {
       path: '/u/$handle'
       fullPath: '/u/$handle'
       preLoaderRoute: typeof UHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/youtube-search': {
+      id: '/api/youtube-search'
+      path: '/api/youtube-search'
+      fullPath: '/api/youtube-search'
+      preLoaderRoute: typeof ApiYoutubeSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/run-code': {
@@ -766,6 +786,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   ApiChatRoute: ApiChatRoute,
   ApiRunCodeRoute: ApiRunCodeRoute,
+  ApiYoutubeSearchRoute: ApiYoutubeSearchRoute,
   UHandleRoute: UHandleRoute,
 }
 export const routeTree = rootRouteImport
