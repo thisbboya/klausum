@@ -123,6 +123,15 @@ function VoicePage() {
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
+  const { data: notes = [] } = useQuery({
+    queryKey: ["voice", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("voice_notes").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
   async function save() {
     if (!transcript.trim()) return toast.error("No transcript");
     setBusy(true);
@@ -183,9 +192,16 @@ function VoicePage() {
           </button>
           <div>
             <div className="font-mono text-2xl">{mm}:{ss}</div>
-            <div className="text-xs text-muted-foreground">{recording ? "Recording…" : supportsSR ? "Tap to start" : "Browser unsupported"}</div>
+            <div className="text-xs text-muted-foreground">
+              {transcribing ? "Transcribing audio…" : recording ? "Recording…" : mode === "record" ? "Tap to record (AI transcription)" : "Tap to start (live)"}
+            </div>
+          </div>
+          <div className="ml-auto flex rounded-lg border border-border bg-background p-0.5 text-xs">
+            <button onClick={() => setMode("browser")} disabled={!supportsSR || recording} className={`px-2 py-1 rounded ${mode === "browser" ? "bg-primary text-primary-foreground" : ""} disabled:opacity-40`}>Live</button>
+            <button onClick={() => setMode("record")} disabled={recording} className={`px-2 py-1 rounded ${mode === "record" ? "bg-primary text-primary-foreground" : ""}`}>Record</button>
           </div>
         </div>
+        {transcribing && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Sending audio to AI…</div>}
 
         <textarea value={transcript} onChange={(e) => setTranscript(e.target.value)} className="w-full min-h-32 rounded-lg border border-border bg-background p-3 text-sm" placeholder="Live transcript appears here. You can edit before saving." />
 
