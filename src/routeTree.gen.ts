@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UHandleRouteImport } from './routes/u.$handle'
 import { Route as ApiYoutubeSearchRouteImport } from './routes/api/youtube-search'
+import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as ApiRunCodeRouteImport } from './routes/api/run-code'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
@@ -81,6 +82,11 @@ const UHandleRoute = UHandleRouteImport.update({
 const ApiYoutubeSearchRoute = ApiYoutubeSearchRouteImport.update({
   id: '/api/youtube-search',
   path: '/api/youtube-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
+  id: '/api/transcribe',
+  path: '/api/transcribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRunCodeRoute = ApiRunCodeRouteImport.update({
@@ -245,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
+  '/api/transcribe': typeof ApiTranscribeRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
+  '/api/transcribe': typeof ApiTranscribeRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
+  '/api/transcribe': typeof ApiTranscribeRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/api/chat'
     | '/api/run-code'
+    | '/api/transcribe'
     | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/api/chat'
     | '/api/run-code'
+    | '/api/transcribe'
     | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
@@ -425,6 +436,7 @@ export interface FileRouteTypes {
     | '/_authenticated/voice'
     | '/api/chat'
     | '/api/run-code'
+    | '/api/transcribe'
     | '/api/youtube-search'
     | '/u/$handle'
     | '/_authenticated/materials/$id'
@@ -442,6 +454,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiRunCodeRoute: typeof ApiRunCodeRoute
+  ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiYoutubeSearchRoute: typeof ApiYoutubeSearchRoute
   UHandleRoute: typeof UHandleRoute
 }
@@ -502,6 +515,13 @@ declare module '@tanstack/react-router' {
       path: '/api/youtube-search'
       fullPath: '/api/youtube-search'
       preLoaderRoute: typeof ApiYoutubeSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/transcribe': {
+      id: '/api/transcribe'
+      path: '/api/transcribe'
+      fullPath: '/api/transcribe'
+      preLoaderRoute: typeof ApiTranscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/run-code': {
@@ -786,6 +806,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   ApiChatRoute: ApiChatRoute,
   ApiRunCodeRoute: ApiRunCodeRoute,
+  ApiTranscribeRoute: ApiTranscribeRoute,
   ApiYoutubeSearchRoute: ApiYoutubeSearchRoute,
   UHandleRoute: UHandleRoute,
 }
