@@ -98,7 +98,16 @@ function Dashboard() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat icon={Flame} label="Streak" value={`${profile?.streak_days ?? 0}d`} />
+        <Stat icon={Flame} label="Streak" value={`${profile?.streak_days ?? 0}d`} sub={
+          (profile?.streak_freezes ?? 0) > 0 ? (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-sky-400 mt-1">
+              {Array.from({ length: profile?.streak_freezes ?? 0 }).map((_, i) => (
+                <Snowflake key={i} className="h-2.5 w-2.5" />
+              ))}
+              <span className="ml-1">freezes</span>
+            </span>
+          ) : null
+        } />
         <Stat icon={Sparkles} label="XP" value={profile?.xp_total ?? 0} />
         <Stat icon={Brain} label="Due cards" value={data?.dueCount ?? 0} accent />
         <Stat icon={BookOpen} label="Total cards" value={data?.totalCards ?? 0} />
