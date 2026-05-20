@@ -77,6 +77,19 @@ function ReviewPage() {
     return () => clearInterval(id);
   }, [pausedUntil]);
 
+  // Consume quiz-based hearts refill (set when user passes a quiz with >=70%)
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("klausum:heartsRefilledAt");
+      if (v && Date.now() - Number(v) < 1000 * 60 * 60) {
+        setHearts(3);
+        setPausedUntil(null);
+        localStorage.removeItem("klausum:heartsRefilledAt");
+        toast.success("Hearts refilled from your quiz!", { icon: "❤️" });
+      }
+    } catch {}
+  }, []);
+
   const { data: cards, refetch } = useQuery({
     queryKey: ["due-cards", user?.id],
     enabled: !!user,
