@@ -39,23 +39,31 @@ const TestsInput = z.object({
   code: z.string().min(1).max(20000),
 });
 const TestsSchema = z.object({
-  framework: z.string().describe("e.g. pytest, vitest, jest, JUnit, Catch2, go test, rust #[test]"),
-  tests: z.string().describe("Complete runnable test file content for the chosen framework."),
-  notes: z.string().describe("1-3 short sentences on what is covered and any edge cases skipped."),
+  framework: z.string().default("generic").describe("e.g. pytest, vitest, jest, JUnit, Catch2, go test, rust #[test]"),
+  tests: z.string().default("").describe("Complete runnable test file content for the chosen framework."),
+  notes: z.string().default("").describe("1-3 short sentences on what is covered and any edge cases skipped."),
 });
 export const generateTests = createServerFn({ method: "POST" })
   .inputValidator((d) => TestsInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
-      schema: TestsSchema,
-      prompt:
-        `Write thorough unit tests for the following ${data.language} code. ` +
-        `Pick the most idiomatic test framework for that language. Cover happy paths, edge cases, and error cases. ` +
-        `Return a single complete file the student can paste alongside their code.\n\n--- CODE ---\n${data.code}`,
-    });
-    return object;
+    try {
+      const { object } = await generateObject({
+        model: model(),
+        schema: TestsSchema,
+        prompt:
+          `Write thorough unit tests for the following ${data.language} code. ` +
+          `Pick the most idiomatic test framework for that language. Cover happy paths, edge cases, and error cases. ` +
+          `Return a single complete file the student can paste alongside their code.\n\n--- CODE ---\n${data.code}`,
+      });
+      return object;
+    } catch {
+      const { text } = await generateText({
+        model: model(),
+        prompt: `Write a complete, idiomatic unit-test file for this ${data.language} code. Output ONLY the code, no commentary.\n\n${data.code}`,
+      });
+      return { framework: "auto", tests: text, notes: "Generated as plain text — pick the right framework for your project." };
+    }
   });
 
 // Explain code: structured walkthrough
@@ -65,24 +73,33 @@ const ExplainInput = z.object({
   code: z.string().min(1).max(20000),
 });
 const ExplainSchema = z.object({
-  summary: z.string().describe("2-3 sentence plain-English summary of what the code does."),
-  line_by_line: z.array(z.object({ lines: z.string(), explanation: z.string() })).min(1).max(15),
-  complexity: z.string().describe("Time and space complexity, e.g. 'O(n log n) time, O(n) space'."),
+  summary: z.string().default("").describe("2-3 sentence plain-English summary of what the code does."),
+  line_by_line: z.array(z.object({ lines: z.string().default(""), explanation: z.string().default("") })).default([]),
+  complexity: z.string().default("unknown").describe("Time and space complexity, e.g. 'O(n log n) time, O(n) space'."),
   suggestions: z.array(z.string()).max(5).default([]).describe("Optional refactor or correctness suggestions."),
 });
 export const explainCode = createServerFn({ method: "POST" })
   .inputValidator((d) => ExplainInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
-      schema: ExplainSchema,
-      prompt:
-        `Explain this ${data.language} code to an undergraduate. ` +
-        `Group consecutive lines that form one logical step. Be precise but accessible.\n\n--- CODE ---\n${data.code}`,
-    });
-    return object;
+    try {
+      const { object } = await generateObject({
+        model: model(),
+        schema: ExplainSchema,
+        prompt:
+          `Explain this ${data.language} code to an undergraduate. ` +
+          `Group consecutive lines that form one logical step. Be precise but accessible.\n\n--- CODE ---\n${data.code}`,
+      });
+      return object;
+    } catch {
+      const { text } = await generateText({
+        model: model(),
+        prompt: `Explain this ${data.language} code to an undergraduate in plain English, then list 3 short suggestions.\n\n${data.code}`,
+      });
+      return { summary: text, line_by_line: [], complexity: "unknown", suggestions: [] };
+    }
   });
+
 
 // Transcribe + summarize a voice note (text only — student types/dictates summary)
 const TranscriptInput = z.object({
