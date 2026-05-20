@@ -114,7 +114,12 @@ function Dashboard() {
         <Stat icon={BookOpen} label="Total cards" value={data?.totalCards ?? 0} />
       </div>
 
-      <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
+        <LeaguesCard />
+      </div>
+
+
 
 
       <section className="grid gap-4 md:grid-cols-3">
