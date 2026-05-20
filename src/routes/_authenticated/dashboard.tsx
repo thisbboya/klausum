@@ -195,13 +195,14 @@ function greeting() {
   return "Maadwo";
 }
 
-function Stat({ icon: Icon, label, value, accent }: any) {
+function Stat({ icon: Icon, label, value, accent, sub }: any) {
   return (
     <div className={`rounded-xl border p-4 ${accent ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
       <div className={`mt-1 text-2xl font-semibold ${accent ? "text-primary" : ""}`}>{value}</div>
+      {sub}
     </div>
   );
 }
