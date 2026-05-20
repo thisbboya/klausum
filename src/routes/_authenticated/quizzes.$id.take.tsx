@@ -86,7 +86,18 @@ function TakeQuiz() {
   }
 
   function pick(letter: string) {
+    if (checked[idx]) return; // locked after check
     setAnswers({ ...answers, [idx]: letter });
+    const right = letter === q.correct;
+    setChecked({ ...checked, [idx]: true });
+    if (right) {
+      Sounds.correct();
+      setFlash("green");
+    } else {
+      Sounds.wrong();
+      setFlash("red");
+    }
+    setTimeout(() => setFlash(null), 500);
   }
 
   async function finish() {
