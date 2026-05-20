@@ -347,6 +347,7 @@ function PreferencesTab() {
         <input type="checkbox" checked={form.dark_mode} onChange={(e) => onToggleDark(e.target.checked)} />
         Dark mode <span className="text-xs text-muted-foreground">(currently {theme})</span>
       </label>
+      <SoundsToggle />
       <button onClick={save} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
     </div>
