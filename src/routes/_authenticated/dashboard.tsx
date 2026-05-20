@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flame, Sparkles, BookOpen, Brain, MessagesSquare, Plus, CalendarClock } from "lucide-react";
+import { Flame, Sparkles, BookOpen, Brain, MessagesSquare, Plus, CalendarClock, Snowflake } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { checkAndApplyStreakFreeze } from "@/lib/streak-freeze";
 
 import { WeeklyConsistency } from "@/components/weekly-consistency";
 import { CompanionHero } from "@/components/companion-hero";
