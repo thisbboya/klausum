@@ -19,6 +19,12 @@ function Dashboard() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
+  useEffect(() => {
+    if (user?.id) checkAndApplyStreakFreeze(user.id).then((used) => {
+      if (used) qc.invalidateQueries({ queryKey: ["dash", user.id] });
+    });
+  }, [user?.id, qc]);
+
   const { data } = useQuery({
     queryKey: ["dash", user?.id],
     enabled: !!user,
