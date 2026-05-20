@@ -1306,6 +1306,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_challenge: {
+        Args: { p_key: string; p_xp: number }
+        Returns: undefined
+      }
       get_monthly_usage: {
         Args: { p_user_id: string }
         Returns: {
@@ -1332,6 +1336,10 @@ export type Database = {
       }
       update_weekly_leaderboard: {
         Args: { p_user_id: string; p_xp: number }
+        Returns: undefined
+      }
+      upvote_room_question: {
+        Args: { p_question_id: string }
         Returns: undefined
       }
     }
