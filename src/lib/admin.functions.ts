@@ -28,10 +28,9 @@ export const getMyRoles = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const userId = await getUserIdFromToken(data.accessToken);
     const sa = admin();
-    const { data: authUser } = await sa.auth.admin.getUserById(userId);
-    if (authUser.user?.email?.toLowerCase() !== "sadickabbeyquaye@gmail.com") return { roles: [] };
     const { data: rows } = await sa.from("user_roles").select("role").eq("user_id", userId);
     return { roles: (rows ?? []).map((r) => r.role as string) };
+
   });
 
 export const adminListUsers = createServerFn({ method: "POST" })
