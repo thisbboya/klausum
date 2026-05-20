@@ -1136,7 +1136,10 @@ export type Database = {
           reading_score: number | null
           school: string | null
           secondary_style: string | null
+          sounds_enabled: boolean
           streak_days: number | null
+          streak_freeze_used_date: string | null
+          streak_freezes: number
           study_intensity: string | null
           updated_at: string | null
           vark_completed: boolean | null
@@ -1172,7 +1175,10 @@ export type Database = {
           reading_score?: number | null
           school?: string | null
           secondary_style?: string | null
+          sounds_enabled?: boolean
           streak_days?: number | null
+          streak_freeze_used_date?: string | null
+          streak_freezes?: number
           study_intensity?: string | null
           updated_at?: string | null
           vark_completed?: boolean | null
@@ -1208,7 +1214,10 @@ export type Database = {
           reading_score?: number | null
           school?: string | null
           secondary_style?: string | null
+          sounds_enabled?: boolean
           streak_days?: number | null
+          streak_freeze_used_date?: string | null
+          streak_freezes?: number
           study_intensity?: string | null
           updated_at?: string | null
           vark_completed?: boolean | null

@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flame, Sparkles, BookOpen, Brain, MessagesSquare, Plus, CalendarClock } from "lucide-react";
+import { Flame, Sparkles, BookOpen, Brain, MessagesSquare, Plus, CalendarClock, Snowflake } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { checkAndApplyStreakFreeze } from "@/lib/streak-freeze";
 
 import { WeeklyConsistency } from "@/components/weekly-consistency";
 import { CompanionHero } from "@/components/companion-hero";
@@ -17,6 +18,12 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { user } = useAuth();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (user?.id) checkAndApplyStreakFreeze(user.id).then((used) => {
+      if (used) qc.invalidateQueries({ queryKey: ["dash", user.id] });
+    });
+  }, [user?.id, qc]);
 
   const { data } = useQuery({
     queryKey: ["dash", user?.id],
@@ -91,7 +98,16 @@ function Dashboard() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat icon={Flame} label="Streak" value={`${profile?.streak_days ?? 0}d`} />
+        <Stat icon={Flame} label="Streak" value={`${profile?.streak_days ?? 0}d`} sub={
+          (profile?.streak_freezes ?? 0) > 0 ? (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-sky-400 mt-1">
+              {Array.from({ length: profile?.streak_freezes ?? 0 }).map((_, i) => (
+                <Snowflake key={i} className="h-2.5 w-2.5" />
+              ))}
+              <span className="ml-1">freezes</span>
+            </span>
+          ) : null
+        } />
         <Stat icon={Sparkles} label="XP" value={profile?.xp_total ?? 0} />
         <Stat icon={Brain} label="Due cards" value={data?.dueCount ?? 0} accent />
         <Stat icon={BookOpen} label="Total cards" value={data?.totalCards ?? 0} />
@@ -179,13 +195,14 @@ function greeting() {
   return "Maadwo";
 }
 
-function Stat({ icon: Icon, label, value, accent }: any) {
+function Stat({ icon: Icon, label, value, accent, sub }: any) {
   return (
     <div className={`rounded-xl border p-4 ${accent ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
       <div className={`mt-1 text-2xl font-semibold ${accent ? "text-primary" : ""}`}>{value}</div>
+      {sub}
     </div>
   );
 }

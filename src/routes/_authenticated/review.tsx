@@ -3,9 +3,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { reviewCard, isDue, type Rating, type FSRSState } from "@/lib/fsrs";
-import { CheckCircle2, RotateCcw, Brain, Lightbulb, Sparkles } from "lucide-react";
+import { CheckCircle2, RotateCcw, Brain, Lightbulb, Sparkles, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { evaluateFeynman } from "@/lib/materials.functions";
@@ -14,6 +14,10 @@ import { getAccessToken } from "@/lib/auth-helper";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import confetti from "canvas-confetti";
+import { Sounds } from "@/lib/sounds";
+import { XPBurst, type XPBurstState } from "@/components/xp-burst";
+import { Hearts } from "@/components/hearts";
 
 export const Route = createFileRoute("/_authenticated/review")({
   component: ReviewPage,
@@ -49,11 +53,29 @@ function ReviewPage() {
   const feynmanFn = useServerFn(evaluateFeynman);
   const [showBack, setShowBack] = useState(false);
   const [reviewedToday, setReviewedToday] = useState(0);
+  const [firstTryRight, setFirstTryRight] = useState(0);
   const [hint, setHint] = useState(false);
   const [feynman, setFeynman] = useState(false);
   const [explanation, setExplanation] = useState("");
   const [feedback, setFeedback] = useState<any>(null);
   const [evaluating, setEvaluating] = useState(false);
+
+  // Duolingo state
+  const [hearts, setHearts] = useState(3);
+  const [hotStreak, setHotStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [totalXp, setTotalXp] = useState(0);
+  const [flash, setFlash] = useState<"green" | "red" | null>(null);
+  const [xpBurst, setXpBurst] = useState<XPBurstState>({ show: false, amount: 0 });
+  const [pausedUntil, setPausedUntil] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pausedUntil) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [pausedUntil]);
 
   const { data: cards, refetch } = useQuery({
     queryKey: ["due-cards", user?.id],
@@ -84,10 +106,53 @@ function ReviewPage() {
     });
   }, [current]);
 
+  function triggerXpBurst(amount: number) {
+    const rect = cardRef.current?.getBoundingClientRect();
+    setXpBurst({
+      show: true,
+      amount,
+      x: (rect ? rect.left + rect.width / 2 : window.innerWidth / 2) - 30,
+      y: rect ? rect.top + 40 : 200,
+      key: Date.now(),
+    });
+    setTimeout(() => setXpBurst((s) => ({ ...s, show: false })), 1200);
+  }
+
   async function handleRate(rating: Rating) {
     if (!current || !user) return;
+    if (pausedUntil && Date.now() < pausedUntil) return;
+
     const state = cardToState(current);
     const next = reviewCard(state, rating);
+
+    // Hearts + hot streak
+    if (rating === 1) {
+      Sounds.heartBreak();
+      setFlash("red");
+      setHotStreak(0);
+      const newHearts = Math.max(0, hearts - 1);
+      setHearts(newHearts);
+      if (newHearts === 0) {
+        const until = Date.now() + 5 * 60 * 1000;
+        setPausedUntil(until);
+        toast("Take a short break! Hearts refill in 5 minutes.", { icon: "💔" });
+      }
+    } else {
+      if (rating === 4) Sounds.correct();
+      else Sounds.xpEarn();
+      setFlash("green");
+      setHearts((h) => Math.min(3, h + (rating === 4 ? 1 : 0)));
+      const newStreak = hotStreak + 1;
+      setHotStreak(newStreak);
+      setBestStreak((b) => Math.max(b, newStreak));
+      setFirstTryRight((n) => (showBack ? n : n + 1));
+      if (newStreak === 5 || newStreak === 10) {
+        Sounds.streak();
+        toast.success(newStreak === 10 ? "🔥🔥 On FIRE! +10 bonus XP!" : "Hot streak! 🔥 +5 bonus XP!");
+        await awardXp({ userId: user.id, amount: newStreak === 10 ? 10 : 5, action: "hot_streak", description: `${newStreak} in a row` });
+      }
+    }
+    setTimeout(() => setFlash(null), 500);
 
     const updates = supabase.from("flashcards").update({
       fsrs_stability: next.stability,
@@ -107,6 +172,8 @@ function ReviewPage() {
     });
 
     const xpAmount = rating === 1 ? 1 : rating === 4 ? 5 : 2;
+    triggerXpBurst(xpAmount);
+    setTotalXp((x) => x + xpAmount);
     const xp = awardXp({ userId: user.id, amount: xpAmount, action: "card_reviewed", description: `Rated ${rating}` });
 
     const [u, r] = await Promise.all([updates, review, xp]);
@@ -140,25 +207,71 @@ function ReviewPage() {
     }
   }
 
+  // Trigger confetti once when session ends
+  const sessionEnded = cards && cards.length === 0 && reviewedToday > 0;
+  useEffect(() => {
+    if (!sessionEnded) return;
+    confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 }, colors: ["#F4A300", "#22C55E", "#3B82F6", "#F59E0B"] });
+    Sounds.levelUp();
+  }, [sessionEnded]);
+
   if (!cards) return <div className="text-center py-20 text-sm text-muted-foreground">Loading…</div>;
 
   if (cards.length === 0) {
+    const pct = reviewedToday > 0 ? Math.round((firstTryRight / reviewedToday) * 100) : 0;
+    const motivation =
+      pct >= 90 ? "Incredible session. You're unstoppable! 💪"
+      : pct >= 70 ? "Strong work. Consistency beats intensity every time."
+      : pct >= 50 ? "Good effort. Tomorrow will be even better. 🌱"
+      : reviewedToday > 0 ? "These cards are tough — that's why FSRS keeps showing them. You've got this!"
+      : "No cards due. Generate flashcards from a material.";
+
     return (
-      <div className="text-center py-20">
-        <CheckCircle2 className="h-12 w-12 mx-auto text-primary" />
-        <h2 className="mt-4 font-display text-2xl font-semibold">Ayekoo! 🏆</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {reviewedToday > 0 ? `You reviewed ${reviewedToday} card${reviewedToday === 1 ? "" : "s"} today.` : "No cards due. Generate flashcards from a material."}
-        </p>
-        <Link to="/materials" className="mt-6 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-          Go to materials
+      <div className="text-center py-16 card-entrance">
+        <CheckCircle2 className="h-14 w-14 mx-auto text-primary" />
+        <h2 className="mt-4 font-display text-3xl font-bold">Ayekoo! 🏆</h2>
+        {reviewedToday > 0 && (
+          <div className="mt-6 mx-auto max-w-md grid grid-cols-2 gap-3 text-left">
+            <Stat label="Cards reviewed" value={reviewedToday.toString()} />
+            <Stat label="First-try right" value={`${pct}%`} />
+            <Stat label="Hot streak" value={`${bestStreak} 🔥`} />
+            <Stat label="XP earned" value={`+${totalXp} ⚡`} accent />
+          </div>
+        )}
+        <p className="mt-6 text-sm text-muted-foreground max-w-md mx-auto">{motivation}</p>
+        <Link to="/materials" className="mt-6 inline-block rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
+          Back to materials
         </Link>
       </div>
     );
   }
 
+  // Paused (0 hearts) screen
+  if (pausedUntil && Date.now() < pausedUntil) {
+    void tick;
+    const remaining = Math.max(0, Math.ceil((pausedUntil - Date.now()) / 1000));
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    return (
+      <div className="text-center py-16 card-entrance">
+        <div className="text-6xl mb-4">💔</div>
+        <h2 className="font-display text-2xl font-bold">Out of hearts</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Take a short break. They refill in:</p>
+        <div className="mt-4 font-mono text-3xl text-primary">{m}:{s.toString().padStart(2, "0")}</div>
+        <button
+          onClick={() => { setHearts(3); setPausedUntil(null); }}
+          className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+        >
+          Refill now (skip break)
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-5">
+    <div className={`space-y-5 transition ${flash === "green" ? "flash-green" : flash === "red" ? "flash-red" : ""}`}>
+      <XPBurst state={xpBurst} />
+
       <header className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
@@ -166,19 +279,31 @@ function ReviewPage() {
           </h1>
           <p className="text-xs text-muted-foreground mt-1">{cards.length} due · {reviewedToday} reviewed</p>
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-3">
+          <Hearts count={hearts} />
+          {hotStreak >= 2 && (
+            <div className="flex items-center gap-1 text-xs font-semibold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full streak-bounce" key={hotStreak}>
+              <Flame className="h-3 w-3" /> {hotStreak} in a row
+            </div>
+          )}
           <button onClick={() => { setFeynman(!feynman); setShowBack(false); setFeedback(null); }}
-            className={`px-3 py-1.5 rounded-md border ${feynman ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+            className={`px-3 py-1.5 rounded-md border text-xs ${feynman ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
             <Sparkles className="h-3 w-3 inline mr-1" /> Feynman
           </button>
-          <button onClick={() => setShowBack((s) => !s)} className="text-muted-foreground hover:text-foreground">
+          <button onClick={() => { Sounds.flip(); setShowBack((s) => !s); }} className="text-muted-foreground hover:text-foreground text-xs">
             <RotateCcw className="h-3.5 w-3.5 inline mr-1" /> Flip
           </button>
         </div>
       </header>
 
+      {/* Progress bar */}
+      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+        <div className="h-full bg-primary xp-bar-fill" style={{ width: `${(reviewedToday / (reviewedToday + cards.length)) * 100}%` }} />
+      </div>
+
       <AnimatePresence mode="wait">
         <motion.div
+          ref={cardRef}
           key={current?.id + (showBack ? "-back" : "-front")}
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.2 }}
@@ -258,7 +383,7 @@ function ReviewPage() {
           )}
         </div>
       ) : !showBack ? (
-        <button onClick={() => setShowBack(true)}
+        <button onClick={() => { Sounds.flip(); setShowBack(true); }}
           className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
           Show answer
         </button>
@@ -275,6 +400,15 @@ function ReviewPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className={`rounded-xl border p-4 ${accent ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={`mt-1 text-xl font-semibold ${accent ? "text-primary" : ""}`}>{value}</div>
     </div>
   );
 }

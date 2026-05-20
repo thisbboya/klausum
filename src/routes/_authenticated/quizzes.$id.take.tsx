@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Flag, ChevronRight, Loader2, Timer } from "lucide-react";
+import { Flag, ChevronRight, Loader2, Timer, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Sounds } from "@/lib/sounds";
 
 type Q = {
   question: string;
@@ -40,6 +41,8 @@ function TakeQuiz() {
   const [start] = useState(Date.now());
   const [secLeft, setSecLeft] = useState(timerSec ?? 0);
   const [reviewMode, setReviewMode] = useState(false);
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [flash, setFlash] = useState<"green" | "red" | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -83,7 +86,18 @@ function TakeQuiz() {
   }
 
   function pick(letter: string) {
+    if (checked[idx]) return; // locked after check
     setAnswers({ ...answers, [idx]: letter });
+    const right = letter === q.correct;
+    setChecked({ ...checked, [idx]: true });
+    if (right) {
+      Sounds.correct();
+      setFlash("green");
+    } else {
+      Sounds.wrong();
+      setFlash("red");
+    }
+    setTimeout(() => setFlash(null), 500);
   }
 
   async function finish() {
@@ -208,8 +222,12 @@ function TakeQuiz() {
   const answered = Object.keys(answers).length;
   const allAnswered = answered === total;
 
+  const isChecked = !!checked[idx];
+  const userAnswer = answers[idx];
+  const isCorrect = isChecked && userAnswer === q.correct;
+
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className={`space-y-6 max-w-2xl mx-auto transition ${flash === "green" ? "flash-green" : flash === "red" ? "flash-red" : ""}`}>
       <header>
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">{subject} · {idx + 1} / {total}</p>
@@ -221,7 +239,7 @@ function TakeQuiz() {
         </div>
         <h1 className="font-display text-xl font-semibold mt-1">{title}</h1>
         <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
-          <div className="h-full bg-primary transition-all" style={{ width: `${((idx + 1) / total) * 100}%` }} />
+          <div className="h-full bg-primary xp-bar-fill" style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
         {flags.size > 0 && (
           <div className="mt-2 flex items-center gap-2 text-[11px] text-amber-400">
@@ -242,7 +260,7 @@ function TakeQuiz() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.25 }}
-          className="rounded-xl border border-border bg-card p-6"
+          className={`rounded-xl border border-border bg-card p-6 ${isChecked && !isCorrect ? "answer-wrong" : ""}`}
         >
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-base md:text-lg leading-relaxed">{q.question}</h2>
@@ -256,17 +274,29 @@ function TakeQuiz() {
           </div>
           <div className="mt-5 space-y-2">
             {(["A", "B", "C", "D"] as const).map((letter) => {
-              const sel = answers[idx] === letter;
+              const sel = userAnswer === letter;
+              const isRightAns = letter === q.correct;
+              let cls = "border-border bg-background hover:border-primary/40";
+              if (isChecked) {
+                if (isRightAns) cls = "border-emerald-500 bg-emerald-500/15 text-emerald-400 answer-correct";
+                else if (sel) cls = "border-red-500 bg-red-500/15 text-red-400";
+                else cls = "border-border bg-background opacity-60";
+              } else if (sel) {
+                cls = "border-primary bg-primary/10 text-foreground";
+              }
               return (
                 <button
                   key={letter}
                   onClick={() => pick(letter)}
-                  className={`w-full text-left rounded-lg border px-4 py-3 text-sm transition ${
-                    sel ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background hover:border-primary/40"
-                  }`}
+                  disabled={isChecked}
+                  className={`w-full text-left rounded-lg border px-4 py-3 text-sm transition flex items-center justify-between ${cls}`}
                 >
-                  <span className="font-mono text-xs text-muted-foreground mr-2">{letter}.</span>
-                  {q.options[letter]}
+                  <span>
+                    <span className="font-mono text-xs text-muted-foreground mr-2">{letter}.</span>
+                    {q.options[letter]}
+                  </span>
+                  {isChecked && isRightAns && <Check className="h-4 w-4" />}
+                  {isChecked && sel && !isRightAns && <X className="h-4 w-4" />}
                 </button>
               );
             })}
@@ -277,6 +307,35 @@ function TakeQuiz() {
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* Duolingo-style instant feedback banner */}
+      <AnimatePresence>
+        {isChecked && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            className={`rounded-xl border p-4 ${isCorrect ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"}`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className={`font-display text-sm font-bold ${isCorrect ? "text-emerald-400" : "text-red-400"}`}>
+                  {isCorrect ? "✅ Correct!" : "❌ Incorrect"}
+                </div>
+                {!isCorrect && (
+                  <div className="text-xs text-muted-foreground mt-1">Answer: <span className="text-emerald-400 font-semibold">{q.correct}</span></div>
+                )}
+                {q.explanation && (
+                  <p className="text-xs text-muted-foreground mt-1.5">{q.explanation}</p>
+                )}
+              </div>
+              {isCorrect && <span className="shrink-0 text-primary font-bold text-sm">+ XP ⚡</span>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       <div className="flex items-center justify-between gap-3">
         <button
