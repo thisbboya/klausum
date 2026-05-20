@@ -16,6 +16,7 @@ import { Route as CompanionSelectRouteImport } from './routes/companion-select'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UHandleRouteImport } from './routes/u.$handle'
+import { Route as ApiRunCodeRouteImport } from './routes/api/run-code'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
@@ -74,6 +75,11 @@ const IndexRoute = IndexRouteImport.update({
 const UHandleRoute = UHandleRouteImport.update({
   id: '/u/$handle',
   path: '/u/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRunCodeRoute = ApiRunCodeRouteImport.update({
+  id: '/api/run-code',
+  path: '/api/run-code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/run-code': typeof ApiRunCodeRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByTo {
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/run-code': typeof ApiRunCodeRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/run-code': typeof ApiRunCodeRoute
   '/u/$handle': typeof UHandleRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -335,6 +344,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/voice'
     | '/api/chat'
+    | '/api/run-code'
     | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/voice'
     | '/api/chat'
+    | '/api/run-code'
     | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/_authenticated/videos'
     | '/_authenticated/voice'
     | '/api/chat'
+    | '/api/run-code'
     | '/u/$handle'
     | '/_authenticated/materials/$id'
     | '/_authenticated/rooms/$id'
@@ -417,6 +429,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiRunCodeRoute: typeof ApiRunCodeRoute
   UHandleRoute: typeof UHandleRoute
 }
 
@@ -469,6 +482,13 @@ declare module '@tanstack/react-router' {
       path: '/u/$handle'
       fullPath: '/u/$handle'
       preLoaderRoute: typeof UHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/run-code': {
+      id: '/api/run-code'
+      path: '/api/run-code'
+      fullPath: '/api/run-code'
+      preLoaderRoute: typeof ApiRunCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -745,8 +765,19 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiRunCodeRoute: ApiRunCodeRoute,
   UHandleRoute: UHandleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
