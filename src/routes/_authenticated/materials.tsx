@@ -204,6 +204,7 @@ function MaterialsPage() {
   async function handleFile(file: File) {
     if (file.size > 20 * 1024 * 1024) return toast.error("Max 20MB");
     const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     const t = file.name.replace(/\.[^.]+$/, "");
     if (isText) {
       const text = await file.text();
@@ -213,11 +214,22 @@ function MaterialsPage() {
       });
     } else {
       const fileBase64 = await fileToBase64(file);
+      // For PDFs, stash the raw file in storage so the in-app reader can render it.
+      let pdfStoragePath: string | undefined;
+      if (isPdf && user) {
+        const path = `${user.id}/${crypto.randomUUID()}.pdf`;
+        const { error: upErr } = await supabase.storage
+          .from("materials")
+          .upload(path, file, { contentType: "application/pdf", upsert: false, cacheControl: "3600" });
+        if (upErr) console.warn("Raw PDF upload failed (non-fatal):", upErr.message);
+        else pdfStoragePath = path;
+      }
       await runProcess({
         title: t, subject, fieldCategory: field, isStem: STEM_FIELDS.has(field),
         fileBase64, mimeType: file.type || "application/pdf",
         rawContent: `[binary file: ${file.name}]`,
-        fileName: file.name, fileType: file.type,
+        fileName: file.name, fileType: isPdf ? "pdf" : file.type,
+        pdfStoragePath,
       });
     }
   }
