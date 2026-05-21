@@ -97,6 +97,7 @@ function MaterialsPage() {
           original_content: isBinary ? "" : opts.rawContent,
           file_name: opts.fileName,
           file_type: opts.fileType,
+          pdf_storage_path: opts.pdfStoragePath ?? null,
           processing_status: "processing",
         })
         .select()
