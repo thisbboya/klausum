@@ -11,6 +11,9 @@ import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { FocusTimer } from "@/components/focus-timer";
+import { PDFViewer } from "@/components/reader/PDFViewer";
+import { MaterialAIChat } from "@/components/reader/MaterialAIChat";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
