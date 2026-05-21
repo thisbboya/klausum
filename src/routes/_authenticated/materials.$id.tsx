@@ -49,6 +49,13 @@ function MaterialDetail() {
     refetchInterval: (q) => (q.state.data?.processing_status === "processing" ? 2500 : false),
   });
 
+  const hasPdf = !!(material as any)?.pdf_storage_path;
+
+  // Default to "read" tab when a PDF is available
+  useEffect(() => {
+    if (hasPdf) setTab("read");
+  }, [hasPdf]);
+
   const { data: deck } = useQuery({
     queryKey: ["deck-for-material", id],
     enabled: !!user,
@@ -61,11 +68,12 @@ function MaterialDetail() {
   const visibleTabs = useMemo(() => {
     if (!material) return TABS;
     return TABS.filter((t) => {
+      if (t.key === "read") return hasPdf;
       if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0;
       if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
       return true;
     });
-  }, [material]);
+  }, [material, hasPdf]);
 
   async function handleDelete() {
     if (!material) return;
