@@ -154,6 +154,9 @@ function MaterialDetail() {
             ))}
           </div>
 
+          {tab === "read" && hasPdf && user && (
+            <ReadPdfTab material={material} userId={user.id} />
+          )}
           {tab === "summary" && <SummaryTab material={material} />}
           {tab === "original" && <OriginalTab material={material} />}
           {(tab === "visual" || tab === "auditory" || tab === "reading" || tab === "kinesthetic") && (
