@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      chest_openings: {
+        Row: {
+          id: string
+          opened_at: string
+          reward_gems: number
+          reward_xp: number
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          opened_at?: string
+          reward_gems?: number
+          reward_xp?: number
+          tier: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          opened_at?: string
+          reward_gems?: number
+          reward_xp?: number
+          tier?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       code_snippets: {
         Row: {
           code: string
@@ -136,6 +163,51 @@ export type Database = {
           energy?: string
           id?: string
           mood?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_quests: {
+        Row: {
+          claimed: boolean
+          completed: boolean
+          created_at: string
+          id: string
+          key: string
+          progress: number
+          quest_date: string
+          reward_gems: number
+          reward_xp: number
+          target: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          claimed?: boolean
+          completed?: boolean
+          created_at?: string
+          id?: string
+          key: string
+          progress?: number
+          quest_date?: string
+          reward_gems?: number
+          reward_xp?: number
+          target: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          claimed?: boolean
+          completed?: boolean
+          created_at?: string
+          id?: string
+          key?: string
+          progress?: number
+          quest_date?: string
+          reward_gems?: number
+          reward_xp?: number
+          target?: number
+          title?: string
           user_id?: string
         }
         Relationships: []
@@ -1413,6 +1485,10 @@ export type Database = {
           ai_messages_used: number
           youtube_videos_used: number
         }[]
+      }
+      grant_rewards: {
+        Args: { _gems: number; _xp: number }
+        Returns: undefined
       }
       has_role: {
         Args: {
