@@ -74,6 +74,7 @@ function MaterialsPage() {
     rawContent: string;
     fileName?: string;
     fileType?: string;
+    pdfStoragePath?: string;
   }) {
     if (!user) return;
     setUploading(true);
