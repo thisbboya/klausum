@@ -2,15 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flame, Sparkles, BookOpen, Brain, MessagesSquare, Plus, CalendarClock, Snowflake } from "lucide-react";
+import { BookOpen, Brain, MessagesSquare, Plus, CalendarClock } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { checkAndApplyStreakFreeze } from "@/lib/streak-freeze";
+import { refillHeartsIfDue } from "@/lib/hearts";
 
 import { WeeklyConsistency } from "@/components/weekly-consistency";
 import { CompanionHero } from "@/components/companion-hero";
 import { LeaguesCard } from "@/components/leagues-card";
+import { XpLevelCard } from "@/components/xp-level-card";
+import { HeartsRow } from "@/components/hearts-row";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -19,11 +23,14 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [hearts, setHearts] = useState<{ hearts: number; msUntilNext: number } | null>(null);
 
   useEffect(() => {
-    if (user?.id) checkAndApplyStreakFreeze(user.id).then((used) => {
+    if (!user?.id) return;
+    checkAndApplyStreakFreeze(user.id).then((used) => {
       if (used) qc.invalidateQueries({ queryKey: ["dash", user.id] });
     });
+    refillHeartsIfDue(user.id).then(setHearts).catch(() => {});
   }, [user?.id, qc]);
 
   const { data } = useQuery({
@@ -69,55 +76,51 @@ function Dashboard() {
   });
 
   const profile = data?.profile;
+  const firstName = profile?.full_name?.split(" ")[0] || "there";
 
   return (
-    <div className="space-y-6">
-
-      <header>
-        <p className="text-sm text-muted-foreground">{greeting()},</p>
-        <h1 className="font-display text-3xl font-bold mt-1">
-          {profile?.full_name?.split(" ")[0] || "Student"}.
-        </h1>
-        {profile?.primary_style && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your primary learning style is{" "}
-            <span className="text-primary font-medium capitalize">{profile.primary_style}</span>
-            {profile.secondary_style && (
-              <> — secondary <span className="capitalize">{profile.secondary_style}</span></>
-            )}
-            .
-          </p>
-        )}
-      </header>
-
+    <div className="space-y-6 pb-12">
       <CompanionHero
+        firstName={firstName}
         companionId={profile?.companion_id}
         companionName={profile?.companion_name}
         streak={profile?.streak_days}
         due={data?.dueCount}
-        hasGap={false}
+        freezes={profile?.streak_freezes}
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat icon={Flame} label="Streak" value={`${profile?.streak_days ?? 0}d`} sub={
-          (profile?.streak_freezes ?? 0) > 0 ? (
-            <span className="inline-flex items-center gap-0.5 text-[10px] text-sky-400 mt-1">
-              {Array.from({ length: profile?.streak_freezes ?? 0 }).map((_, i) => (
-                <Snowflake key={i} className="h-2.5 w-2.5" />
-              ))}
-              <span className="ml-1">freezes</span>
-            </span>
-          ) : null
-        } />
-        <Stat icon={Sparkles} label="XP" value={profile?.xp_total ?? 0} />
-        <Stat icon={Brain} label="Due cards" value={data?.dueCount ?? 0} accent />
-        <Stat icon={BookOpen} label="Total cards" value={data?.totalCards ?? 0} />
+      {hearts && (
+        <div className="flex justify-end -mt-2">
+          <HeartsRow hearts={hearts.hearts} msUntilNext={hearts.msUntilNext} />
+        </div>
+      )}
+
+      {profile?.primary_style && (
+        <p className="text-xs text-muted-foreground -mt-3">
+          Primary style:{" "}
+          <span className="text-primary font-medium capitalize">{profile.primary_style}</span>
+          {profile.secondary_style && (
+            <> · secondary <span className="capitalize">{profile.secondary_style}</span></>
+          )}
+        </p>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <XpLevelCard xp={profile?.xp_total ?? 0} />
+        <Stat
+          to="/review"
+          label="Cards due now"
+          value={data?.dueCount ?? 0}
+          sub={`of ${data?.totalCards ?? 0} total`}
+          accent
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
         <LeaguesCard />
       </div>
+
 
 
 
