@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Gem, Sparkles, Target, Check } from "lucide-react";
 import { ensureTodayQuests, claimQuest, type Quest } from "@/lib/quests";
-import { sounds } from "@/lib/sounds";
+import { Sounds as sounds } from "@/lib/sounds";
 import { toast } from "sonner";
 
 export function DailyQuests({ userId }: { userId?: string }) {
