@@ -1,24 +1,29 @@
 import { motion } from "framer-motion";
 
+/**
+ * The 10 Ghanaian Pilots of NkyinkyimIQ.
+ * IDs are stable (1–10) so existing user.companion_id values keep working.
+ */
 export type Companion = {
   id: number;
   name: string;
   trait: string;
   color: string;
+  description: string;
   shape: "blob" | "spiky" | "droopy" | "round" | "fluffy" | "fox" | "bear" | "bird" | "owl" | "eagle";
 };
 
 export const COMPANIONS: Companion[] = [
-  { id: 1, name: "KOJO", trait: "CURIOUS", color: "#F4A300", shape: "blob" },
-  { id: 2, name: "ABENA", trait: "CHILL", color: "#3B82F6", shape: "spiky" },
-  { id: 3, name: "KWAME", trait: "DREAMY", color: "#FCD34D", shape: "droopy" },
-  { id: 4, name: "AMA", trait: "STEADY", color: "#10B981", shape: "round" },
-  { id: 5, name: "YAW", trait: "GENTLE", color: "#F1F5F9", shape: "fluffy" },
-  { id: 6, name: "AKUA", trait: "BOLD", color: "#F59E0B", shape: "fox" },
-  { id: 7, name: "KOFI", trait: "COZY", color: "#92400E", shape: "bear" },
-  { id: 8, name: "EFUA", trait: "PLAYFUL", color: "#84CC16", shape: "bird" },
-  { id: 9, name: "NANA", trait: "WISE", color: "#8B5CF6", shape: "owl" },
-  { id: 10, name: "KWESI", trait: "FIERCE", color: "#60A5FA", shape: "eagle" },
+  { id: 1,  name: "ANANSE", trait: "CURIOUS",  color: "#F4A300", description: "Spider — clever trickster",     shape: "blob"   },
+  { id: 2,  name: "SUNSUM", trait: "CHILL",    color: "#3B82F6", description: "Spirit glow — calm light",      shape: "spiky"  },
+  { id: 3,  name: "ABENA",  trait: "DREAMY",   color: "#FBBF24", description: "Star child — dreamy",           shape: "droopy" },
+  { id: 4,  name: "KOFI",   trait: "STEADY",   color: "#10B981", description: "Steady warrior-tortoise",       shape: "round"  },
+  { id: 5,  name: "AWO",    trait: "GENTLE",   color: "#94A3B8", description: "Elder moon — gentle",           shape: "fluffy" },
+  { id: 6,  name: "AMMA",   trait: "BOLD",     color: "#F97316", description: "Fox — bold, fierce",            shape: "fox"    },
+  { id: 7,  name: "KWEKU",  trait: "COZY",     color: "#92400E", description: "Bear — warm, cozy",             shape: "bear"   },
+  { id: 8,  name: "KOJO",   trait: "PLAYFUL",  color: "#0D9488", description: "Parrot — playful, bright",      shape: "bird"   },
+  { id: 9,  name: "AKUA",   trait: "WISE",     color: "#8B5CF6", description: "Owl — wise, nocturnal",         shape: "owl"    },
+  { id: 10, name: "YOOFI",  trait: "FIERCE",   color: "#1D4ED8", description: "Hawk — fierce, sharp",          shape: "eagle"  },
 ];
 
 export function getCompanion(id?: number | null): Companion {

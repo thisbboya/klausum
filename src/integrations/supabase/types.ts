@@ -1201,7 +1201,10 @@ export type Database = {
           exam_curriculum: string | null
           field_of_study: string | null
           full_name: string
+          gems: number
           handle: string | null
+          hearts: number
+          hearts_last_refill: string
           id: string
           is_day1_pioneer: boolean | null
           kinesthetic_score: number | null
@@ -1240,7 +1243,10 @@ export type Database = {
           exam_curriculum?: string | null
           field_of_study?: string | null
           full_name?: string
+          gems?: number
           handle?: string | null
+          hearts?: number
+          hearts_last_refill?: string
           id: string
           is_day1_pioneer?: boolean | null
           kinesthetic_score?: number | null
@@ -1279,7 +1285,10 @@ export type Database = {
           exam_curriculum?: string | null
           field_of_study?: string | null
           full_name?: string
+          gems?: number
           handle?: string | null
+          hearts?: number
+          hearts_last_refill?: string
           id?: string
           is_day1_pioneer?: boolean | null
           kinesthetic_score?: number | null

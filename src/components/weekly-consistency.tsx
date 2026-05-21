@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Check } from "lucide-react";
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function startOfWeek(d: Date) {
   const date = new Date(d);
@@ -12,7 +13,13 @@ function startOfWeek(d: Date) {
   return date;
 }
 
-export function WeeklyConsistency({ userId, streak }: { userId?: string; streak?: number | null }) {
+export function WeeklyConsistency({
+  userId,
+  streak,
+}: {
+  userId?: string;
+  streak?: number | null;
+}) {
   const { data } = useQuery({
     queryKey: ["weekly-consistency", userId],
     enabled: !!userId,
@@ -28,37 +35,69 @@ export function WeeklyConsistency({ userId, streak }: { userId?: string; streak?
         .lt("check_date", end.toISOString().slice(0, 10));
       if (error) throw error;
       const set = new Set<string>((data ?? []).map((r) => r.check_date as string));
-      const filled = DAYS.map((_, i) => {
+      return DAY_LETTERS.map((_, i) => {
         const d = new Date(start);
         d.setDate(d.getDate() + i);
         return set.has(d.toISOString().slice(0, 10));
       });
-      return filled;
     },
   });
 
   const days = data ?? Array(7).fill(false);
   const completed = days.filter(Boolean).length;
+  const todayIdx = (() => {
+    const d = new Date().getDay();
+    return d === 0 ? 6 : d - 1; // Monday = 0 ... Sunday = 6
+  })();
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="font-display text-sm font-semibold">Weekly Consistency</h3>
         <span className="text-xs text-muted-foreground">{completed}/7 days completed</span>
       </div>
-      <div className="grid grid-cols-7 gap-1.5">
-        {days.map((on, i) => (
-          <div key={i} className="flex flex-col items-center gap-1">
-            <div
-              className={`h-3 w-full rounded-full ${on ? "bg-primary" : "bg-muted"}`}
-              title={DAYS[i]}
-            />
-            <span className="text-[10px] text-muted-foreground">{DAYS[i].slice(0, 1)}</span>
-          </div>
-        ))}
+
+      <div className="grid grid-cols-7 gap-2">
+        {DAY_LETTERS.map((letter, i) => {
+          const completed = days[i];
+          const isToday = i === todayIdx;
+          const isPast = i < todayIdx;
+
+          let circleClass = "border border-border bg-transparent text-muted-foreground";
+          if (completed && !isToday) circleClass = "bg-emerald-500 text-white border-emerald-500";
+          if (isToday && completed) circleClass = "bg-primary text-primary-foreground border-primary gold-pulse";
+          else if (isToday) circleClass = "bg-primary/20 text-primary border-primary gold-pulse";
+          else if (!completed && isPast) circleClass = "border border-border bg-muted/40 text-muted-foreground/60";
+
+          return (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <div
+                className={`h-9 w-9 rounded-full flex items-center justify-center text-[11px] font-bold transition ${circleClass}`}
+                title={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+              >
+                {completed && !isToday ? <Check className="h-4 w-4" /> : letter}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div className="mt-3 text-[10px] uppercase tracking-wide text-muted-foreground">
-        Current streak: <span className="text-foreground font-semibold">{streak ?? 0} Days</span>
+
+      <div className="mt-4 h-1 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400 transition-all duration-700"
+          style={{ width: `${(completed / 7) * 100}%` }}
+        />
+      </div>
+
+      <div className="mt-3 flex items-end justify-between">
+        <div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            Current Streak
+          </div>
+          <div className="font-display text-xl font-semibold text-foreground streak-bounce">
+            {streak ?? 0} {(streak ?? 0) === 1 ? "Day" : "Days"}
+          </div>
+        </div>
       </div>
     </div>
   );
