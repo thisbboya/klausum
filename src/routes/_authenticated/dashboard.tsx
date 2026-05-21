@@ -14,6 +14,9 @@ import { CompanionHero } from "@/components/companion-hero";
 import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { HeartsRow } from "@/components/hearts-row";
+import { DailyQuests } from "@/components/daily-quests";
+import { ChestCard } from "@/components/chest-card";
+import { ensureTodayQuests } from "@/lib/quests";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -38,7 +41,7 @@ function Dashboard() {
     enabled: !!user,
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const [profileRes, materialsRes, cardsRes, checkinRes, examsRes] = await Promise.all([
+      const [profileRes, materialsRes, cardsRes, checkinRes, examsRes, questsRes, chestRes] = await Promise.all([
         supabase.from("user_profiles").select("*").eq("id", user!.id).maybeSingle(),
         supabase
           .from("study_materials")
@@ -62,8 +65,16 @@ function Dashboard() {
           .gte("exam_date", today)
           .order("exam_date", { ascending: true })
           .limit(3),
+        ensureTodayQuests(user!.id),
+        supabase
+          .from("chest_openings")
+          .select("id")
+          .eq("user_id", user!.id)
+          .gte("opened_at", today + "T00:00:00")
+          .maybeSingle(),
       ]);
       const dueCount = (cardsRes.data ?? []).filter((c) => c.next_review_date && isDue(c.next_review_date)).length;
+      const allQuestsDone = (questsRes ?? []).length > 0 && (questsRes ?? []).every((q) => q.claimed);
       return {
         profile: profileRes.data,
         materials: materialsRes.data ?? [],
@@ -71,6 +82,7 @@ function Dashboard() {
         dueCount,
         checkin: checkinRes.data,
         exams: examsRes.data ?? [],
+        chestUnlocked: allQuestsDone && !chestRes.data,
       };
     },
   });
@@ -120,6 +132,16 @@ function Dashboard() {
         <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
         <LeaguesCard />
       </div>
+
+      <div className="grid gap-4 md:grid-cols-[1fr,300px]">
+        <DailyQuests userId={user?.id} />
+        <ChestCard userId={user?.id} tier="bronze" unlocked={!!data?.chestUnlocked} />
+      </div>
+
+
+
+
+
 
 
 
