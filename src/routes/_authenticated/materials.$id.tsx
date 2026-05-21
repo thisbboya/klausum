@@ -415,3 +415,152 @@ function ConceptGraphTab({ graph, concepts }: { graph: any[]; concepts: any[] })
     </div>
   );
 }
+
+function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
+  const isMobile = useIsMobile();
+  const [signedUrl, setSignedUrl] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const [pageText, setPageText] = useState("");
+  const [totalPages, setTotalPages] = useState(0);
+  const [mobileTab, setMobileTab] = useState<"read" | "chat">("read");
+  const [initialPage, setInitialPage] = useState(1);
+  const [initialPageReady, setInitialPageReady] = useState(false);
+
+  // Restore last read page
+  useEffect(() => {
+    supabase
+      .from("reading_progress")
+      .select("last_page")
+      .eq("user_id", userId)
+      .eq("material_id", material.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.last_page && data.last_page > 1) {
+          setInitialPage(data.last_page);
+          setPage(data.last_page);
+        }
+        setInitialPageReady(true);
+      });
+  }, [material.id, userId]);
+
+  // Refresh signed URL (2-hour expiry, refresh every 90 min)
+  useEffect(() => {
+    if (!material.pdf_storage_path) return;
+    let mounted = true;
+    async function load() {
+      const { data } = await supabase.storage
+        .from("materials")
+        .createSignedUrl(material.pdf_storage_path, 7200);
+      if (mounted && data?.signedUrl) setSignedUrl(data.signedUrl);
+    }
+    load();
+    const t = setInterval(load, 90 * 60 * 1000);
+    return () => {
+      mounted = false;
+      clearInterval(t);
+    };
+  }, [material.pdf_storage_path]);
+
+  // Save reading progress on page change
+  useEffect(() => {
+    if (!totalPages) return;
+    supabase
+      .from("reading_progress")
+      .upsert(
+        {
+          user_id: userId,
+          material_id: material.id,
+          last_page: page,
+          total_pages: totalPages,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,material_id" },
+      )
+      .then(() => {});
+    // Also persist total_pages onto study_materials once known
+    if (totalPages && !material.total_pages) {
+      supabase
+        .from("study_materials")
+        .update({ total_pages: totalPages })
+        .eq("id", material.id)
+        .then(() => {});
+    }
+  }, [page, totalPages, material.id, material.total_pages, userId]);
+
+  if (!signedUrl || !initialPageReady) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const chatProps = {
+    materialId: material.id,
+    materialTitle: material.title,
+    subject: material.subject ?? "General",
+    level: material.level ?? undefined,
+    currentPage: page,
+    totalPages: totalPages || 1,
+    currentPageText: pageText,
+    fullDocumentText: material.original_content ?? "",
+    userId,
+    userPrimaryStyle: undefined as string | undefined,
+  };
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-12rem)] rounded-xl border border-border overflow-hidden">
+        <div className="flex bg-card border-b border-border shrink-0">
+          {(["read", "chat"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setMobileTab(t)}
+              className={`flex-1 py-2.5 text-xs font-semibold transition ${
+                mobileTab === t
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {t === "read" ? "📄 Read" : "🤖 AI Chat"}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 overflow-hidden">
+          {mobileTab === "read" ? (
+            <PDFViewer
+              pdfUrl={signedUrl}
+              onPageChange={(p, txt) => {
+                setPage(p);
+                setPageText(txt);
+              }}
+              onTotalPages={setTotalPages}
+              initialPage={initialPage}
+            />
+          ) : (
+            <MaterialAIChat {...chatProps} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-13rem)] rounded-xl border border-border overflow-hidden">
+      <div className="w-[60%] border-r border-border">
+        <PDFViewer
+          pdfUrl={signedUrl}
+          onPageChange={(p, txt) => {
+            setPage(p);
+            setPageText(txt);
+          }}
+          onTotalPages={setTotalPages}
+          initialPage={initialPage}
+        />
+      </div>
+      <div className="w-[40%]">
+        <MaterialAIChat {...chatProps} />
+      </div>
+    </div>
+  );
+}
