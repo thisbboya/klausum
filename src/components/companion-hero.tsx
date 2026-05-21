@@ -1,55 +1,188 @@
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Flame, Crown, Snowflake } from "lucide-react";
 import { CompanionSVG, getCompanion } from "@/components/companion-svg";
 
-function pickMessage({
-  hour,
-  streak,
-  due,
-  hasGap,
-}: {
-  hour: number;
-  streak: number;
-  due: number;
-  hasGap: boolean;
-}) {
-  if (streak > 0) return `Day ${streak} streak — you're unstoppable! 🔥`;
-  if (due > 10) return `You have ${due} cards waiting for review — let's go!`;
-  if (hasGap) return `Let's close that gap today. You've got this.`;
-  if (hour >= 5 && hour < 12) return "Good morning! Ready to crush it today?";
-  if (hour >= 12 && hour < 18) return "Still going strong! Keep the momentum.";
-  if (hour >= 18 && hour < 24) return "Evening session — legends study at night. 🌙";
-  return "Your companion is ready. Let's learn.";
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "morning";
+  if (h < 18) return "afternoon";
+  return "evening";
+}
+
+const BUBBLE_MESSAGES = (streak: number, due: number) => [
+  "Good " + greeting() + "! Ready to crush it today? 💪",
+  "Let's review those flashcards first! 🔥",
+  due > 0 ? `${due} card${due === 1 ? "" : "s"} waiting. Let's go! 🎯` : "Your memory is fresh. Build on it! ⚡",
+  "Your memory health is climbing. Time to review! ⚡",
+  "Ayekoo! You're on a roll — keep going! 🏆",
+  "Small sessions daily beat long sessions weekly. Let's go!",
+  "One quiz away from closing a knowledge gap. 🔬",
+  streak > 0
+    ? `Day ${streak} streak — let's make it ${streak + 1}! 📚`
+    : "Start your streak today! ✨",
+];
+
+/**
+ * Deterministic pick by day so the bubble doesn't churn each render,
+ * but rotates over time inside a single session.
+ */
+function dayHash() {
+  const d = new Date();
+  return d.getFullYear() * 1000 + d.getMonth() * 50 + d.getDate();
 }
 
 export function CompanionHero({
+  firstName,
   companionId,
   companionName,
   streak,
   due,
-  hasGap,
+  freezes,
 }: {
+  firstName?: string | null;
   companionId?: number | null;
   companionName?: string | null;
   streak?: number | null;
   due?: number | null;
-  hasGap?: boolean;
+  freezes?: number | null;
 }) {
   const c = getCompanion(companionId ?? 1);
-  const msg = pickMessage({
-    hour: new Date().getHours(),
-    streak: streak ?? 0,
-    due: due ?? 0,
-    hasGap: !!hasGap,
-  });
+  const name = companionName ?? c.name;
+  const streakDays = streak ?? 0;
+  const dueCount = due ?? 0;
+
+  const messages = useMemo(
+    () => BUBBLE_MESSAGES(streakDays, dueCount),
+    [streakDays, dueCount],
+  );
+
+  // Rotate every 8s, deterministic starting point per day
+  const [idx, setIdx] = useState(dayHash() % messages.length);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % messages.length), 8000);
+    return () => clearInterval(t);
+  }, [messages.length]);
+
+  // Count-up streak number
+  const [shownStreak, setShownStreak] = useState(0);
+  useEffect(() => {
+    if (streakDays === 0) {
+      setShownStreak(0);
+      return;
+    }
+    const start = performance.now();
+    const dur = 400;
+    let raf = 0;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / dur);
+      setShownStreak(Math.round(streakDays * p));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [streakDays]);
+
+  const isCentury = streakDays >= 100;
+  const isMonth = streakDays >= 30 && !isCentury;
+  const isWeek = streakDays >= 7 && !isMonth && !isCentury;
+
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
-      <div className="flex-1 min-w-0">
-        <div className="relative inline-block bg-background border border-border rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-foreground shadow-sm">
-          {msg}
+    <div className="relative overflow-hidden rounded-3xl p-5 md:p-6 bg-gradient-to-br from-sky-50 via-blue-100 to-cyan-100 text-slate-900 shadow-md">
+      {/* Subtle topology lines (decorative) */}
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-40"
+        viewBox="0 0 400 200"
+        preserveAspectRatio="none"
+      >
+        <path d="M0 60 Q100 20 200 60 T400 60" stroke="rgba(244,163,0,0.15)" strokeWidth="1" fill="none" />
+        <path d="M0 110 Q100 75 200 110 T400 110" stroke="rgba(244,163,0,0.12)" strokeWidth="1" fill="none" />
+        <path d="M0 160 Q100 125 200 160 T400 160" stroke="rgba(244,163,0,0.1)" strokeWidth="1" fill="none" />
+      </svg>
+
+      <div className="relative flex items-center gap-4">
+        {/* Left: greeting */}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-display text-3xl md:text-4xl font-bold leading-tight text-slate-900">
+            Hey {firstName || "there"}!
+          </h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Good {greeting()} — your pilot's warmed up!
+          </p>
+
+          {/* Streak pill */}
+          <div className="mt-4 inline-flex items-center gap-3 rounded-2xl bg-white px-4 py-2 shadow-sm border border-white/80">
+            {isCentury ? (
+              <Crown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_6px_rgba(244,163,0,0.6)]" />
+            ) : (
+              <Flame
+                className={`h-5 w-5 ${
+                  isMonth
+                    ? "text-orange-500 animate-pulse"
+                    : isWeek
+                    ? "text-orange-500 animate-pulse"
+                    : "text-orange-400"
+                }`}
+              />
+            )}
+            <div>
+              <div className="text-[9px] uppercase tracking-widest text-slate-500 leading-none">
+                Streak
+              </div>
+              {streakDays === 0 ? (
+                <div className="font-display text-sm font-semibold text-slate-900">
+                  Start today ✨
+                </div>
+              ) : streakDays === 1 ? (
+                <div className="font-display text-sm font-semibold text-slate-900">
+                  Day 1 — great start! 🌱
+                </div>
+              ) : (
+                <div className="font-display text-2xl font-bold text-slate-900 leading-none streak-bounce">
+                  {shownStreak}
+                  <span className="text-xs font-medium text-slate-500 ml-1">days</span>
+                </div>
+              )}
+            </div>
+
+            {(freezes ?? 0) > 0 && (
+              <div
+                className="ml-2 flex items-center gap-0.5 border-l border-slate-200 pl-3"
+                title="Streak Freezes — auto-protect a missed day"
+              >
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Snowflake
+                    key={i}
+                    className={`h-3.5 w-3.5 ${
+                      i < (freezes ?? 0) ? "text-sky-500" : "text-slate-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col items-center shrink-0">
-        <CompanionSVG id={c.id} size={70} />
-        <span className="mt-1 text-[10px] font-bold tracking-wide text-primary">{companionName ?? c.name}</span>
+
+        {/* Right: speech bubble + pilot */}
+        <div className="flex flex-col items-end shrink-0 gap-2">
+          <div className="relative max-w-[160px] rounded-2xl rounded-br-sm bg-white px-3 py-2 text-xs text-slate-700 shadow-sm border border-white/80 min-h-[44px] flex items-center">
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={idx}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3 }}
+              >
+                {messages[idx]}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+          <div className="pilot-float">
+            <CompanionSVG id={c.id} size={72} animate={false} />
+          </div>
+          <span className="text-[10px] font-bold tracking-widest text-slate-700">{name}</span>
+        </div>
       </div>
     </div>
   );
