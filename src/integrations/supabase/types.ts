@@ -517,6 +517,44 @@ export type Database = {
         }
         Relationships: []
       }
+      material_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          material_id: string
+          page_number: number | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          material_id: string
+          page_number?: number | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          material_id?: string
+          page_number?: number | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_chat_messages_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mind_maps: {
         Row: {
           created_at: string | null
@@ -654,6 +692,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      reading_progress: {
+        Row: {
+          last_page: number
+          material_id: string
+          total_pages: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_page?: number
+          material_id: string
+          total_pages?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_page?: number
+          material_id?: string
+          total_pages?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_progress_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       room_members: {
         Row: {
@@ -885,11 +955,14 @@ export type Database = {
           key_concepts: Json | null
           level: string | null
           original_content: string
+          pdf_storage_path: string | null
+          pdf_storage_url: string | null
           processing_error: string | null
           processing_status: string | null
           subject: string
           tags: string[] | null
           title: string
+          total_pages: number | null
           updated_at: string | null
           user_id: string
           word_count: number | null
@@ -916,11 +989,14 @@ export type Database = {
           key_concepts?: Json | null
           level?: string | null
           original_content: string
+          pdf_storage_path?: string | null
+          pdf_storage_url?: string | null
           processing_error?: string | null
           processing_status?: string | null
           subject?: string
           tags?: string[] | null
           title: string
+          total_pages?: number | null
           updated_at?: string | null
           user_id: string
           word_count?: number | null
@@ -947,11 +1023,14 @@ export type Database = {
           key_concepts?: Json | null
           level?: string | null
           original_content?: string
+          pdf_storage_path?: string | null
+          pdf_storage_url?: string | null
           processing_error?: string | null
           processing_status?: string | null
           subject?: string
           tags?: string[] | null
           title?: string
+          total_pages?: number | null
           updated_at?: string | null
           user_id?: string
           word_count?: number | null
