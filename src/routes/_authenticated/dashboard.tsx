@@ -204,17 +204,30 @@ function greeting() {
   return "Maadwo";
 }
 
-function Stat({ icon: Icon, label, value, accent, sub }: any) {
-  return (
-    <div className={`rounded-xl border p-4 ${accent ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
+function Stat({ icon: Icon, label, value, accent, sub, to }: any) {
+  const inner = (
+    <>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" /> {label}
+        {Icon ? <Icon className="h-3.5 w-3.5" /> : null} {label}
       </div>
-      <div className={`mt-1 text-2xl font-semibold ${accent ? "text-primary" : ""}`}>{value}</div>
-      {sub}
-    </div>
+      <div className={`mt-1 font-display text-3xl font-bold ${accent ? "text-primary" : ""}`}>
+        {value}
+      </div>
+      {sub ? <div className="mt-1 text-xs text-muted-foreground">{sub}</div> : null}
+    </>
+  );
+  const cls = `block rounded-2xl border p-5 transition ${
+    accent ? "border-primary/40 bg-primary/5 hover:bg-primary/10" : "border-border bg-card hover:border-primary/40"
+  }`;
+  return to ? (
+    <Link to={to} className={cls}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={cls}>{inner}</div>
   );
 }
+
 
 function ActionCard({ to, icon: Icon, title, desc, highlight }: any) {
   return (
