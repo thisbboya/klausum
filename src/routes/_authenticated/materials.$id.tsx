@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/materials/$id")({
 });
 
 const TABS = [
+  { key: "read", label: "📖 Read PDF", color: "text-foreground" },
   { key: "summary", label: "Summary", color: "text-foreground" },
   { key: "original", label: "📄 Original", color: "text-foreground" },
   { key: "visual", label: "👁️ Visual", color: "text-[color:var(--color-visual)]" },
