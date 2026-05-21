@@ -5,8 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { KlausumMark } from "@/components/klausum-mark";
+import { COMPANIONS, CompanionSVG } from "@/components/companion-svg";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
+
 
 type Q = { q: string; options: { label: string; style: "visual" | "auditory" | "reading" | "kinesthetic" }[] };
 
@@ -188,6 +190,8 @@ function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [pilotId, setPilotId] = useState<number | null>(null);
+  const [pilotConfirmed, setPilotConfirmed] = useState(false);
   const [scores, setScores] = useState({ visual: 0, auditory: 0, reading: 0, kinesthetic: 0 });
   const [name, setName] = useState("");
   const [country, setCountry] = useState("Ghana");
@@ -202,13 +206,15 @@ function Onboarding() {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
   }
 
-  const totalSteps = QUESTIONS.length + 2; // intro + questions + profile
+  const totalSteps = QUESTIONS.length + 2; // intro/pilot + questions + profile
 
   async function complete() {
     setSubmitting(true);
     const top = (Object.entries(scores).sort((a, b) => b[1] - a[1]) as [keyof typeof scores, number][]);
     const primary = top[0][0];
     const secondary = top[1][0];
+
+    const chosen = COMPANIONS.find((c) => c.id === pilotId) ?? COMPANIONS[0];
 
     const { error } = await supabase
       .from("user_profiles")
@@ -225,12 +231,15 @@ function Onboarding() {
         secondary_style: secondary,
         vark_completed: true,
         onboarding_completed: true,
-      });
+        companion_id: chosen.id,
+        companion_name: chosen.name,
+      } as any);
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success(`Your primary style: ${primary}!`);
-    navigate({ to: "/companion-select" });
+    toast.success(`Welcome aboard, ${chosen.name} is ready! 🎉`);
+    navigate({ to: "/dashboard" });
   }
+
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -256,11 +265,70 @@ function Onboarding() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {step === 0 && (
+          {step === 0 && !pilotConfirmed && (
+            <div>
+              <div className="text-center">
+                <h1 className="font-display text-3xl font-bold">Akwaaba — welcome.</h1>
+                <p className="mt-2 text-muted-foreground">
+                  First, pick your <span className="text-primary font-semibold">Pilot</span>.
+                  Your companion will guide every session — celebrate wins, nudge streaks, and keep you company.
+                </p>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {COMPANIONS.map((c) => {
+                  const selected = pilotId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setPilotId(c.id)}
+                      className={`group rounded-2xl border-2 p-3 transition text-center ${
+                        selected
+                          ? "border-primary bg-primary/10 shadow-[var(--shadow-glow)] scale-[1.02]"
+                          : "border-border bg-card hover:border-primary/40 hover:-translate-y-0.5"
+                      }`}
+                    >
+                      <div className="flex justify-center">
+                        <CompanionSVG id={c.id} size={64} animate={selected} />
+                      </div>
+                      <div className="mt-2 font-display text-sm font-bold tracking-wide">{c.name}</div>
+                      <div
+                        className="inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-widest text-white"
+                        style={{ backgroundColor: c.color }}
+                      >
+                        {c.trait}
+                      </div>
+                      <div className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2">
+                        {c.description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                disabled={pilotId === null}
+                onClick={() => setPilotConfirmed(true)}
+                className="mt-6 w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {pilotId === null ? "Pick a pilot to continue" : "Lock in my pilot →"}
+              </button>
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                You can change your pilot later in Settings.
+              </p>
+            </div>
+          )}
+
+          {step === 0 && pilotConfirmed && (
             <div className="text-center">
-              <h1 className="font-display text-3xl font-bold">Akwaaba — welcome.</h1>
+              <div className="flex justify-center">
+                <CompanionSVG id={pilotId ?? 1} size={120} />
+              </div>
+              <h1 className="mt-4 font-display text-3xl font-bold">
+                {COMPANIONS.find((c) => c.id === pilotId)?.name} is ready! 🎉
+              </h1>
               <p className="mt-3 text-muted-foreground">
-                We'll ask {QUESTIONS.length} quick questions to discover how you learn best, then tailor every lesson to your mind.
+                Now {QUESTIONS.length} quick questions to discover how you learn best, so we can tailor every lesson to your mind.
               </p>
               <button
                 onClick={() => setStep(1)}
@@ -270,6 +338,7 @@ function Onboarding() {
               </button>
             </div>
           )}
+
 
           {step > 0 && step <= QUESTIONS.length && (() => {
             const q = QUESTIONS[step - 1];
