@@ -138,6 +138,24 @@ function Dashboard() {
         <ChestCard userId={user?.id} tier="bronze" unlocked={!!data?.chestUnlocked} />
       </div>
 
+      <Link
+        to="/wrapped"
+        className="group relative block overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 via-fuchsia-500/10 to-indigo-500/20 p-6 transition hover:border-primary/60"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">✨ New</p>
+            <h3 className="mt-1 font-display text-2xl font-bold">Your Klausum Wrapped is ready</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              12 cinematic slides of your learning year — share them, save them, own them.
+            </p>
+          </div>
+          <span className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground group-hover:opacity-90">
+            Open →
+          </span>
+        </div>
+      </Link>
+
 
 
 
