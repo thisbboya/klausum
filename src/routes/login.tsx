@@ -38,8 +38,11 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <AuthSidePanel />
+      <div className="flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
+
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 text-primary">
           <KlausumMark size={32} />
           <span className="font-display text-lg font-semibold">Klausum</span>
