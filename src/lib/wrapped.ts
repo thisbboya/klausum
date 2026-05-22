@@ -166,6 +166,6 @@ export async function saveWrappedSnapshot(userId: string, data: WrappedData) {
   await supabase.from("wrapped_snapshots").insert({
     user_id: userId,
     period: "all_time",
-    data: data as unknown as Record<string, unknown>,
+    data: JSON.parse(JSON.stringify(data)),
   });
 }
