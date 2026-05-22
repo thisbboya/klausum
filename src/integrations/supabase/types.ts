@@ -1290,6 +1290,7 @@ export type Database = {
           reading_score: number | null
           school: string | null
           secondary_style: string | null
+          semester_start_date: string | null
           sounds_enabled: boolean
           streak_days: number | null
           streak_freeze_used_date: string | null
@@ -1332,6 +1333,7 @@ export type Database = {
           reading_score?: number | null
           school?: string | null
           secondary_style?: string | null
+          semester_start_date?: string | null
           sounds_enabled?: boolean
           streak_days?: number | null
           streak_freeze_used_date?: string | null
@@ -1374,6 +1376,7 @@ export type Database = {
           reading_score?: number | null
           school?: string | null
           secondary_style?: string | null
+          semester_start_date?: string | null
           sounds_enabled?: boolean
           streak_days?: number | null
           streak_freeze_used_date?: string | null
@@ -1439,6 +1442,33 @@ export type Database = {
           summary?: string | null
           title?: string
           transcript?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wrapped_snapshots: {
+        Row: {
+          created_at: string
+          data: Json
+          generated_at: string
+          id: string
+          period: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          generated_at?: string
+          id?: string
+          period?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          generated_at?: string
+          id?: string
+          period?: string
           user_id?: string
         }
         Relationships: []
