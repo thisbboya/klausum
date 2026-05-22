@@ -20,6 +20,7 @@ import { Route as ApiYoutubeSearchRouteImport } from './routes/api/youtube-searc
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as ApiRunCodeRouteImport } from './routes/api/run-code'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AuthenticatedWrappedRouteImport } from './routes/_authenticated/wrapped'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
@@ -98,6 +99,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWrappedRoute = AuthenticatedWrappedRouteImport.update({
+  id: '/wrapped',
+  path: '/wrapped',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedVoiceRoute = AuthenticatedVoiceRouteImport.update({
   id: '/voice',
@@ -249,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
+  '/wrapped': typeof AuthenticatedWrappedRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -285,6 +292,7 @@ export interface FileRoutesByTo {
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/voice': typeof AuthenticatedVoiceRoute
+  '/wrapped': typeof AuthenticatedWrappedRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -323,6 +331,7 @@ export interface FileRoutesById {
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
+  '/_authenticated/wrapped': typeof AuthenticatedWrappedRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -361,6 +370,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/videos'
     | '/voice'
+    | '/wrapped'
     | '/api/chat'
     | '/api/run-code'
     | '/api/transcribe'
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/videos'
     | '/voice'
+    | '/wrapped'
     | '/api/chat'
     | '/api/run-code'
     | '/api/transcribe'
@@ -434,6 +445,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tutor'
     | '/_authenticated/videos'
     | '/_authenticated/voice'
+    | '/_authenticated/wrapped'
     | '/api/chat'
     | '/api/run-code'
     | '/api/transcribe'
@@ -537,6 +549,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/wrapped': {
+      id: '/_authenticated/wrapped'
+      path: '/wrapped'
+      fullPath: '/wrapped'
+      preLoaderRoute: typeof AuthenticatedWrappedRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/voice': {
       id: '/_authenticated/voice'
@@ -768,6 +787,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedVoiceRoute: typeof AuthenticatedVoiceRoute
+  AuthenticatedWrappedRoute: typeof AuthenticatedWrappedRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -791,6 +811,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedVoiceRoute: AuthenticatedVoiceRoute,
+  AuthenticatedWrappedRoute: AuthenticatedWrappedRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
