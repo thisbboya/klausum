@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { KlausumMark } from "@/components/klausum-mark";
+import { AuthSidePanel } from "@/components/auth-side-panel";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
@@ -66,8 +67,11 @@ function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <AuthSidePanel />
+      <div className="flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
+
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 text-primary">
           <KlausumMark size={32} />
           <span className="font-display text-lg font-semibold">Klausum</span>
@@ -151,6 +155,7 @@ function SignupPage() {
             </form>
           </>
         )}
+      </div>
       </div>
     </div>
   );
