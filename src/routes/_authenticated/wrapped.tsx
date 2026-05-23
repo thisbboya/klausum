@@ -111,7 +111,7 @@ function WrappedPage() {
 }
 
 
-function SlideShell({ bg, children, shareable }: { bg: string; children: React.ReactNode; shareable?: boolean }) {
+function SlideShell({ bg, children, shareable, label }: { bg: string; children: React.ReactNode; shareable?: boolean; label?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   async function share() {
     if (!ref.current) return;
@@ -133,11 +133,18 @@ function SlideShell({ bg, children, shareable }: { bg: string; children: React.R
     } catch { toast.error("Couldn't capture slide"); }
   }
   return (
-    <div ref={ref} className={`relative flex h-full w-full max-w-md flex-col items-center justify-center rounded-3xl p-8 text-center ${bg}`}>
-      <div className="absolute left-6 top-6 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest opacity-70">
+    <div
+      ref={ref}
+      className={`relative flex h-full w-full max-w-md flex-col items-center justify-center overflow-hidden rounded-3xl px-6 py-16 text-center sm:px-8 ${bg}`}
+      style={{ minHeight: "min(844px, calc(100vh - 24px))" }}
+    >
+      <div className="absolute left-6 top-6 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] opacity-70">
         <Sparkles className="h-3 w-3" /> Klausum Wrapped
       </div>
-      {children}
+      {label && (
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">{label}</p>
+      )}
+      <div className="flex flex-col items-center justify-center gap-2">{children}</div>
       {shareable && (
         <button onClick={share} className="absolute bottom-6 right-6 flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium backdrop-blur hover:bg-white/25">
           <Share2 className="h-3.5 w-3.5" /> Share
@@ -152,60 +159,102 @@ function StatNumber({ value, suffix = "" }: { value: number; suffix?: string }) 
   return <span>{v.toLocaleString()}{suffix}</span>;
 }
 
+function PilotOrb({ emoji, big = false }: { emoji: string; big?: boolean }) {
+  const size = big ? "h-24 w-24 text-5xl" : "h-20 w-20 text-4xl";
+  return (
+    <div
+      className={`flex ${size} items-center justify-center rounded-full border-2 border-white/30 bg-white/20 backdrop-blur-sm`}
+      style={{ boxShadow: "0 0 40px rgba(255,255,255,0.2)", animation: "klausumPilotFloat 3s ease-in-out infinite" }}
+    >
+      {emoji}
+    </div>
+  );
+}
+
 function buildSlides(d: WrappedData) {
   const s: React.ReactNode[] = [];
+  const pilotEmoji = "🦅";
+  const period: "weekly" | "monthly" | "semester" | "yearly" = "semester";
+  const closingLine = { weekly: "See you next Sunday.", monthly: "See you next month.", semester: "See you at the end of semester.", yearly: "See you next year." }[period];
+  const pilotQuote = { weekly: "Another week in the books. Keep the momentum.", monthly: "A whole month of learning. Look at what you built.", semester: "You showed up. You did the work. You got smarter.", yearly: "One full year of learning. You are not the same person you were." }[period];
+  const slideTitleEra = { weekly: "YOUR WEEK", monthly: "YOUR MONTH", semester: "YOUR SEMESTER", yearly: "YOUR YEAR" }[period];
 
   // 1 — Cover
   s.push(
     <SlideShell key="cover" bg="bg-gradient-to-br from-primary via-orange-500 to-fuchsia-600">
-      <p className="text-sm font-medium uppercase tracking-widest text-white/80">Welcome back, {d.fullName.split(" ")[0]}</p>
-      <h1 className="mt-4 font-display text-6xl font-black leading-none">Your<br/>Year in<br/>Learning.</h1>
-      <p className="mt-6 text-sm text-white/80">Tap to begin →</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">Welcome back, {d.fullName.split(" ")[0] || "Pilot"}</p>
+      <h1 className="mt-3 font-display text-6xl font-black leading-none">Your<br/>{slideTitleEra.split(" ")[1]}<br/>in Learning.</h1>
+      <div className="mt-8"><PilotOrb emoji={pilotEmoji} /></div>
+      <p className="mt-3 text-sm text-white/70">{d.companionName} has your story ready</p>
+      <p className="mt-6 text-xs text-white/60">Tap to begin →</p>
     </SlideShell>
   );
 
-  // 2 — Total minutes
-  s.push(
-    <SlideShell key="minutes" bg="bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-600" shareable>
-      <p className="text-sm uppercase tracking-widest text-white/70">You studied for</p>
-      <p className="mt-4 font-display text-7xl font-black"><StatNumber value={d.totals.studyMinutes} /></p>
-      <p className="mt-2 text-2xl font-semibold">minutes</p>
-      <p className="mt-6 max-w-xs text-sm text-white/70">
-        That's {d.totals.studyHours} hours of pure focus across {d.totals.sessions} sessions.
-      </p>
-    </SlideShell>
-  );
+  // 2 — Minutes (zero-state aware)
+  if (d.totals.studyMinutes === 0) {
+    s.push(
+      <SlideShell key="minutes" bg="bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-600" shareable label="YOUR JOURNEY BEGINS">
+        <p className="font-display text-4xl font-black leading-tight">Your story<br/>starts now.</p>
+        <p className="mt-5 max-w-xs text-sm text-white/80">Every Klausum journey begins with a single session. This is your first chapter.</p>
+      </SlideShell>
+    );
+  } else {
+    s.push(
+      <SlideShell key="minutes" bg="bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-600" shareable label="YOU STUDIED FOR">
+        <p className="font-display text-7xl font-black leading-none"><StatNumber value={d.totals.studyMinutes} /></p>
+        <p className="mt-2 text-xl font-semibold text-white/90">minutes</p>
+        <p className="mt-5 max-w-xs text-sm text-white/70">
+          That's {d.totals.studyHours} hours of pure focus across {d.totals.sessions} sessions.
+        </p>
+      </SlideShell>
+    );
+  }
 
   // 3 — Cards reviewed
-  s.push(
-    <SlideShell key="cards" bg="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700" shareable>
-      <p className="text-sm uppercase tracking-widest text-white/70">You reviewed</p>
-      <p className="mt-4 font-display text-7xl font-black"><StatNumber value={d.totals.cardsReviewed} /></p>
-      <p className="mt-2 text-2xl font-semibold">flashcards</p>
-      <p className="mt-6 max-w-xs text-sm text-white/80">
-        And nailed <span className="font-bold text-white">{d.totals.cardsAcedFirstTry}</span> of them with a confident response.
-      </p>
-    </SlideShell>
-  );
+  if (d.totals.cardsReviewed === 0) {
+    s.push(
+      <SlideShell key="cards" bg="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700" shareable label="YOUR DECK AWAITS">
+        <p className="font-display text-4xl font-black leading-tight">Ready to remember<br/>everything.</p>
+        <p className="mt-5 max-w-xs text-sm text-white/80">Upload a note, generate cards, and watch your memory get a superpower.</p>
+      </SlideShell>
+    );
+  } else {
+    s.push(
+      <SlideShell key="cards" bg="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700" shareable label="YOU REVIEWED">
+        <p className="font-display text-7xl font-black leading-none"><StatNumber value={d.totals.cardsReviewed} /></p>
+        <p className="mt-2 text-xl font-semibold text-white/90">flashcards</p>
+        <p className="mt-5 max-w-xs text-sm text-white/80">
+          And nailed <span className="font-bold text-white">{d.totals.cardsAcedFirstTry}</span> of them with a confident response.
+        </p>
+      </SlideShell>
+    );
+  }
 
   // 4 — XP earned
-  s.push(
-    <SlideShell key="xp" bg="bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600" shareable>
-      <p className="text-sm uppercase tracking-widest text-white/80">Total XP earned</p>
-      <p className="mt-4 font-display text-7xl font-black"><StatNumber value={d.totals.xpEarned} /></p>
-      <p className="mt-2 text-2xl font-semibold">XP</p>
-      <p className="mt-6 max-w-xs text-sm text-white/80">Every correct answer, every quest claimed, every flame kept alive.</p>
-    </SlideShell>
-  );
+  if (d.totals.xpEarned === 0) {
+    s.push(
+      <SlideShell key="xp" bg="bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600" shareable label="YOUR XP STORY">
+        <p className="font-display text-5xl font-black">Ready to earn.</p>
+        <p className="mt-5 max-w-xs text-sm text-white/85">Every quest completed, every card reviewed, every gap closed — all earn XP. Start today.</p>
+      </SlideShell>
+    );
+  } else {
+    s.push(
+      <SlideShell key="xp" bg="bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600" shareable label="TOTAL XP EARNED">
+        <p className="font-display text-7xl font-black leading-none"><StatNumber value={d.totals.xpEarned} /></p>
+        <p className="mt-2 text-xl font-semibold text-white/90">XP</p>
+        <p className="mt-5 max-w-xs text-sm text-white/85">Every correct answer, every quest claimed, every flame kept alive.</p>
+      </SlideShell>
+    );
+  }
 
   // 5 — Top subject
   if (d.topSubject) {
     s.push(
-      <SlideShell key="subject" bg="bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-700" shareable>
-        <p className="text-sm uppercase tracking-widest text-white/70">You spent the most time on</p>
-        <p className="mt-4 font-display text-5xl font-black">{d.topSubject.name}</p>
-        <p className="mt-3 text-xl">{d.topSubject.minutes} minutes deep</p>
-        <p className="mt-6 max-w-xs text-sm text-white/80">More than any other topic. You're becoming dangerous in this subject.</p>
+      <SlideShell key="subject" bg="bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-700" shareable label="YOU SPENT THE MOST TIME ON">
+        <p className="font-display text-5xl font-black">{d.topSubject.name}</p>
+        <p className="mt-3 text-xl text-white/90">{d.topSubject.minutes} minutes deep</p>
+        <p className="mt-5 max-w-xs text-sm text-white/80">More than any other topic. You're becoming dangerous in this subject.</p>
       </SlideShell>
     );
   }
@@ -213,10 +262,9 @@ function buildSlides(d: WrappedData) {
   // 6 — Peak hour
   if (d.peakHour) {
     s.push(
-      <SlideShell key="hour" bg="bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900" shareable>
-        <p className="text-sm uppercase tracking-widest text-white/70">Your prime time</p>
-        <p className="mt-4 font-display text-5xl font-black">{d.peakHour.hourLabel}</p>
-        <p className="mt-6 max-w-xs text-sm text-white/80">
+      <SlideShell key="hour" bg="bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900" shareable label="YOUR PRIME TIME">
+        <p className="font-display text-5xl font-black">{d.peakHour.hourLabel}</p>
+        <p className="mt-5 max-w-xs text-sm text-white/80">
           You studied here more than any other time of day. Your brain knows when it's ready.
         </p>
       </SlideShell>
@@ -226,11 +274,10 @@ function buildSlides(d: WrappedData) {
   // 7 — Toughest card
   if (d.toughestCard) {
     s.push(
-      <SlideShell key="tough" bg="bg-gradient-to-br from-red-700 via-rose-700 to-orange-700" shareable>
-        <p className="text-sm uppercase tracking-widest text-white/80">Your nemesis card</p>
-        <p className="mt-4 line-clamp-4 font-display text-2xl font-bold italic">"{d.toughestCard.front}"</p>
+      <SlideShell key="tough" bg="bg-gradient-to-br from-red-700 via-rose-700 to-orange-700" shareable label="YOUR NEMESIS CARD">
+        <p className="line-clamp-4 max-w-xs font-display text-2xl font-bold italic">"{d.toughestCard.front}"</p>
         <p className="mt-4 text-lg">You wrestled with it <span className="font-black">{d.toughestCard.lapses}</span> times.</p>
-        <p className="mt-4 max-w-xs text-sm text-white/80">But you kept showing up. That's how mastery is built.</p>
+        <p className="mt-3 max-w-xs text-sm text-white/80">But you kept showing up. That's how mastery is built.</p>
       </SlideShell>
     );
   }
@@ -238,52 +285,62 @@ function buildSlides(d: WrappedData) {
   // 8 — Fastest quiz
   if (d.fastestQuiz) {
     s.push(
-      <SlideShell key="speed" bg="bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800" shareable>
-        <p className="text-sm uppercase tracking-widest text-white/70">Your fastest quiz</p>
-        <p className="mt-4 font-display text-2xl font-bold">{d.fastestQuiz.title}</p>
-        <p className="mt-3 font-display text-6xl font-black">{d.fastestQuiz.secondsPerQuestion}s</p>
-        <p className="mt-2 text-sm">per question</p>
+      <SlideShell key="speed" bg="bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800" shareable label="YOUR FASTEST QUIZ">
+        <p className="font-display text-xl font-bold">{d.fastestQuiz.title}</p>
+        <p className="mt-3 font-display text-6xl font-black"><StatNumber value={d.fastestQuiz.secondsPerQuestion} />s</p>
+        <p className="mt-2 text-sm text-white/80">per question</p>
       </SlideShell>
     );
   }
 
-  // 9 — Streak
-  s.push(
-    <SlideShell key="streak" bg="bg-gradient-to-br from-orange-600 via-red-600 to-rose-700" shareable>
-      <p className="text-sm uppercase tracking-widest text-white/80">Longest streak</p>
-      <p className="mt-4 font-display text-8xl font-black">🔥{d.totals.longestStreak}</p>
-      <p className="mt-2 text-xl font-semibold">days in a row</p>
-      <p className="mt-6 max-w-xs text-sm text-white/80">
-        {d.totals.longestStreak >= 7 ? "Discipline > motivation. You proved it." : "Every legend starts with day one."}
-      </p>
-    </SlideShell>
-  );
+  // 9 — Streak (zero-state aware)
+  if (d.totals.longestStreak === 0) {
+    s.push(
+      <SlideShell key="streak" bg="bg-gradient-to-br from-orange-600 via-red-600 to-rose-700" shareable label="YOUR STREAK STORY">
+        <p className="font-display text-6xl font-black">Day 1</p>
+        <p className="mt-2 text-xl font-semibold text-white/90">starts now</p>
+        <p className="mt-5 max-w-xs text-sm text-white/80">The best streaks begin with a single decision. Make it today.</p>
+      </SlideShell>
+    );
+  } else {
+    s.push(
+      <SlideShell key="streak" bg="bg-gradient-to-br from-orange-600 via-red-600 to-rose-700" shareable label="LONGEST STREAK">
+        <p className="font-display text-7xl font-black leading-none">🔥<StatNumber value={d.totals.longestStreak} /></p>
+        <p className="mt-2 text-xl font-semibold text-white/90">{d.totals.longestStreak === 1 ? "day strong" : "days in a row"}</p>
+        <p className="mt-5 max-w-xs text-sm text-white/80">
+          {d.totals.longestStreak >= 7 ? "Discipline > motivation. You proved it." : "Every single one of those days, you chose to show up."}
+        </p>
+      </SlideShell>
+    );
+  }
 
   // 10 — VARK radar
-  s.push(
-    <SlideShell key="vark" bg="bg-gradient-to-br from-purple-800 via-violet-800 to-indigo-900" shareable>
-      <p className="text-sm uppercase tracking-widest text-white/70">How your mind learns</p>
-      <p className="mt-2 font-display text-2xl font-bold">Your VARK signature</p>
-      <div className="mt-4 h-64 w-full">
-        <ResponsiveContainer>
-          <RadarChart data={d.varkRadar} outerRadius="75%">
-            <PolarGrid stroke="rgba(255,255,255,0.2)" />
-            <PolarAngleAxis dataKey="subject" tick={{ fill: "#fff", fontSize: 12 }} />
-            <PolarRadiusAxis tick={false} axisLine={false} />
-            <Radar dataKey="A" stroke="#F4A300" fill="#F4A300" fillOpacity={0.55} />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    </SlideShell>
-  );
+  {
+    const dominant = [...d.varkRadar].sort((a, b) => b.A - a.A)[0]?.subject ?? "Balanced";
+    s.push(
+      <SlideShell key="vark" bg="bg-gradient-to-br from-purple-800 via-violet-800 to-indigo-900" shareable label="HOW YOUR MIND LEARNS">
+        <p className="font-display text-2xl font-bold">Your VARK signature</p>
+        <div className="mt-3 h-[260px] w-[260px]">
+          <ResponsiveContainer>
+            <RadarChart data={d.varkRadar} outerRadius="80%">
+              <PolarGrid stroke="rgba(255,255,255,0.25)" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: "#fff", fontSize: 12 }} />
+              <PolarRadiusAxis tick={false} axisLine={false} />
+              <Radar dataKey="A" stroke="#F4A300" fill="#F4A300" fillOpacity={0.55} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+        <p className="mt-2 text-base font-medium text-white">Your dominant style: {dominant}</p>
+      </SlideShell>
+    );
+  }
 
   // 11 — Rank
   if (d.rank) {
     s.push(
-      <SlideShell key="rank" bg="bg-gradient-to-br from-emerald-700 via-green-700 to-teal-800" shareable>
-        <p className="text-sm uppercase tracking-widest text-white/70">You're in the top</p>
-        <p className="mt-4 font-display text-8xl font-black">{d.rank.percentile}%</p>
-        <p className="mt-2 text-lg">of {d.rank.total.toLocaleString()} Klausum learners this week</p>
+      <SlideShell key="rank" bg="bg-gradient-to-br from-emerald-700 via-green-700 to-teal-800" shareable label="YOU'RE IN THE TOP">
+        <p className="font-display text-8xl font-black"><StatNumber value={d.rank.percentile} />%</p>
+        <p className="mt-3 text-base text-white/85">of {d.rank.total.toLocaleString()} Klausum learners this week</p>
       </SlideShell>
     );
   }
@@ -291,18 +348,13 @@ function buildSlides(d: WrappedData) {
   // 12 — Outro
   s.push(
     <SlideShell key="outro" bg="bg-gradient-to-br from-primary via-amber-500 to-rose-600" shareable>
-      <p className="text-sm uppercase tracking-widest text-white/80">{d.companionName} says</p>
-      <h2 className="mt-4 font-display text-4xl font-black leading-tight">
-        You showed up.<br/>You did the work.<br/>You got smarter.
-      </h2>
-      <p className="mt-6 text-lg font-semibold">See you next year.</p>
+      <PilotOrb emoji={pilotEmoji} big />
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">{d.companionName} says</p>
+      <h2 className="mt-3 font-display text-3xl font-black leading-tight">{pilotQuote}</h2>
+      <p className="mt-5 text-base font-semibold text-white/90">{closingLine}</p>
       <button
-        onClick={() => {
-          const a = document.createElement("a");
-          a.href = "/dashboard";
-          window.location.href = "/dashboard";
-        }}
-        className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black hover:bg-white/90"
+        onClick={() => { window.location.href = "/dashboard"; }}
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black hover:bg-white/90"
       >
         <Download className="h-4 w-4" /> Back to dashboard
       </button>
@@ -311,3 +363,4 @@ function buildSlides(d: WrappedData) {
 
   return s;
 }
+
