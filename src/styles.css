@@ -6,10 +6,20 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * NkyinkyimIQ Design System
+ * Klausum Design System
  * Deep navy + Ghana gold. Dark-first.
  * All colors in oklch.
  */
+
+@keyframes klausumSlowRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes klausumPilotFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
 
 @theme inline {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
