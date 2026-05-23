@@ -63,10 +63,16 @@ function WrappedPage() {
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden bg-[#0a0f1f] text-white">
       {/* Progress bars */}
-      <div className="absolute left-4 right-4 top-4 z-20 flex gap-1">
+      <div className="absolute left-3 right-3 top-3 z-20 flex gap-1">
         {slides.map((_, i) => (
-          <div key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-white/15">
-            <div className={`h-full bg-white transition-all duration-300 ${i < idx ? "w-full" : i === idx ? "w-full" : "w-0"}`} />
+          <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
+            <div
+              className="h-full transition-all duration-300"
+              style={{
+                width: i <= idx ? "100%" : "0%",
+                background: i < idx ? "rgba(255,255,255,0.9)" : i === idx ? "#ffffff" : "transparent",
+              }}
+            />
           </div>
         ))}
       </div>
@@ -74,7 +80,7 @@ function WrappedPage() {
       {/* Close */}
       <button
         onClick={() => navigate({ to: "/dashboard" })}
-        className="absolute right-4 top-8 z-20 rounded-full bg-white/10 p-2 backdrop-blur hover:bg-white/20"
+        className="absolute right-3 top-7 z-20 rounded-full bg-white/10 p-2 backdrop-blur hover:bg-white/20"
         aria-label="Close"
       >
         <X className="h-5 w-5" />
@@ -84,9 +90,9 @@ function WrappedPage() {
       <button className="absolute inset-y-0 left-0 z-10 w-1/3" onClick={prev} aria-label="Previous" />
       <button className="absolute inset-y-0 right-0 z-10 w-1/3" onClick={next} aria-label="Next" />
 
-      {/* Nav arrows (desktop) */}
-      <button onClick={prev} className="absolute left-4 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-white/10 p-2 backdrop-blur hover:bg-white/20 md:block"><ChevronLeft className="h-6 w-6" /></button>
-      <button onClick={next} className="absolute right-4 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-white/10 p-2 backdrop-blur hover:bg-white/20 md:block"><ChevronRight className="h-6 w-6" /></button>
+      {/* Nav arrows */}
+      <button onClick={prev} className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur hover:bg-black/50"><ChevronLeft className="h-5 w-5" /></button>
+      <button onClick={next} className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur hover:bg-black/50"><ChevronRight className="h-5 w-5" /></button>
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -95,7 +101,7 @@ function WrappedPage() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.02 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0 flex items-center justify-center px-6"
+          className="absolute inset-0 flex items-center justify-center p-2 sm:p-6"
         >
           {slides[idx]}
         </motion.div>
@@ -103,6 +109,7 @@ function WrappedPage() {
     </div>
   );
 }
+
 
 function SlideShell({ bg, children, shareable }: { bg: string; children: React.ReactNode; shareable?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
