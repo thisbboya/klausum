@@ -40,6 +40,10 @@ export const Route = createFileRoute("/api/video-chat")({
         }
         if (!Array.isArray(body.messages) || !body.videoId)
           return new Response("Bad request", { status: 400 });
+        const videoId: string = body.videoId;
+        const messagesIn: UIMessage[] = body.messages;
+
+
 
         const { data: cache } = await supabaseAdmin
           .from("video_chapters")
