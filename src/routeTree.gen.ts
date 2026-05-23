@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UHandleRouteImport } from './routes/u.$handle'
 import { Route as ApiYoutubeSearchRouteImport } from './routes/api/youtube-search'
+import { Route as ApiVideoQuizRouteImport } from './routes/api/video-quiz'
 import { Route as ApiVideoChatRouteImport } from './routes/api/video-chat'
 import { Route as ApiVideoAnalyzeRouteImport } from './routes/api/video-analyze'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
@@ -85,6 +86,11 @@ const UHandleRoute = UHandleRouteImport.update({
 const ApiYoutubeSearchRoute = ApiYoutubeSearchRouteImport.update({
   id: '/api/youtube-search',
   path: '/api/youtube-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVideoQuizRoute = ApiVideoQuizRouteImport.update({
+  id: '/api/video-quiz',
+  path: '/api/video-quiz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiVideoChatRoute = ApiVideoChatRouteImport.update({
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/video-analyze': typeof ApiVideoAnalyzeRoute
   '/api/video-chat': typeof ApiVideoChatRoute
+  '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -312,6 +319,7 @@ export interface FileRoutesByTo {
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/video-analyze': typeof ApiVideoAnalyzeRoute
   '/api/video-chat': typeof ApiVideoChatRoute
+  '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -353,6 +361,7 @@ export interface FileRoutesById {
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/video-analyze': typeof ApiVideoAnalyzeRoute
   '/api/video-chat': typeof ApiVideoChatRoute
+  '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
@@ -394,6 +403,7 @@ export interface FileRouteTypes {
     | '/api/transcribe'
     | '/api/video-analyze'
     | '/api/video-chat'
+    | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
@@ -433,6 +443,7 @@ export interface FileRouteTypes {
     | '/api/transcribe'
     | '/api/video-analyze'
     | '/api/video-chat'
+    | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
@@ -473,6 +484,7 @@ export interface FileRouteTypes {
     | '/api/transcribe'
     | '/api/video-analyze'
     | '/api/video-chat'
+    | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
     | '/_authenticated/materials/$id'
@@ -493,6 +505,7 @@ export interface RootRouteChildren {
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiVideoAnalyzeRoute: typeof ApiVideoAnalyzeRoute
   ApiVideoChatRoute: typeof ApiVideoChatRoute
+  ApiVideoQuizRoute: typeof ApiVideoQuizRoute
   ApiYoutubeSearchRoute: typeof ApiYoutubeSearchRoute
   UHandleRoute: typeof UHandleRoute
 }
@@ -553,6 +566,13 @@ declare module '@tanstack/react-router' {
       path: '/api/youtube-search'
       fullPath: '/api/youtube-search'
       preLoaderRoute: typeof ApiYoutubeSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/video-quiz': {
+      id: '/api/video-quiz'
+      path: '/api/video-quiz'
+      fullPath: '/api/video-quiz'
+      preLoaderRoute: typeof ApiVideoQuizRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/video-chat': {
@@ -870,6 +890,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiVideoAnalyzeRoute: ApiVideoAnalyzeRoute,
   ApiVideoChatRoute: ApiVideoChatRoute,
+  ApiVideoQuizRoute: ApiVideoQuizRoute,
   ApiYoutubeSearchRoute: ApiYoutubeSearchRoute,
   UHandleRoute: UHandleRoute,
 }
