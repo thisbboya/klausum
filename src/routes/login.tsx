@@ -43,8 +43,26 @@ function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <AuthSidePanel />
-      <div className="flex items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12">
+        <AuthBg />
+        {/* Top bar */}
+        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-6 py-5">
+          <Link to="/" className="flex items-center gap-2 text-primary">
+            <KlausumMark size={24} />
+            <span className="font-display text-sm font-semibold">Klausum</span>
+          </Link>
+          <Link to="/signup" className="text-xs text-muted-foreground hover:text-foreground">
+            New here? <span className="text-primary">Sign up free →</span>
+          </Link>
+        </div>
+        {/* Bottom bar */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center gap-3 px-6 py-4 text-[11px] text-muted-foreground">
+          <span>Free forever for students</span>
+          <span>·</span>
+          <span>Built in Ghana 🇬🇭</span>
+        </div>
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
+
 
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 text-primary">
           <KlausumMark size={32} />
