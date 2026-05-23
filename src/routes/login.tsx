@@ -5,6 +5,8 @@ import { lovable } from "@/integrations/lovable";
 import { KlausumMark } from "@/components/klausum-mark";
 import { AuthSidePanel } from "@/components/auth-side-panel";
 import { AuthBg } from "@/components/auth-bg";
+import { toast } from "sonner";
+
 
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
