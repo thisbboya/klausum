@@ -188,14 +188,15 @@ const FEATURES = [
 
 function FeaturesSection() {
   return (
-    <section className="relative bg-[#0A0F1E] py-24 px-4 md:px-8">
+    <section className="relative bg-[#0A0F1E] px-4 py-12 md:px-8 md:py-20">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-16 text-center">
+        <div className="mb-10 text-center">
           <h2 className="font-display text-[32px] font-bold text-[#F1F5F9] md:text-[40px]">
             Everything you need. Nothing you don't.
           </h2>
-          <p className="mt-3 text-[#94A3B8]">NkyinkyimIQ… sorry, Klausum. 😄</p>
+          <p className="mt-3 text-[#94A3B8]">Built for how students actually study.</p>
         </div>
+
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
             <motion.div
