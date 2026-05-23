@@ -900,6 +900,42 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_videos: {
+        Row: {
+          channel: string | null
+          created_at: string
+          id: string
+          material_id: string | null
+          subject: string | null
+          thumbnail_url: string | null
+          title: string
+          user_id: string
+          youtube_video_id: string
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          material_id?: string | null
+          subject?: string | null
+          thumbnail_url?: string | null
+          title: string
+          user_id: string
+          youtube_video_id: string
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          material_id?: string | null
+          subject?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          user_id?: string
+          youtube_video_id?: string
+        }
+        Relationships: []
+      }
       schedule_blocks: {
         Row: {
           block_type: string | null
@@ -1407,6 +1443,129 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      video_chapters: {
+        Row: {
+          channel: string | null
+          chapters: Json
+          duration_seconds: number | null
+          generated_at: string
+          summary: string | null
+          title: string | null
+          transcript: Json
+          youtube_video_id: string
+        }
+        Insert: {
+          channel?: string | null
+          chapters?: Json
+          duration_seconds?: number | null
+          generated_at?: string
+          summary?: string | null
+          title?: string | null
+          transcript?: Json
+          youtube_video_id: string
+        }
+        Update: {
+          channel?: string | null
+          chapters?: Json
+          duration_seconds?: number | null
+          generated_at?: string
+          summary?: string | null
+          title?: string | null
+          transcript?: Json
+          youtube_video_id?: string
+        }
+        Relationships: []
+      }
+      video_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          timestamp_seconds: number | null
+          user_id: string
+          youtube_video_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          timestamp_seconds?: number | null
+          user_id: string
+          youtube_video_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          timestamp_seconds?: number | null
+          user_id?: string
+          youtube_video_id?: string
+        }
+        Relationships: []
+      }
+      video_notes: {
+        Row: {
+          chapter_title: string | null
+          created_at: string
+          id: string
+          material_id: string | null
+          note_text: string
+          timestamp_seconds: number
+          user_id: string
+          youtube_video_id: string
+        }
+        Insert: {
+          chapter_title?: string | null
+          created_at?: string
+          id?: string
+          material_id?: string | null
+          note_text: string
+          timestamp_seconds: number
+          user_id: string
+          youtube_video_id: string
+        }
+        Update: {
+          chapter_title?: string | null
+          created_at?: string
+          id?: string
+          material_id?: string | null
+          note_text?: string
+          timestamp_seconds?: number
+          user_id?: string
+          youtube_video_id?: string
+        }
+        Relationships: []
+      }
+      video_watch_progress: {
+        Row: {
+          last_watched_at: string
+          percent_watched: number
+          total_seconds: number
+          user_id: string
+          watch_seconds: number
+          youtube_video_id: string
+        }
+        Insert: {
+          last_watched_at?: string
+          percent_watched?: number
+          total_seconds?: number
+          user_id: string
+          watch_seconds?: number
+          youtube_video_id: string
+        }
+        Update: {
+          last_watched_at?: string
+          percent_watched?: number
+          total_seconds?: number
+          user_id?: string
+          watch_seconds?: number
+          youtube_video_id?: string
         }
         Relationships: []
       }
