@@ -66,36 +66,48 @@ function AnimatedHeadline() {
   const line1 = "Your private vault for";
   const line2 = "everything you study.";
   return (
-    <h1 className="font-display text-[44px] leading-[1.05] font-bold tracking-tight text-[#F1F5F9] md:text-[72px]">
+    <h1
+      className="font-display font-bold tracking-tight text-[#F1F5F9]"
+      style={{ fontSize: "clamp(36px, 8vw, 72px)", lineHeight: 1.1, wordBreak: "keep-all", overflowWrap: "normal" }}
+    >
       <span className="block">
-        {line1.split("").map((ch, i) => (
-          <motion.span
-            key={`a-${i}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.018, duration: 0.4 }}
-            style={{ display: "inline-block", whiteSpace: "pre" }}
-          >
-            {ch}
-          </motion.span>
+        {line1.split(" ").map((word, wi) => (
+          <span key={`a-${wi}`} style={{ display: "inline-block", whiteSpace: "nowrap", marginRight: "0.25em" }}>
+            {word.split("").map((ch, i) => (
+              <motion.span
+                key={`a-${wi}-${i}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + (wi * 4 + i) * 0.018, duration: 0.4 }}
+                style={{ display: "inline-block" }}
+              >
+                {ch}
+              </motion.span>
+            ))}
+          </span>
         ))}
       </span>
       <span className="block text-[#F4A300]">
-        {line2.split("").map((ch, i) => (
-          <motion.span
-            key={`b-${i}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 + i * 0.018, duration: 0.4 }}
-            style={{ display: "inline-block", whiteSpace: "pre" }}
-          >
-            {ch}
-          </motion.span>
+        {line2.split(" ").map((word, wi) => (
+          <span key={`b-${wi}`} style={{ display: "inline-block", whiteSpace: "nowrap", marginRight: "0.25em" }}>
+            {word.split("").map((ch, i) => (
+              <motion.span
+                key={`b-${wi}-${i}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + (wi * 4 + i) * 0.018, duration: 0.4 }}
+                style={{ display: "inline-block" }}
+              >
+                {ch}
+              </motion.span>
+            ))}
+          </span>
         ))}
       </span>
     </h1>
   );
 }
+
 
 /* ─────────────────── PHONE MOCKUP ─────────────────── */
 function PhoneMockup() {
