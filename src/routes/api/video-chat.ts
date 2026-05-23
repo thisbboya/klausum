@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/video-chat")({
         const { data: cache } = await supabaseAdmin
           .from("video_chapters")
           .select("transcript, chapters, summary, title")
-          .eq("youtube_video_id", body.videoId)
+          .eq("youtube_video_id", videoId)
           .maybeSingle();
 
         const transcript = (cache?.transcript ?? []) as unknown as TranscriptLine[];
@@ -105,11 +105,11 @@ ${fullTranscriptSnippet}
         const result = streamText({
           model,
           system,
-          messages: await convertToModelMessages(body.messages),
+          messages: await convertToModelMessages(messagesIn),
           maxOutputTokens: 1200,
           onFinish: async ({ text }) => {
             try {
-              const last = body.messages?.[body.messages.length - 1];
+              const last = messagesIn[messagesIn.length - 1];
               const userText =
                 last && last.role === "user"
                   ? last.parts
@@ -121,14 +121,14 @@ ${fullTranscriptSnippet}
                 await supabaseAdmin.from("video_chat_messages").insert([
                   {
                     user_id: userId,
-                    youtube_video_id: body.videoId,
+                    youtube_video_id: videoId,
                     role: "user",
                     content: userText.slice(0, 4000),
                     timestamp_seconds: currentTime,
                   },
                   {
                     user_id: userId,
-                    youtube_video_id: body.videoId,
+                    youtube_video_id: videoId,
                     role: "ai",
                     content: text.slice(0, 8000),
                     timestamp_seconds: currentTime,
@@ -142,7 +142,7 @@ ${fullTranscriptSnippet}
           },
         });
 
-        return result.toUIMessageStreamResponse({ originalMessages: body.messages });
+        return result.toUIMessageStreamResponse({ originalMessages: messagesIn });
       },
     },
   },
