@@ -468,7 +468,7 @@ export function WatchStudy({
                   videoTitle={video.title}
                   accessToken={accessToken}
                   seekTo={seekTo}
-                  analyzeReady={!analyzing && transcript.length > 0}
+                  analyzeReady={!analyzing}
                 />
               )}
             </div>
