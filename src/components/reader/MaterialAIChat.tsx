@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { chatWithMaterial } from "@/lib/material-chat.functions";
@@ -7,7 +7,7 @@ import { awardXp } from "@/lib/xp";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import { Send, Mic } from "lucide-react";
+import { Send, X, Clock } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -25,6 +25,10 @@ interface Props {
   totalPages: number;
   currentPageText: string;
   fullDocumentText: string;
+  pageIndex?: Record<number, string>;
+  selection?: string | null;
+  onClearSelection?: () => void;
+  onJumpToPage?: (page: number) => void;
   userId: string;
   userPrimaryStyle?: string;
 }
@@ -33,8 +37,59 @@ const QUICK_PROMPTS = [
   { label: "Explain key concepts on this page simply", icon: "💡" },
   { label: "What might come up in an exam from here?", icon: "📝" },
   { label: "Summarise the most important points", icon: "📋" },
-  { label: "Give me a practical example", icon: "🔬" },
+  { label: "Where is this concept covered?", icon: "🔎" },
 ];
+
+function formatFocus(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}m ${sec.toString().padStart(2, "0")}s`;
+}
+
+// Renders AI markdown with [p.X] / "page X" tokens swapped for jump buttons.
+function ReplyWithJumps({
+  content,
+  onJump,
+}: {
+  content: string;
+  onJump?: (p: number) => void;
+}) {
+  // We split text on page mentions and intersperse buttons. Markdown is rendered per segment.
+  const segments = useMemo(() => {
+    const re = /\[?\bp(?:age|\.)\s*(\d{1,4})\]?/gi;
+    const parts: { type: "text" | "jump"; value: string; page?: number }[] = [];
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(content)) !== null) {
+      if (m.index > last) parts.push({ type: "text", value: content.slice(last, m.index) });
+      parts.push({ type: "jump", value: m[0], page: parseInt(m[1], 10) });
+      last = m.index + m[0].length;
+    }
+    if (last < content.length) parts.push({ type: "text", value: content.slice(last) });
+    return parts;
+  }, [content]);
+
+  return (
+    <article className="prose prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+      {segments.map((seg, i) =>
+        seg.type === "text" ? (
+          <ReactMarkdown key={i} remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+            {seg.value}
+          </ReactMarkdown>
+        ) : (
+          <button
+            key={i}
+            onClick={() => seg.page && onJump?.(seg.page)}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-full px-2 py-0.5 mx-0.5 align-baseline transition not-prose"
+            title={`Jump to page ${seg.page}`}
+          >
+            📄 p.{seg.page} →
+          </button>
+        ),
+      )}
+    </article>
+  );
+}
 
 export function MaterialAIChat({
   materialId,
@@ -45,6 +100,10 @@ export function MaterialAIChat({
   totalPages,
   currentPageText,
   fullDocumentText,
+  pageIndex,
+  selection,
+  onClearSelection,
+  onJumpToPage,
   userId,
   userPrimaryStyle,
 }: Props) {
@@ -53,7 +112,15 @@ export function MaterialAIChat({
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingStatus, setThinkingStatus] = useState("");
+  const [focusSeconds, setFocusSeconds] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus timer
+  useEffect(() => {
+    const t = setInterval(() => setFocusSeconds((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Load history
   useEffect(() => {
@@ -82,9 +149,19 @@ export function MaterialAIChat({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
 
+  // When selection arrives, focus the input so user can type their question
+  useEffect(() => {
+    if (selection) inputRef.current?.focus();
+  }, [selection]);
+
   async function send(text: string) {
     const q = text.trim();
     if (!q || isThinking) return;
+
+    // Build effective question with selection context (kept for AI; user UI keeps it as chip)
+    const effective = selection
+      ? `Regarding this passage from page ${currentPage}: "${selection.slice(0, 600)}"\n\n${q}`
+      : q;
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -96,7 +173,7 @@ export function MaterialAIChat({
     setInput("");
     setIsThinking(true);
 
-    const statuses = ["Skimming the page…", "Cross-referencing the document…", "Putting it together…"];
+    const statuses = ["Skimming the page…", "Searching the document…", "Putting it together…"];
     let i = 0;
     setThinkingStatus(statuses[0]);
     const statusTimer = setInterval(() => {
@@ -104,7 +181,6 @@ export function MaterialAIChat({
       setThinkingStatus(statuses[i]);
     }, 1800);
 
-    // Persist user message (fire-and-forget)
     supabase.from("material_chat_messages").insert({
       user_id: userId,
       material_id: materialId,
@@ -120,6 +196,16 @@ export function MaterialAIChat({
         content: m.content,
         page: m.page,
       }));
+
+      // Compact page index for cross-page search (first 500 chars per page, capped)
+      let compactIndex: string | undefined;
+      if (pageIndex) {
+        const entries = Object.entries(pageIndex)
+          .map(([p, txt]) => `[p.${p}] ${(txt || "").slice(0, 500)}`)
+          .join("\n");
+        compactIndex = entries.slice(0, 30000);
+      }
+
       const { reply } = await chatFn({
         data: {
           accessToken,
@@ -130,9 +216,11 @@ export function MaterialAIChat({
           totalPages,
           currentPageText,
           fullDocumentText,
+          pageIndex: compactIndex,
+          selection: selection ?? undefined,
           userPrimaryStyle,
           history: recent,
-          question: q,
+          question: effective,
         },
       });
 
@@ -152,6 +240,8 @@ export function MaterialAIChat({
         page_number: currentPage,
       });
 
+      onClearSelection?.();
+
       awardXp({
         userId,
         amount: 5,
@@ -164,12 +254,11 @@ export function MaterialAIChat({
         {
           id: crypto.randomUUID(),
           role: "ai",
-          content:
-            err?.message?.includes("429")
-              ? "Rate limit reached — give me a moment and try again. 🙂"
-              : err?.message?.includes("402")
-                ? "AI credits exhausted. Please top up to continue."
-                : "I had trouble responding. Please try again. 🙂",
+          content: err?.message?.includes("429")
+            ? "Rate limit reached — give me a moment and try again. 🙂"
+            : err?.message?.includes("402")
+              ? "AI credits exhausted. Please top up to continue."
+              : "I had trouble responding. Please try again. 🙂",
           page: currentPage,
         },
       ]);
@@ -182,16 +271,22 @@ export function MaterialAIChat({
 
   return (
     <div className="flex flex-col h-full bg-card">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border shrink-0 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-muted-foreground text-xs shrink-0">🤖</span>
           <span className="text-foreground text-sm font-semibold truncate">
             Ask about this page
           </span>
         </div>
-        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">
-          📄 p.{currentPage}/{totalPages}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <Clock className="h-2.5 w-2.5" /> {formatFocus(focusSeconds)}
+          </span>
+          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+            p.{currentPage}/{totalPages}
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -228,19 +323,16 @@ export function MaterialAIChat({
               }`}
             >
               {msg.role === "ai" && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-primary font-semibold bg-primary/10 px-2 py-0.5 rounded-full mb-2">
+                <button
+                  onClick={() => onJumpToPage?.(msg.page)}
+                  className="inline-flex items-center gap-1 text-[10px] text-primary font-semibold bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-full mb-2 transition"
+                  title={`Jump to page ${msg.page}`}
+                >
                   📄 p.{msg.page}
-                </span>
+                </button>
               )}
               {msg.role === "ai" ? (
-                <article className="prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
-                </article>
+                <ReplyWithJumps content={msg.content} onJump={onJumpToPage} />
               ) : (
                 msg.content
               )}
@@ -267,8 +359,29 @@ export function MaterialAIChat({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-border bg-card shrink-0 px-3 py-2 flex items-end gap-2">
+      {selection && (
+        <div className="px-3 pt-2 shrink-0">
+          <div className="flex items-start gap-2 bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">
+            <span className="text-[10px] font-semibold text-primary shrink-0 mt-0.5">
+              SELECTED p.{currentPage}
+            </span>
+            <p className="text-xs text-foreground/90 flex-1 line-clamp-2 italic">
+              "{selection}"
+            </p>
+            <button
+              onClick={onClearSelection}
+              className="text-muted-foreground hover:text-foreground shrink-0"
+              aria-label="Clear selection"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-border bg-card shrink-0 px-3 py-2 flex items-end gap-2 mt-2">
         <textarea
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -277,7 +390,9 @@ export function MaterialAIChat({
               send(input);
             }
           }}
-          placeholder={`Ask anything about page ${currentPage}…`}
+          placeholder={
+            selection ? "Ask about the selected passage…" : `Ask anything about page ${currentPage}…`
+          }
           rows={2}
           disabled={isThinking}
           className="flex-1 bg-muted border border-border rounded-xl px-3 py-2 text-foreground text-sm placeholder-muted-foreground resize-none outline-none focus:border-primary transition disabled:opacity-40"
