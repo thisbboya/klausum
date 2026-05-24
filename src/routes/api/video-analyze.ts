@@ -4,6 +4,7 @@ import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { getUserIdFromToken } from "@/lib/server-auth";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { pickGeminiKey, blockGeminiKey, hasGeminiKeys } from "@/lib/gemini-keys.server";
 
 type Body = {
   accessToken?: string;
@@ -28,6 +29,75 @@ function safeJson<T>(raw: string): T | null {
   } catch {
     return null;
   }
+}
+
+function fallbackChapters(title: string, durationSeconds: number): Chapter[] {
+  const dur = Math.max(60, durationSeconds || 0);
+  const count = Math.min(8, Math.max(3, Math.floor(dur / 900) + 2));
+  const step = dur / count;
+  return Array.from({ length: count }, (_, i) => ({
+    title:
+      i === 0
+        ? "Introduction"
+        : i === count - 1
+          ? "Conclusion"
+          : `Part ${i + 1}${title ? ` — ${title.slice(0, 40)}` : ""}`,
+    startSeconds: Math.round(i * step),
+    summary: `Section ${i + 1} of ${count}`,
+  }));
+}
+
+async function callGeminiWithRotation(
+  prompt: string,
+  options: {
+    fileUrl?: string;
+    maxOutputTokens?: number;
+    model?: string;
+  },
+): Promise<{ text: string } | { error: string; tokenOverflow?: boolean }> {
+  const maxAttempts = 4;
+  for (let i = 0; i < maxAttempts; i++) {
+    const k = pickGeminiKey();
+    if (!k) return { error: "All Gemini keys at rate limit" };
+    try {
+      const google = createGoogleGenerativeAI({ apiKey: k.key });
+      const model = google(options.model ?? "gemini-2.5-flash");
+      const content: Array<
+        { type: "text"; text: string } | { type: "file"; data: string; mediaType: string }
+      > = [];
+      if (options.fileUrl) {
+        content.push({ type: "file", data: options.fileUrl, mediaType: "video/mp4" });
+      }
+      content.push({ type: "text", text: prompt });
+      const result = await generateText({
+        model,
+        messages: [{ role: "user", content }],
+        maxOutputTokens: options.maxOutputTokens ?? 4000,
+        maxRetries: 0,
+      });
+      return { text: result.text };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const status = (err as { statusCode?: number; status?: number })?.statusCode ?? (err as { status?: number })?.status;
+      // Token overflow — content issue, no retry helps
+      if (/token count exceeds|exceeds the maximum/i.test(msg)) {
+        return { error: msg, tokenOverflow: true };
+      }
+      // Rate limit / quota — block this key, try next
+      if (status === 429 || /quota|rate limit|429/i.test(msg)) {
+        blockGeminiKey(k.key, 60_000);
+        continue;
+      }
+      // Invalid key — block long
+      if (status === 403 || status === 401) {
+        blockGeminiKey(k.key, 24 * 60 * 60 * 1000);
+        continue;
+      }
+      // Other error — try next key
+      if (i === maxAttempts - 1) return { error: msg };
+    }
+  }
+  return { error: "All Gemini attempts failed" };
 }
 
 export const Route = createFileRoute("/api/video-analyze")({
@@ -63,11 +133,8 @@ export const Route = createFileRoute("/api/video-analyze")({
           }
         }
 
-        const gemKey = process.env.GEMINI_API_KEY;
-        if (!gemKey) return new Response("Missing GEMINI_API_KEY", { status: 500 });
-
-        const google = createGoogleGenerativeAI({ apiKey: gemKey });
-        const model = google("gemini-2.5-flash");
+        if (!hasGeminiKeys())
+          return new Response("Missing GEMINI_API_KEY", { status: 500 });
 
         const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
         const prompt = `Analyze this YouTube video and produce a structured study breakdown.
@@ -85,47 +152,82 @@ Return ONLY valid JSON in this exact shape (no prose, no markdown fences):
 }
 
 Rules:
-- Generate 5-10 logical chapters with accurate startSeconds.
-- Transcript: 40-120 lines, each 3-15 seconds apart. Use the actual spoken words.
-- If you cannot access the audio, infer from visible captions/title; do your best.
+- Generate 5-8 logical chapters with accurate startSeconds.
+- Transcript: 40-80 lines, each 5-15 seconds apart. Use actual spoken words.
+- If the video is very long, sample lines across the full duration (don't truncate early).
 - Output MUST be valid JSON only.`;
 
-        let raw = "";
-        try {
-          const result = await generateText({
-            model,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "file", data: youtubeUrl, mediaType: "video/mp4" },
-                  { type: "text", text: prompt },
-                ],
-              },
-            ],
-            maxOutputTokens: 8000,
-            maxRetries: 1,
+        // First attempt: full analysis with video file
+        let firstAttempt = await callGeminiWithRotation(prompt, {
+          fileUrl: youtubeUrl,
+          maxOutputTokens: 6000,
+        });
+
+        let parsed:
+          | {
+              summary: string;
+              durationSeconds: number;
+              chapters: Chapter[];
+              transcript: TranscriptLine[];
+            }
+          | null = null;
+
+        if ("text" in firstAttempt) {
+          parsed = safeJson(firstAttempt.text);
+        }
+
+        // Token overflow OR parse failure → fallback: title-only chapter generation
+        if (!parsed || !Array.isArray(parsed.chapters) || parsed.chapters.length === 0) {
+          const overflow = "tokenOverflow" in firstAttempt && firstAttempt.tokenOverflow;
+          console.warn("[video-analyze] primary failed, using fallback", {
+            overflow,
+            err: "error" in firstAttempt ? firstAttempt.error : "parse",
           });
-          raw = result.text;
-        } catch (err) {
-          console.error("[video-analyze] Gemini error:", err);
-          return new Response(
-            `Video analysis failed: ${err instanceof Error ? err.message : "unknown"}`,
-            { status: 502 },
-          );
+
+          // Try a metadata-only call (no video file attached) for short summary + chapters
+          const metaPrompt = `For the YouTube video titled "${body.title ?? "Untitled"}"${
+            body.channel ? ` by ${body.channel}` : ""
+          }, produce a study breakdown WITHOUT watching the video.
+
+Return ONLY valid JSON:
+{
+  "summary": "1-2 sentence summary based on the title",
+  "durationSeconds": 0,
+  "chapters": [{ "title": "...", "startSeconds": 0, "summary": "..." }]
+}
+
+Generate 4-6 plausible chapters spaced evenly across an estimated duration based on the title.`;
+          const metaAttempt = await callGeminiWithRotation(metaPrompt, {
+            maxOutputTokens: 1500,
+            model: "gemini-2.5-flash",
+          });
+          if ("text" in metaAttempt) {
+            const metaParsed = safeJson<{
+              summary: string;
+              durationSeconds: number;
+              chapters: Chapter[];
+            }>(metaAttempt.text);
+            if (metaParsed && Array.isArray(metaParsed.chapters)) {
+              parsed = {
+                summary: metaParsed.summary ?? "",
+                durationSeconds: metaParsed.durationSeconds || 0,
+                chapters: metaParsed.chapters,
+                transcript: [],
+              };
+            }
+          }
+
+          // Last resort: pure deterministic fallback chapters
+          if (!parsed || !Array.isArray(parsed.chapters) || parsed.chapters.length === 0) {
+            parsed = {
+              summary: body.title ?? "",
+              durationSeconds: 0,
+              chapters: fallbackChapters(body.title ?? "", 0),
+              transcript: [],
+            };
+          }
         }
 
-        const parsed = safeJson<{
-          summary: string;
-          durationSeconds: number;
-          chapters: Chapter[];
-          transcript: TranscriptLine[];
-        }>(raw);
-        if (!parsed || !Array.isArray(parsed.chapters)) {
-          return new Response("Could not parse video analysis", { status: 502 });
-        }
-
-        // Sanity-clean
         const chapters = parsed.chapters
           .filter((c) => c && typeof c.title === "string" && typeof c.startSeconds === "number")
           .slice(0, 12)
@@ -156,6 +258,7 @@ Rules:
           summary: parsed.summary ?? "",
           durationSeconds: parsed.durationSeconds ?? 0,
           cached: false,
+          degraded: transcript.length === 0,
         });
       },
     },

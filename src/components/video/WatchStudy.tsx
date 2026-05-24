@@ -325,8 +325,6 @@ export function WatchStudy({
             </p>
             {analyzing ? (
               <p className="text-xs text-muted-foreground">Analyzing video with AI…</p>
-            ) : analyzeError ? (
-              <p className="text-xs text-destructive">{analyzeError}</p>
             ) : chapters.length === 0 ? (
               <p className="text-xs text-muted-foreground">No chapters available.</p>
             ) : (
@@ -334,6 +332,11 @@ export function WatchStudy({
                 {chapters.map((c, i) => (
                   <button
                     key={i}
+                    ref={(el) => {
+                      if (el && i === currentChapterIdx) {
+                        el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+                      }
+                    }}
                     onClick={() => seekTo(c.startSeconds)}
                     className={`shrink-0 rounded-full px-3 py-1 text-xs whitespace-nowrap transition ${
                       i === currentChapterIdx
@@ -344,6 +347,15 @@ export function WatchStudy({
                     {(i + 1).toString().padStart(2, "0")} {c.title} · {fmt(c.startSeconds)}
                   </button>
                 ))}
+              </div>
+            )}
+            {analyzeError && !analyzing && (
+              <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+                <span className="text-amber-400 text-xs shrink-0">⚠️</span>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  This video is long — automatic chapter detection was limited.
+                  The AI chat and quiz still work. Ask the AI anything about what you're watching.
+                </p>
               </div>
             )}
           </div>
@@ -456,7 +468,7 @@ export function WatchStudy({
                   videoTitle={video.title}
                   accessToken={accessToken}
                   seekTo={seekTo}
-                  analyzeReady={!analyzing && transcript.length > 0}
+                  analyzeReady={!analyzing}
                 />
               )}
             </div>
