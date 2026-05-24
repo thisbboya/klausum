@@ -54,30 +54,41 @@ export const Route = createFileRoute("/api/video-quiz")({
           .select("transcript, summary, title")
           .eq("youtube_video_id", body.videoId)
           .maybeSingle();
-        if (!cache || !Array.isArray(cache.transcript) || cache.transcript.length === 0)
-          return new Response("Analyze the video first", { status: 409 });
 
-        const transcript = (cache.transcript as unknown as TranscriptLine[])
-          .map((l) => `[${Math.floor(l.start)}s] ${l.text}`)
-          .join("\n")
-          .slice(0, 14000);
+        const transcriptLines = (cache?.transcript ?? []) as unknown as TranscriptLine[];
+        const hasTranscript = Array.isArray(transcriptLines) && transcriptLines.length > 0;
+        const transcript = hasTranscript
+          ? transcriptLines
+              .map((l) => `[${Math.floor(l.start)}s] ${l.text}`)
+              .join("\n")
+              .slice(0, 14000)
+          : "";
 
-        const prompt = `Generate 8 multiple-choice questions from this YouTube video transcript.
+        const prompt = hasTranscript
+          ? `Generate 8 multiple-choice questions from this YouTube video transcript.
 Target: ${body.level ?? "university"} student. Subject: ${body.subject ?? "General"}.
-Bloom distribution: 2 L1 (recall), 2 L2 (comprehension), 2 L3 (application), 1 L4 (analysis), 1 L5 (evaluation).
+Bloom distribution: 2 L1, 2 L2, 2 L3, 1 L4, 1 L5.
 
 For each question include:
 - "question": string
-- "options": { "A": ..., "B": ..., "C": ..., "D": ... }
-- "correct": "A" | "B" | "C" | "D"
+- "options": { "A","B","C","D" }
+- "correct": "A"|"B"|"C"|"D"
 - "explanation": 1-2 sentences
-- "timestamp_seconds": integer — where the answer is found
+- "timestamp_seconds": integer
 - "bloom_level": 1-6
 
-Return ONLY a JSON array of 8 objects. No prose, no fences.
+Return ONLY a JSON array of 8 objects.
 
 TRANSCRIPT:
-${transcript}`;
+${transcript}`
+          : `Generate 5 multiple-choice exam questions about the YouTube video titled "${
+              body.videoTitle ?? cache?.title ?? "Untitled"
+            }" (subject: ${body.subject ?? "General"}, level: ${body.level ?? "university"}).
+You do not have the transcript — use the topic from the title to write plausible exam questions.
+Bloom distribution: 2 L1, 2 L2, 1 L3.
+
+Same JSON shape: question, options A-D, correct, explanation,
+timestamp_seconds (use 0), bloom_level. Return ONLY a JSON array.`;
 
         const model = resolveModel(DEFAULT_MODEL);
         const result = await generateText({
