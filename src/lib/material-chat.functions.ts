@@ -13,6 +13,8 @@ const ChatInput = z.object({
   totalPages: z.number().int().min(1).max(10000),
   currentPageText: z.string().max(20000),
   fullDocumentText: z.string().max(40000).optional(),
+  pageIndex: z.string().max(35000).optional(),
+  selection: z.string().max(2000).optional(),
   userPrimaryStyle: z.string().max(50).optional(),
   history: z
     .array(
@@ -45,11 +47,19 @@ export const chatWithMaterial = createServerFn({ method: "POST" })
     const history = (data.history ?? [])
       .map(
         (m) =>
-          `${m.role === "user" ? `Student (p.${m.page ?? "?"})` : "NkyinkyimIQ"}: ${m.content}`,
+          `${m.role === "user" ? `Student (p.${m.page ?? "?"})` : "Klausum"}: ${m.content}`,
       )
       .join("\n\n");
 
-    const system = `You are NkyinkyimIQ — a warm, knowledgeable study companion for a ${data.level ?? "student"} studying "${data.materialTitle}" (${data.subject ?? "General"}).
+    const indexBlock = data.pageIndex
+      ? `\n═══ PAGE INDEX (for cross-page search) ═══\nEach line is [p.N] followed by a snippet of that page. Use this to locate concepts across the document.\n${data.pageIndex}\n`
+      : "";
+
+    const selectionBlock = data.selection
+      ? `\n═══ STUDENT HIGHLIGHTED (page ${data.currentPage}) ═══\n"""${data.selection}"""\nTreat this passage as the explicit subject of their question unless they say otherwise.\n`
+      : "";
+
+    const system = `You are Klausum — a warm, knowledgeable study companion for a ${data.level ?? "student"} studying "${data.materialTitle}" (${data.subject ?? "General"}).
 
 ═══ PAGE AWARENESS — CRITICAL ═══
 The student is CURRENTLY ON PAGE ${data.currentPage} of ${data.totalPages}.
@@ -58,16 +68,17 @@ EXACT TEXT ON PAGE ${data.currentPage}:
 """
 ${data.currentPageText || "(This page appears to be visual/image-based with no extractable text)"}
 """
-
+${selectionBlock}
 Rules:
 1. Always know which page they're on. Reference it: "On page ${data.currentPage}..."
 2. Answer "this page", "this paragraph", "this line" using the EXACT text above.
-3. If asked about another page, say: "You'll find this on page X — navigate there to follow along."
-4. Break complex things down concept by concept.
+3. When you reference any other page, write it as [p.N] (e.g. [p.12]) so the UI can render a jump button.
+4. If asked "where is X mentioned?", scan the PAGE INDEX below and list every matching page as [p.N].
+5. Break complex things down concept by concept.
 
 ═══ FULL DOCUMENT CONTEXT (truncated) ═══
-${(data.fullDocumentText ?? "").substring(0, 10000)}
-
+${(data.fullDocumentText ?? "").substring(0, 8000)}
+${indexBlock}
 ═══ STYLE ═══
 ${styleHint}
 - Use **bold** for KEY TERMS.
@@ -85,7 +96,7 @@ ${history || "(First message in this session)"}
 ═══ NEW MESSAGE ═══
 Student (currently on page ${data.currentPage} of ${data.totalPages}): ${data.question}
 
-NkyinkyimIQ:`;
+Klausum:`;
 
     const result = await generateText({
       model,

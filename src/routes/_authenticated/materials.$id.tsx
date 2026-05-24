@@ -423,8 +423,9 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   const [pageText, setPageText] = useState("");
   const [totalPages, setTotalPages] = useState(0);
   const [mobileTab, setMobileTab] = useState<"read" | "chat">("read");
-  const [initialPage, setInitialPage] = useState(1);
-  const [initialPageReady, setInitialPageReady] = useState(false);
+  const [initialReady, setInitialReady] = useState(false);
+  const [pageIndex, setPageIndex] = useState<Record<number, string> | undefined>(undefined);
+  const [selection, setSelection] = useState<string | null>(null);
 
   // Restore last read page
   useEffect(() => {
@@ -435,15 +436,12 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
       .eq("material_id", material.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data?.last_page && data.last_page > 1) {
-          setInitialPage(data.last_page);
-          setPage(data.last_page);
-        }
-        setInitialPageReady(true);
+        if (data?.last_page && data.last_page > 1) setPage(data.last_page);
+        setInitialReady(true);
       });
   }, [material.id, userId]);
 
-  // Refresh signed URL (2-hour expiry, refresh every 90 min)
+  // Refresh signed URL
   useEffect(() => {
     if (!material.pdf_storage_path) return;
     let mounted = true;
@@ -461,7 +459,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     };
   }, [material.pdf_storage_path]);
 
-  // Save reading progress on page change
+  // Save reading progress
   useEffect(() => {
     if (!totalPages) return;
     supabase
@@ -477,7 +475,6 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
         { onConflict: "user_id,material_id" },
       )
       .then(() => {});
-    // Also persist total_pages onto study_materials once known
     if (totalPages && !material.total_pages) {
       supabase
         .from("study_materials")
@@ -487,13 +484,28 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     }
   }, [page, totalPages, material.id, material.total_pages, userId]);
 
-  if (!signedUrl || !initialPageReady) {
+  if (!signedUrl || !initialReady) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  const handlePageChange = (p: number, txt: string) => {
+    setPage(p);
+    setPageText(txt);
+  };
+
+  const handleJump = (target: number) => {
+    setPage(Math.max(1, Math.min(target, totalPages || target)));
+    if (isMobile) setMobileTab("read");
+  };
+
+  const handleAskAboutSelection = (text: string) => {
+    setSelection(text);
+    if (isMobile) setMobileTab("chat");
+  };
 
   const chatProps = {
     materialId: material.id,
@@ -504,6 +516,10 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     totalPages: totalPages || 1,
     currentPageText: pageText,
     fullDocumentText: material.original_content ?? "",
+    pageIndex,
+    selection,
+    onClearSelection: () => setSelection(null),
+    onJumpToPage: handleJump,
     userId,
     userPrimaryStyle: undefined as string | undefined,
   };
@@ -522,7 +538,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
                   : "text-muted-foreground"
               }`}
             >
-              {t === "read" ? "📄 Read" : "🤖 AI Chat"}
+              {t === "read" ? `📄 Read · p.${page}/${totalPages || "…"}` : "🤖 AI Chat"}
             </button>
           ))}
         </div>
@@ -530,12 +546,11 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
           {mobileTab === "read" ? (
             <PDFViewer
               pdfUrl={signedUrl}
-              onPageChange={(p, txt) => {
-                setPage(p);
-                setPageText(txt);
-              }}
+              page={page}
+              onPageChange={handlePageChange}
               onTotalPages={setTotalPages}
-              initialPage={initialPage}
+              onAllPagesIndexed={setPageIndex}
+              onAskAboutSelection={handleAskAboutSelection}
             />
           ) : (
             <MaterialAIChat {...chatProps} />
@@ -550,12 +565,11 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
       <div className="w-[60%] border-r border-border">
         <PDFViewer
           pdfUrl={signedUrl}
-          onPageChange={(p, txt) => {
-            setPage(p);
-            setPageText(txt);
-          }}
+          page={page}
+          onPageChange={handlePageChange}
           onTotalPages={setTotalPages}
-          initialPage={initialPage}
+          onAllPagesIndexed={setPageIndex}
+          onAskAboutSelection={handleAskAboutSelection}
         />
       </div>
       <div className="w-[40%]">
