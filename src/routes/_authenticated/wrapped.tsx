@@ -33,6 +33,7 @@ function WrappedPage() {
   const [data, setData] = useState<WrappedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   useEffect(() => {
     (async () => {
