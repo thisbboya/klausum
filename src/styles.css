@@ -372,6 +372,9 @@ body.landing::before {
   transform-origin: 0 0;
   caret-color: oklch(var(--primary));
   z-index: 2;
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
 }
 .textLayer :is(span, br) {
   color: transparent;
@@ -379,6 +382,8 @@ body.landing::before {
   white-space: pre;
   cursor: text;
   transform-origin: 0% 0%;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .textLayer span.markedContent {
   top: 0;
