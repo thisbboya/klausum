@@ -46,8 +46,9 @@ function Dashboard() {
         supabase
           .from("study_materials")
           .select("id,title,subject,processing_status,created_at")
+          .eq("user_id", user!.id)
           .order("created_at", { ascending: false })
-          .limit(5),
+          .limit(20),
         supabase
           .from("flashcards")
           .select("id,next_review_date,fsrs_state")
