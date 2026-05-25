@@ -320,11 +320,15 @@ function buildSlides(d: WrappedData) {
     s.push(
       <SlideShell key="vark" bg="bg-gradient-to-br from-purple-800 via-violet-800 to-indigo-900" shareable label="HOW YOUR MIND LEARNS">
         <p className="font-display text-2xl font-bold">Your VARK signature</p>
-        <div className="mt-3 h-[260px] w-[260px]">
+        <div className="mt-3 h-[300px] w-[300px] overflow-visible">
           <ResponsiveContainer>
-            <RadarChart data={d.varkRadar} outerRadius="80%">
+            <RadarChart data={d.varkRadar} outerRadius="62%" margin={{ top: 16, right: 28, bottom: 16, left: 28 }}>
               <PolarGrid stroke="rgba(255,255,255,0.25)" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: "#fff", fontSize: 12 }} />
+              <PolarAngleAxis
+                dataKey="subject"
+                tick={{ fill: "#fff", fontSize: 11 }}
+                tickFormatter={(v: string) => (v?.length > 7 ? v.slice(0, 4) + "." : v)}
+              />
               <PolarRadiusAxis tick={false} axisLine={false} />
               <Radar dataKey="A" stroke="#F4A300" fill="#F4A300" fillOpacity={0.55} />
             </RadarChart>
