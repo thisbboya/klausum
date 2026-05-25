@@ -173,10 +173,10 @@ export function PDFViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdf, page, scale]);
 
-  // Selection tracking
-  const handleMouseUp = useCallback(() => {
+  // Selection tracking — works for mouse AND touch (mobile)
+  const checkSelection = useCallback(() => {
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) {
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
       setSelection(null);
       return;
     }
@@ -201,6 +201,16 @@ export function PDFViewer({
       y: rect.top - wrapRect.top - 8,
     });
   }, []);
+
+  // Listen for selection changes globally (covers desktop, mobile, keyboard)
+  useEffect(() => {
+    const handler = () => {
+      // Debounce a tick so mobile long-press finalises
+      setTimeout(checkSelection, 50);
+    };
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, [checkSelection]);
 
   const goTo = useCallback(
     (n: number) => {
