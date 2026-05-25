@@ -354,40 +354,58 @@ function MaterialsPage() {
 
       {materials && materials.length > 0 ? (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-          {materials.map((m) => (
-            <li key={m.id} className="group flex items-center">
-              <Link
-                to="/materials/$id" params={{ id: m.id }}
-                className="flex items-center gap-4 px-4 py-3 hover:bg-accent/10 transition flex-1 min-w-0"
-              >
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{m.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {m.subject} · {new Date(m.created_at!).toLocaleDateString()}
+          {materials.map((m) => {
+            const hasPdf = !!(m as any).pdf_storage_path;
+            const isReady = m.processing_status === "ready";
+            const isFailed = m.processing_status === "failed";
+            return (
+              <li key={m.id} className="flex items-center gap-2 px-3 py-2.5">
+                <Link
+                  to="/materials/$id" params={{ id: m.id }}
+                  className="flex items-center gap-3 flex-1 min-w-0 py-1"
+                >
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{m.title}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                      <span>{m.subject}</span>
+                      <span>·</span>
+                      <span>{new Date(m.created_at!).toLocaleDateString()}</span>
+                      {hasPdf && <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold">PDF</span>}
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] capitalize ${
+                        isReady ? "bg-emerald-500/15 text-emerald-400" :
+                        isFailed ? "bg-destructive/15 text-destructive" :
+                        "bg-muted text-muted-foreground"
+                      }`}>{m.processing_status}</span>
+                    </div>
                   </div>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
-                  {m.processing_status}
-                </span>
-              </Link>
-              <button
-                onClick={async () => {
-                  if (!confirm(`Delete "${m.title}"? This also removes its flashcards and notes.`)) return;
-                  const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
-                  if (error) toast.error(error.message);
-                  else {
-                    toast.success("Material deleted");
-                    qc.invalidateQueries({ queryKey: ["materials"] });
-                  }
-                }}
-                className="px-3 py-3 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition"
-                aria-label="Delete material"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
+                </Link>
+                {isReady && (
+                  <Link
+                    to="/materials/$id" params={{ id: m.id }}
+                    className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 active:scale-95 transition"
+                  >
+                    {hasPdf ? "📖 Read" : "Open"}
+                  </Link>
+                )}
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Delete "${m.title}"?`)) return;
+                    const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
+                    if (error) toast.error(error.message);
+                    else {
+                      toast.success("Material deleted");
+                      qc.invalidateQueries({ queryKey: ["materials"] });
+                    }
+                  }}
+                  className="shrink-0 p-2 text-muted-foreground hover:text-destructive active:scale-95 transition"
+                  aria-label="Delete material"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         !uploading && <p className="text-center text-sm text-muted-foreground py-8">No materials yet.</p>
