@@ -27,7 +27,7 @@ async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
   prompt: string;
 }): Promise<{ object: z.infer<T> }> {
   try {
-    return await generateObject({ model: model(), schema: opts.schema, prompt: opts.prompt });
+    return await generateObjectSafe({ schema: opts.schema, prompt: opts.prompt });
   } catch (err) {
     const { text } = await generateText({
       model: model(),
@@ -55,7 +55,7 @@ export const generateCornellCues = createServerFn({ method: "POST" })
   .inputValidator((d) => CueInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: z.object({ cues: z.array(z.string()).min(4).max(12) }),
       prompt:
@@ -71,7 +71,7 @@ export const generateCornellSummary = createServerFn({ method: "POST" })
   .inputValidator((d) => SummaryInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: z.object({ summary: z.string().min(50) }),
       prompt:
@@ -85,7 +85,7 @@ export const notesToFlashcards = createServerFn({ method: "POST" })
   .inputValidator((d) => NotesToCardsInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: z.object({
         cards: z
@@ -141,7 +141,7 @@ export const generateMindMap = createServerFn({ method: "POST" })
   .inputValidator((d) => MindMapInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: MindMapSchema,
       prompt:
@@ -162,7 +162,7 @@ export const expandMindMapNode = createServerFn({ method: "POST" })
   .inputValidator((d) => ExpandInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: z.object({ children: z.array(z.string()).length(3) }),
       prompt:
@@ -206,7 +206,7 @@ export const generateQuiz = createServerFn({ method: "POST" })
     const dist = data.bloomDistribution
       ? `Bloom distribution (% per level L1-L6): ${data.bloomDistribution.join(", ")}.`
       : `Spread across Bloom L1-L5 with at least 1 question per level when count>=5.`;
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: QuizSchema,
       prompt:
