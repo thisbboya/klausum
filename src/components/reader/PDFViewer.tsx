@@ -227,11 +227,10 @@ export function PDFViewer({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background select-none">
+    <div className="flex flex-col h-full bg-background">
       <div
         ref={wrapRef}
         className="flex-1 overflow-auto flex justify-center items-start p-4 relative"
-        onMouseUp={handleMouseUp}
       >
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
