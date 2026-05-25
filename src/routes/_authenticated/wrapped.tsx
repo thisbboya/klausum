@@ -33,6 +33,7 @@ function WrappedPage() {
   const [data, setData] = useState<WrappedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -57,8 +58,8 @@ function WrappedPage() {
 
   const slides = buildSlides(data);
   const total = slides.length;
-  const next = () => setIdx((i) => Math.min(total - 1, i + 1));
-  const prev = () => setIdx((i) => Math.max(0, i - 1));
+  const next = () => { setShowSwipeHint(false); setIdx((i) => Math.min(total - 1, i + 1)); };
+  const prev = () => { setShowSwipeHint(false); setIdx((i) => Math.max(0, i - 1)); };
 
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden bg-[#0a0f1f] text-white">
@@ -94,18 +95,35 @@ function WrappedPage() {
       <button onClick={prev} className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur hover:bg-black/50"><ChevronLeft className="h-5 w-5" /></button>
       <button onClick={next} className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur hover:bg-black/50"><ChevronRight className="h-5 w-5" /></button>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={idx}
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.02 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0 flex items-center justify-center p-2 sm:p-6"
-        >
-          {slides[idx]}
-        </motion.div>
-      </AnimatePresence>
+      <motion.div
+        className="absolute inset-0 z-[5]"
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.18}
+        onDragEnd={(_, info) => {
+          if (info.offset.x < -60) next();
+          else if (info.offset.x > 60) prev();
+        }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 flex items-center justify-center p-2 sm:p-6"
+          >
+            {slides[idx]}
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+
+      {showSwipeHint && idx === 0 && (
+        <div className="pointer-events-none absolute bottom-8 left-1/2 z-20 -translate-x-1/2 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-[11px] text-white/80 backdrop-blur animate-pulse">
+          <span>←</span><span>Swipe or tap to continue</span><span>→</span>
+        </div>
+      )}
     </div>
   );
 }
