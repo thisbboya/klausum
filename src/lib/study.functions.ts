@@ -1,13 +1,52 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { resolveModel, DEFAULT_MODEL } from "./ai-gateway";
 import { getUserIdFromToken } from "./server-auth";
 
 function model() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key)(DEFAULT_MODEL);
+  return resolveModel(DEFAULT_MODEL);
+}
+
+// Strip markdown fences / prose around JSON returned by Gemini.
+function cleanJSON(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  const first = s.search(/[\[{]/);
+  if (first > 0) s = s.slice(first);
+  const lastClose = Math.max(s.lastIndexOf("}"), s.lastIndexOf("]"));
+  if (lastClose >= 0 && lastClose < s.length - 1) s = s.slice(0, lastClose + 1);
+  return s;
+}
+
+// Robust object generation: try structured output first, then fall back to
+// text + manual JSON parse + Zod validation. Solves Gemini's frequent
+// "No object generated: response did not match schema" failures.
+async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
+  schema: T;
+  prompt: string;
+}): Promise<{ object: z.infer<T> }> {
+  try {
+    return await generateObject({ model: model(), schema: opts.schema, prompt: opts.prompt });
+  } catch (err) {
+    const { text } = await generateText({
+      model: model(),
+      prompt:
+        opts.prompt +
+        `\n\nReturn ONLY valid JSON that matches the requested schema. ` +
+        `No prose, no markdown fences, no commentary.`,
+    });
+    const cleaned = cleanJSON(text);
+    let parsed: unknown;
+    try { parsed = JSON.parse(cleaned); } catch {
+      throw err instanceof Error ? err : new Error(String(err));
+    }
+    const result = opts.schema.safeParse(parsed);
+    if (!result.success) {
+      throw err instanceof Error ? err : new Error(String(err));
+    }
+    return { object: result.data };
+  }
 }
 
 // === Cornell Notes AI helpers ===
