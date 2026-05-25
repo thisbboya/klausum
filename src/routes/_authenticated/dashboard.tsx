@@ -76,9 +76,17 @@ function Dashboard() {
       ]);
       const dueCount = (cardsRes.data ?? []).filter((c) => c.next_review_date && isDue(c.next_review_date)).length;
       const allQuestsDone = (questsRes ?? []).length > 0 && (questsRes ?? []).every((q) => q.claimed);
+      // Dedupe recent materials by normalised title — newest version of each file only
+      const seen = new Set<string>();
+      const uniqueMaterials = (materialsRes.data ?? []).filter((m) => {
+        const key = (m.title || "").trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(0, 5);
       return {
         profile: profileRes.data,
-        materials: materialsRes.data ?? [],
+        materials: uniqueMaterials,
         totalCards: (cardsRes.data ?? []).length,
         dueCount,
         checkin: checkinRes.data,
