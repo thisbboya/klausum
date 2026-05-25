@@ -30,6 +30,7 @@ async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
     return await generateObject({ model: model(), schema: opts.schema, prompt: opts.prompt });
   } catch (err) {
     const { text } = await generateText({
+      model: model(),
 
       prompt:
         opts.prompt +
