@@ -30,7 +30,7 @@ async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
     return await generateObject({ model: model(), schema: opts.schema, prompt: opts.prompt });
   } catch (err) {
     const { text } = await generateText({
-      model: model(),
+
       prompt:
         opts.prompt +
         `\n\nReturn ONLY valid JSON that matches the requested schema. ` +
@@ -56,7 +56,7 @@ export const generateCornellCues = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const { object } = await generateObjectSafe({
-      model: model(),
+
       schema: z.object({ cues: z.array(z.string()).min(4).max(12) }),
       prompt:
         `You are a Cornell-Notes coach. Read the student's notes and produce 6-10 Socratic ` +
@@ -72,7 +72,7 @@ export const generateCornellSummary = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const { object } = await generateObjectSafe({
-      model: model(),
+
       schema: z.object({ summary: z.string().min(50) }),
       prompt:
         `Write a tight 5-sentence summary of these notes. Plain prose, no bullets, no fluff.\n\n${data.notes.slice(0, 12000)}`,
@@ -86,7 +86,7 @@ export const notesToFlashcards = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const { object } = await generateObjectSafe({
-      model: model(),
+
       schema: z.object({
         cards: z
           .array(
@@ -142,7 +142,7 @@ export const generateMindMap = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const { object } = await generateObjectSafe({
-      model: model(),
+
       schema: MindMapSchema,
       prompt:
         `Create a study mind map for the topic. 15-20 nodes total, 1 main, plenty of sub, ` +
@@ -163,7 +163,7 @@ export const expandMindMapNode = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const { object } = await generateObjectSafe({
-      model: model(),
+
       schema: z.object({ children: z.array(z.string()).length(3) }),
       prompt:
         `Generate exactly 3 short child concepts (max 4 words each) that branch from "${data.parentLabel}". ` +
@@ -207,7 +207,7 @@ export const generateQuiz = createServerFn({ method: "POST" })
       ? `Bloom distribution (% per level L1-L6): ${data.bloomDistribution.join(", ")}.`
       : `Spread across Bloom L1-L5 with at least 1 question per level when count>=5.`;
     const { object } = await generateObjectSafe({
-      model: model(),
+
       schema: QuizSchema,
       prompt:
         `Generate exactly ${data.count} multiple-choice questions on "${data.topic}". ` +
