@@ -531,6 +531,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
 function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   const isMobile = useIsMobile();
   const [signedUrl, setSignedUrl] = useState<string>("");
+  const [signError, setSignError] = useState(false);
   const [page, setPage] = useState(1);
   const [pageText, setPageText] = useState("");
   const [totalPages, setTotalPages] = useState(0);
@@ -558,9 +559,10 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     if (!material.pdf_storage_path) return;
     let mounted = true;
     async function load() {
-      const { data } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from("materials")
         .createSignedUrl(material.pdf_storage_path, 7200);
+      if (mounted && error) setSignError(true);
       if (mounted && data?.signedUrl) setSignedUrl(data.signedUrl);
     }
     load();
@@ -595,6 +597,8 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
         .then(() => {});
     }
   }, [page, totalPages, material.id, material.total_pages, userId]);
+
+  if (signError) return <TextReaderTab material={material} userId={userId} />;
 
   if (!signedUrl || !initialReady) {
     return (
