@@ -1,14 +1,32 @@
 import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
+import { getUserIdFromToken } from "@/lib/server-auth";
 
 export const Route = createFileRoute("/api/run-code")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         try {
-          const body = (await request.json()) as { language: string; version: string; code: string; stdin?: string };
+          const body = (await request.json()) as {
+            language?: string;
+            version?: string;
+            code?: string;
+            stdin?: string;
+            accessToken?: string;
+          };
+          if (!body?.accessToken) {
+            return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+          }
+          try {
+            await getUserIdFromToken(body.accessToken);
+          } catch {
+            return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+          }
           if (!body?.language || !body?.code) {
             return Response.json({ ok: false, error: "Missing language or code" }, { status: 400 });
+          }
+          if (typeof body.code !== "string" || body.code.length > 100_000) {
+            return Response.json({ ok: false, error: "Code too large" }, { status: 413 });
           }
           const r = await fetch("https://emkc.org/api/v2/piston/execute", {
             method: "POST",
