@@ -44,6 +44,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes.index'
 import { Route as AuthenticatedMaterialsIndexRouteImport } from './routes/_authenticated/materials.index'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
 import { Route as AuthenticatedMaterialsIdRouteImport } from './routes/_authenticated/materials.$id'
@@ -224,6 +225,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedQuizzesIndexRoute =
+  AuthenticatedQuizzesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedQuizzesRoute,
+  } as any)
 const AuthenticatedMaterialsIndexRoute =
   AuthenticatedMaterialsIndexRouteImport.update({
     id: '/',
@@ -292,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/materials/': typeof AuthenticatedMaterialsIndexRoute
+  '/quizzes/': typeof AuthenticatedQuizzesIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -311,7 +319,6 @@ export interface FileRoutesByTo {
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
-  '/quizzes': typeof AuthenticatedQuizzesRouteWithChildren
   '/review': typeof AuthenticatedReviewRoute
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByTo {
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/materials': typeof AuthenticatedMaterialsIndexRoute
+  '/quizzes': typeof AuthenticatedQuizzesIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/_authenticated/materials/': typeof AuthenticatedMaterialsIndexRoute
+  '/_authenticated/quizzes/': typeof AuthenticatedQuizzesIndexRoute
   '/_authenticated/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/_authenticated/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
     | '/materials/$id'
     | '/rooms/$id'
     | '/materials/'
+    | '/quizzes/'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   fileRoutesByTo: FileRoutesByTo
@@ -437,7 +447,6 @@ export interface FileRouteTypes {
     | '/mindmaps'
     | '/notes'
     | '/progress'
-    | '/quizzes'
     | '/review'
     | '/rooms'
     | '/schedule'
@@ -458,6 +467,7 @@ export interface FileRouteTypes {
     | '/materials/$id'
     | '/rooms/$id'
     | '/materials'
+    | '/quizzes'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   id:
@@ -500,6 +510,7 @@ export interface FileRouteTypes {
     | '/_authenticated/materials/$id'
     | '/_authenticated/rooms/$id'
     | '/_authenticated/materials/'
+    | '/_authenticated/quizzes/'
     | '/_authenticated/quizzes/$id/results'
     | '/_authenticated/quizzes/$id/take'
   fileRoutesById: FileRoutesById
@@ -768,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/quizzes/': {
+      id: '/_authenticated/quizzes/'
+      path: '/'
+      fullPath: '/quizzes/'
+      preLoaderRoute: typeof AuthenticatedQuizzesIndexRouteImport
+      parentRoute: typeof AuthenticatedQuizzesRoute
+    }
     '/_authenticated/materials/': {
       id: '/_authenticated/materials/'
       path: '/'
@@ -823,11 +841,13 @@ const AuthenticatedMaterialsRouteWithChildren =
   )
 
 interface AuthenticatedQuizzesRouteChildren {
+  AuthenticatedQuizzesIndexRoute: typeof AuthenticatedQuizzesIndexRoute
   AuthenticatedQuizzesIdResultsRoute: typeof AuthenticatedQuizzesIdResultsRoute
   AuthenticatedQuizzesIdTakeRoute: typeof AuthenticatedQuizzesIdTakeRoute
 }
 
 const AuthenticatedQuizzesRouteChildren: AuthenticatedQuizzesRouteChildren = {
+  AuthenticatedQuizzesIndexRoute: AuthenticatedQuizzesIndexRoute,
   AuthenticatedQuizzesIdResultsRoute: AuthenticatedQuizzesIdResultsRoute,
   AuthenticatedQuizzesIdTakeRoute: AuthenticatedQuizzesIdTakeRoute,
 }
