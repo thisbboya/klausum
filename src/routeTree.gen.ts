@@ -44,6 +44,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedMaterialsIndexRouteImport } from './routes/_authenticated/materials.index'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
 import { Route as AuthenticatedMaterialsIdRouteImport } from './routes/_authenticated/materials.$id'
 import { Route as AuthenticatedQuizzesIdTakeRouteImport } from './routes/_authenticated/quizzes.$id.take'
@@ -223,6 +224,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMaterialsIndexRoute =
+  AuthenticatedMaterialsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedMaterialsRoute,
+  } as any)
 const AuthenticatedRoomsIdRoute = AuthenticatedRoomsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -284,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
+  '/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -300,7 +308,6 @@ export interface FileRoutesByTo {
   '/exams': typeof AuthenticatedExamsRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
-  '/materials': typeof AuthenticatedMaterialsRouteWithChildren
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
+  '/materials': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -366,6 +374,7 @@ export interface FileRoutesById {
   '/u/$handle': typeof UHandleRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
+  '/_authenticated/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/_authenticated/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/_authenticated/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -408,6 +417,7 @@ export interface FileRouteTypes {
     | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
+    | '/materials/'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   fileRoutesByTo: FileRoutesByTo
@@ -424,7 +434,6 @@ export interface FileRouteTypes {
     | '/exams'
     | '/formulas'
     | '/gaps'
-    | '/materials'
     | '/mindmaps'
     | '/notes'
     | '/progress'
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/u/$handle'
     | '/materials/$id'
     | '/rooms/$id'
+    | '/materials'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   id:
@@ -489,6 +499,7 @@ export interface FileRouteTypes {
     | '/u/$handle'
     | '/_authenticated/materials/$id'
     | '/_authenticated/rooms/$id'
+    | '/_authenticated/materials/'
     | '/_authenticated/quizzes/$id/results'
     | '/_authenticated/quizzes/$id/take'
   fileRoutesById: FileRoutesById
@@ -757,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/materials/': {
+      id: '/_authenticated/materials/'
+      path: '/'
+      fullPath: '/materials/'
+      preLoaderRoute: typeof AuthenticatedMaterialsIndexRouteImport
+      parentRoute: typeof AuthenticatedMaterialsRoute
+    }
     '/_authenticated/rooms/$id': {
       id: '/_authenticated/rooms/$id'
       path: '/$id'
@@ -790,11 +808,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedMaterialsRouteChildren {
   AuthenticatedMaterialsIdRoute: typeof AuthenticatedMaterialsIdRoute
+  AuthenticatedMaterialsIndexRoute: typeof AuthenticatedMaterialsIndexRoute
 }
 
 const AuthenticatedMaterialsRouteChildren: AuthenticatedMaterialsRouteChildren =
   {
     AuthenticatedMaterialsIdRoute: AuthenticatedMaterialsIdRoute,
+    AuthenticatedMaterialsIndexRoute: AuthenticatedMaterialsIndexRoute,
   }
 
 const AuthenticatedMaterialsRouteWithChildren =
