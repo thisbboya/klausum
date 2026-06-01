@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import { Search } from "lucide-react";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 interface PDFViewerProps {
   pdfUrl: string;
@@ -29,6 +29,7 @@ export function PDFViewer({
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.3);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [isRendering, setIsRendering] = useState(false);
   const [pageInput, setPageInput] = useState(String(page));
   const [indexProgress, setIndexProgress] = useState({ done: 0, total: 0 });
@@ -39,6 +40,7 @@ export function PDFViewer({
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
+    setLoadError("");
     pdfjsLib
       .getDocument({ url: pdfUrl, withCredentials: false })
       .promise.then((doc: any) => {
@@ -51,6 +53,7 @@ export function PDFViewer({
       .catch((err: any) => {
         if (!cancelled) {
           console.error("PDF load error:", err);
+          setLoadError("This PDF could not be rendered here, but the extracted text and AI study view are still available.");
           setIsLoading(false);
         }
       });
@@ -238,7 +241,11 @@ export function PDFViewer({
             <p className="text-muted-foreground text-sm">Loading document…</p>
           </div>
         ) : (
-          <div className="relative">
+          loadError ? (
+            <div className="max-w-md rounded-xl border border-border bg-card p-5 text-center text-sm text-muted-foreground">
+              {loadError}
+            </div>
+          ) : <div className="relative">
             <canvas
               ref={canvasRef}
               className="rounded-lg shadow-2xl max-w-full block bg-white"
