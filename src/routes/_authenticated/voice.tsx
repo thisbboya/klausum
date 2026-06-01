@@ -73,6 +73,8 @@ function VoicePage() {
       const ext = (blob.type.includes("mp4") ? "m4a" : "webm");
       const fd = new FormData();
       fd.append("audio", new File([blob], `note.${ext}`, { type: blob.type }));
+      const { getAccessToken } = await import("@/lib/auth-helper");
+      fd.append("accessToken", await getAccessToken());
       const r = await fetch("/api/transcribe", { method: "POST", body: fd });
       const j = await r.json();
       if (!r.ok) throw new Error(j?.error ?? "Transcription failed");

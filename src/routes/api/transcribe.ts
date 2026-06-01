@@ -1,5 +1,6 @@
 import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
+import { getUserIdFromToken } from "@/lib/server-auth";
 
 // POST audio (multipart/form-data, field "audio") -> { text }
 // Uses Gemini directly (GEMINI_API_KEY) if available, else Lovable AI Gateway.
@@ -9,9 +10,21 @@ export const Route = createFileRoute("/api/transcribe")({
       POST: async ({ request }: { request: Request }) => {
         try {
           const form = await request.formData();
+          const token = form.get("accessToken");
+          if (typeof token !== "string" || !token) {
+            return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+          }
+          try {
+            await getUserIdFromToken(token);
+          } catch {
+            return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+          }
           const file = form.get("audio");
           if (!(file instanceof File)) {
             return new Response(JSON.stringify({ error: "Missing audio file" }), { status: 400 });
+          }
+          if (file.size > 25 * 1024 * 1024) {
+            return new Response(JSON.stringify({ error: "Audio too large (max 25 MB)" }), { status: 413 });
           }
           const buf = new Uint8Array(await file.arrayBuffer());
           // base64 encode in chunks to avoid arg limits

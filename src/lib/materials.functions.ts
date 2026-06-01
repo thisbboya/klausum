@@ -11,14 +11,26 @@ function gateway() {
 }
 
 const ProcessInput = z.object({
-  accessToken: z.string(),
-  title: z.string(),
-  subject: z.string().optional(),
-  fieldCategory: z.string().optional(),
+  accessToken: z.string().max(4096),
+  title: z.string().min(1).max(500),
+  subject: z.string().max(200).optional(),
+  fieldCategory: z.string().max(100).optional(),
   isStem: z.boolean().optional(),
-  text: z.string().optional(),
-  fileBase64: z.string().optional(),
-  mimeType: z.string().optional(),
+  text: z.string().max(2_000_000).optional(),
+  // base64 of ~20 MB ≈ 27 MB; cap at 28 MB to block payload abuse
+  fileBase64: z.string().max(28_000_000).optional(),
+  mimeType: z
+    .enum([
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+      "image/gif",
+      "text/plain",
+      "text/markdown",
+    ])
+    .optional(),
 });
 
 const ProcessedSchema = z

@@ -1046,10 +1046,12 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
     setLoading(true);
     setErr(null);
     try {
+      const { getAccessToken } = await import("@/lib/auth-helper");
+      const accessToken = await getAccessToken();
       const res = await fetch("/api/youtube-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ q: query, maxResults: 12 }),
+        body: JSON.stringify({ q: query, maxResults: 12, accessToken }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { videos: Video[] };
