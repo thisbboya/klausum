@@ -35,7 +35,7 @@ export const generateReferenceSheet = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const existing = (data.existing ?? []).slice(0, 30).join("; ");
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: Schema,
       prompt:
