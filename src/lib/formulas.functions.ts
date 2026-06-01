@@ -1,13 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { resolveModel, DEFAULT_MODEL } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
 
 function model() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key)(DEFAULT_MODEL);
+  return resolveModel(DEFAULT_MODEL);
 }
 
 const Input = z.object({
