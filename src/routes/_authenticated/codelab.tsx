@@ -61,10 +61,12 @@ function CodeLab() {
     setRunning(true);
     setOutput("Running…");
     try {
+      const { getAccessToken } = await import("@/lib/auth-helper");
+      const accessToken = await getAccessToken();
       const r = await fetch("/api/run-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: lang.piston, version: lang.version, code, stdin }),
+        body: JSON.stringify({ language: lang.piston, version: lang.version, code, stdin, accessToken }),
       });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error ?? `Sandbox ${r.status}`);
