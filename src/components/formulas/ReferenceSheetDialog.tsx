@@ -41,7 +41,7 @@ export function ReferenceSheetDialog({
         data: { accessToken: session.access_token, subject, topic: topic || undefined, existing: existingNames },
       });
       setItems(r.formulas);
-      setPicked(Object.fromEntries(r.formulas.map((_, i) => [i, true])));
+      setPicked(Object.fromEntries(r.formulas.map((_: unknown, i: number) => [i, true])));
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to generate");
     } finally {

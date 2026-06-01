@@ -1,13 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { resolveModel, DEFAULT_MODEL } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
 
 function model() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key)(DEFAULT_MODEL);
+  return resolveModel(DEFAULT_MODEL);
 }
 
 const Input = z.object({
@@ -37,7 +35,7 @@ export const generateReferenceSheet = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const existing = (data.existing ?? []).slice(0, 30).join("; ");
-    const { object } = await generateObject({
+    const { object } = await generateObjectSafe({
       model: model(),
       schema: Schema,
       prompt:

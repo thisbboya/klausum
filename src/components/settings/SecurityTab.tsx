@@ -148,13 +148,9 @@ function TwoFactorSection() {
                 <div className="text-xs text-muted-foreground">
                   Scan this QR code with your authenticator app, then enter the 6-digit code below.
                 </div>
-                <div
-                  className="mx-auto mt-2 h-44 w-44 rounded bg-white p-2"
-                  // QR is returned as an SVG data URI from Supabase
-                  dangerouslySetInnerHTML={{
-                    __html: `<img src="${enrolling.qr}" alt="2FA QR" width="160" height="160" />`,
-                  }}
-                />
+                <div className="mx-auto mt-2 flex h-44 w-44 items-center justify-center rounded bg-white p-2">
+                  <img src={enrolling.qr} alt="2FA QR code" width={160} height={160} />
+                </div>
                 <div className="mt-2 break-all text-center font-mono text-[10px] text-muted-foreground">
                   {enrolling.secret}
                 </div>

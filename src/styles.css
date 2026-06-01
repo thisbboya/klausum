@@ -404,3 +404,35 @@ body.landing::before {
 .textLayer.selecting .endOfContent {
   top: 0;
 }
+
+/* React Flow dark theme overrides (mindmap canvas) */
+.react-flow__controls,
+.react-flow__controls-button,
+.react-flow__panel,
+.react-flow__minimap,
+.react-flow__attribution {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+.react-flow__controls-button {
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  fill: hsl(var(--foreground)) !important;
+}
+.react-flow__controls-button:hover {
+  background: hsl(var(--muted)) !important;
+}
+.react-flow__edge-text,
+.react-flow__edge-textbg {
+  fill: hsl(var(--foreground)) !important;
+}
+.react-flow__node {
+  color: hsl(var(--foreground));
+}
+.react-flow__handle {
+  background: hsl(var(--primary)) !important;
+  border-color: hsl(var(--background)) !important;
+}
+.react-flow__background {
+  background: hsl(var(--background));
+}
