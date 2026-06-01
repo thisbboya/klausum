@@ -1,13 +1,20 @@
 import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
+import { getUserIdFromToken } from "@/lib/server-auth";
 
-type Body = { q?: string; maxResults?: number };
+type Body = { q?: string; maxResults?: number; accessToken?: string };
 
 export const Route = createFileRoute("/api/youtube-search")({
   server: {
     handlers: {
       POST: async ({ request }: { request: Request }) => {
-        const { q, maxResults = 12 } = (await request.json()) as Body;
+        const { q, maxResults = 12, accessToken } = (await request.json()) as Body;
+        if (!accessToken) return new Response("Unauthorized", { status: 401 });
+        try {
+          await getUserIdFromToken(accessToken);
+        } catch {
+          return new Response("Unauthorized", { status: 401 });
+        }
         if (!q || typeof q !== "string" || q.length > 200) {
           return new Response("Invalid query", { status: 400 });
         }
