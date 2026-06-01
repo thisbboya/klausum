@@ -1,5 +1,5 @@
 import { awardXp } from "@/lib/xp";
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,8 +11,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";
 import { createNewCard } from "@/lib/fsrs";
 
-export const Route = createFileRoute("/_authenticated/materials")({
-  component: MaterialsRoute,
+export const Route = createFileRoute("/_authenticated/materials/")({
+  component: MaterialsPage,
 });
 
 const SUBJECTS = [
@@ -36,10 +36,6 @@ const STEPS = [
   "Extracting formulas",
   "Building Bloom question bank",
 ];
-
-function MaterialsRoute() {
-  return <Outlet />;
-}
 
 export function MaterialsPage() {
   const { user } = useAuth();

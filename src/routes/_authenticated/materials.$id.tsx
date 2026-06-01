@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/materials/$id")({
 });
 
 const TABS = [
-  { key: "read", label: "📖 Read PDF", color: "text-foreground" },
+  { key: "read", label: "📖 Read", color: "text-foreground" },
   { key: "summary", label: "Summary", color: "text-foreground" },
   { key: "original", label: "📄 Original", color: "text-foreground" },
   { key: "visual", label: "👁️ Visual", color: "text-[color:var(--color-visual)]" },
@@ -50,11 +50,12 @@ function MaterialDetail() {
   });
 
   const hasPdf = !!(material as any)?.pdf_storage_path;
+  const hasReadableText = !!((material as any)?.original_content || (material as any)?.ai_summary || (material as any)?.adapted_reading);
 
-  // Default to "read" tab when a PDF is available
+  // Default to "read" whenever we can show a reader: PDF first, extracted text fallback otherwise.
   useEffect(() => {
-    if (hasPdf) setTab("read");
-  }, [hasPdf]);
+    if (hasPdf || hasReadableText) setTab("read");
+  }, [hasPdf, hasReadableText]);
 
   const { data: deck } = useQuery({
     queryKey: ["deck-for-material", id],
@@ -68,12 +69,12 @@ function MaterialDetail() {
   const visibleTabs = useMemo(() => {
     if (!material) return TABS;
     return TABS.filter((t) => {
-      if (t.key === "read") return hasPdf;
+      if (t.key === "read") return hasPdf || hasReadableText;
       if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0;
       if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
       return true;
     });
-  }, [material, hasPdf]);
+  }, [material, hasPdf, hasReadableText]);
 
   async function handleDelete() {
     if (!material) return;
@@ -154,8 +155,8 @@ function MaterialDetail() {
             ))}
           </div>
 
-          {tab === "read" && hasPdf && user && (
-            <ReadPdfTab material={material} userId={user.id} />
+          {tab === "read" && user && (
+            hasPdf ? <ReadPdfTab material={material} userId={user.id} /> : <TextReaderTab material={material} userId={user.id} />
           )}
           {tab === "summary" && <SummaryTab material={material} />}
           {tab === "original" && <OriginalTab material={material} />}
@@ -416,9 +417,121 @@ function ConceptGraphTab({ graph, concepts }: { graph: any[]; concepts: any[] })
   );
 }
 
+function chunkTextPages(text: string): string[] {
+  const clean = text.replace(/\r\n/g, "\n").trim();
+  if (!clean) return [""];
+  const paragraphs = clean.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const pages: string[] = [];
+  let current = "";
+  for (const paragraph of paragraphs.length ? paragraphs : [clean]) {
+    if ((current + "\n\n" + paragraph).length > 1800 && current) {
+      pages.push(current.trim());
+      current = paragraph;
+    } else {
+      current = current ? `${current}\n\n${paragraph}` : paragraph;
+    }
+  }
+  if (current.trim()) pages.push(current.trim());
+  return pages.length ? pages : [clean];
+}
+
+function TextReaderTab({ material, userId }: { material: any; userId: string }) {
+  const isMobile = useIsMobile();
+  const sourceText = material.original_content || material.adapted_reading || material.ai_summary || "";
+  const pages = useMemo(() => chunkTextPages(sourceText), [sourceText]);
+  const [page, setPage] = useState(1);
+  const [mobileTab, setMobileTab] = useState<"read" | "chat">("read");
+  const [selection, setSelection] = useState<string | null>(null);
+  const totalPages = pages.length;
+  const currentPageText = pages[page - 1] ?? "";
+  const pageIndex = useMemo(
+    () => Object.fromEntries(pages.map((txt, i) => [i + 1, txt.slice(0, 900)])),
+    [pages],
+  );
+
+  useEffect(() => {
+    supabase
+      .from("reading_progress")
+      .upsert(
+        { user_id: userId, material_id: material.id, last_page: page, total_pages: totalPages, updated_at: new Date().toISOString() },
+        { onConflict: "user_id,material_id" },
+      )
+      .then(() => {});
+  }, [page, totalPages, material.id, userId]);
+
+  const captureSelection = () => {
+    const text = window.getSelection()?.toString().replace(/\s+/g, " ").trim() ?? "";
+    setSelection(text.length >= 3 ? text.slice(0, 1200) : null);
+  };
+
+  const reader = (
+    <div className="flex h-full flex-col bg-background">
+      <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+        <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40 hover:text-foreground">‹ Prev</button>
+        <span className="font-medium">Page {page} / {totalPages}</span>
+        <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40 hover:text-foreground">Next ›</button>
+      </div>
+      <div className="flex-1 overflow-auto p-5 md:p-6" onMouseUp={captureSelection} onTouchEnd={() => setTimeout(captureSelection, 50)}>
+        {selection && (
+          <button onClick={() => isMobile && setMobileTab("chat")} className="mb-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+            Ask AI about selected text
+          </button>
+        )}
+        <article className="prose prose-invert prose-sm md:prose-base max-w-none whitespace-pre-wrap">
+          {currentPageText || "No readable text was extracted for this material."}
+        </article>
+      </div>
+    </div>
+  );
+
+  const chat = (
+    <MaterialAIChat
+      materialId={material.id}
+      materialTitle={material.title}
+      subject={material.subject ?? "General"}
+      level={material.level ?? undefined}
+      currentPage={page}
+      totalPages={totalPages}
+      currentPageText={currentPageText}
+      fullDocumentText={sourceText}
+      pageIndex={pageIndex}
+      selection={selection}
+      onClearSelection={() => setSelection(null)}
+      onJumpToPage={(target) => {
+        setPage(Math.max(1, Math.min(target, totalPages)));
+        if (isMobile) setMobileTab("read");
+      }}
+      userId={userId}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <div className="flex h-[calc(100vh-12rem)] flex-col overflow-hidden rounded-xl border border-border">
+        <div className="flex shrink-0 border-b border-border bg-card">
+          {(["read", "chat"] as const).map((t) => (
+            <button key={t} onClick={() => setMobileTab(t)} className={`flex-1 py-2.5 text-xs font-semibold ${mobileTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}>
+              {t === "read" ? `📖 Read · p.${page}/${totalPages}` : "🤖 AI Chat"}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 overflow-hidden">{mobileTab === "read" ? reader : chat}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-13rem)] overflow-hidden rounded-xl border border-border">
+      <div className="w-[58%] border-r border-border">{reader}</div>
+      <div className="w-[42%]">{chat}</div>
+    </div>
+  );
+}
+
 function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   const isMobile = useIsMobile();
   const [signedUrl, setSignedUrl] = useState<string>("");
+  const [signError, setSignError] = useState(false);
   const [page, setPage] = useState(1);
   const [pageText, setPageText] = useState("");
   const [totalPages, setTotalPages] = useState(0);
@@ -446,9 +559,10 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     if (!material.pdf_storage_path) return;
     let mounted = true;
     async function load() {
-      const { data } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from("materials")
         .createSignedUrl(material.pdf_storage_path, 7200);
+      if (mounted && error) setSignError(true);
       if (mounted && data?.signedUrl) setSignedUrl(data.signedUrl);
     }
     load();
@@ -483,6 +597,8 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
         .then(() => {});
     }
   }, [page, totalPages, material.id, material.total_pages, userId]);
+
+  if (signError) return <TextReaderTab material={material} userId={userId} />;
 
   if (!signedUrl || !initialReady) {
     return (

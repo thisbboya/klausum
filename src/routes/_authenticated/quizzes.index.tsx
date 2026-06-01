@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ListChecks, Sparkles, Loader2, Play, RotateCcw } from "lucide-react";
 import { generateQuiz } from "@/lib/study.functions";
 
-export const Route = createFileRoute("/_authenticated/quizzes")({ component: QuizzesRoute });
+export const Route = createFileRoute("/_authenticated/quizzes/")({ component: QuizzesPage });
 
 const PRESETS: Record<string, number[]> = {
   Balanced: [20, 20, 20, 15, 15, 10],
@@ -16,10 +16,6 @@ const PRESETS: Record<string, number[]> = {
   "Application (L3-L4)": [10, 15, 35, 30, 5, 5],
   "Higher-order (L5-L6)": [5, 10, 15, 20, 25, 25],
 };
-
-function QuizzesRoute() {
-  return <Outlet />;
-}
 
 export function QuizzesPage() {
   const { user, session } = useAuth();
