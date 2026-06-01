@@ -41,7 +41,7 @@ function MaterialsRoute() {
   return <Outlet />;
 }
 
-function MaterialsPage() {
+export function MaterialsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
