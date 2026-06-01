@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/materials/$id")({
 });
 
 const TABS = [
-  { key: "read", label: "📖 Read PDF", color: "text-foreground" },
+  { key: "read", label: "📖 Read", color: "text-foreground" },
   { key: "summary", label: "Summary", color: "text-foreground" },
   { key: "original", label: "📄 Original", color: "text-foreground" },
   { key: "visual", label: "👁️ Visual", color: "text-[color:var(--color-visual)]" },
@@ -50,11 +50,12 @@ function MaterialDetail() {
   });
 
   const hasPdf = !!(material as any)?.pdf_storage_path;
+  const hasReadableText = !!((material as any)?.original_content || (material as any)?.ai_summary || (material as any)?.adapted_reading);
 
-  // Default to "read" tab when a PDF is available
+  // Default to "read" whenever we can show a reader: PDF first, extracted text fallback otherwise.
   useEffect(() => {
-    if (hasPdf) setTab("read");
-  }, [hasPdf]);
+    if (hasPdf || hasReadableText) setTab("read");
+  }, [hasPdf, hasReadableText]);
 
   const { data: deck } = useQuery({
     queryKey: ["deck-for-material", id],
@@ -68,12 +69,12 @@ function MaterialDetail() {
   const visibleTabs = useMemo(() => {
     if (!material) return TABS;
     return TABS.filter((t) => {
-      if (t.key === "read") return hasPdf;
+      if (t.key === "read") return hasPdf || hasReadableText;
       if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0;
       if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
       return true;
     });
-  }, [material, hasPdf]);
+  }, [material, hasPdf, hasReadableText]);
 
   async function handleDelete() {
     if (!material) return;
@@ -154,8 +155,8 @@ function MaterialDetail() {
             ))}
           </div>
 
-          {tab === "read" && hasPdf && user && (
-            <ReadPdfTab material={material} userId={user.id} />
+          {tab === "read" && user && (
+            hasPdf ? <ReadPdfTab material={material} userId={user.id} /> : <TextReaderTab material={material} userId={user.id} />
           )}
           {tab === "summary" && <SummaryTab material={material} />}
           {tab === "original" && <OriginalTab material={material} />}
