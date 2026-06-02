@@ -521,9 +521,9 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
   }
 
   return (
-    <div className="flex h-[calc(100vh-13rem)] overflow-hidden rounded-xl border border-border">
-      <div className="w-[58%] border-r border-border">{reader}</div>
-      <div className="w-[42%]">{chat}</div>
+    <div className="flex h-[calc(100vh-8rem)] min-h-[600px] overflow-hidden rounded-xl border border-border">
+      <div className="w-[60%] border-r border-border">{reader}</div>
+      <div className="w-[40%]">{chat}</div>
     </div>
   );
 }
