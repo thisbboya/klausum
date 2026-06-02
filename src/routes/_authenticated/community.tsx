@@ -75,7 +75,7 @@ function FriendsTab() {
     queryKey: ["friend_profiles", otherIds.join(",")],
     enabled: otherIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase.from("user_profiles")
+      const { data } = await supabase.from("public_profiles")
         .select("id, full_name, handle, avatar_url, xp_total, level")
         .in("id", otherIds);
       return data ?? [];
@@ -92,7 +92,7 @@ function FriendsTab() {
     if (!q.trim()) return;
     setSearching(true);
     const term = q.trim().toLowerCase().replace(/^@/, "");
-    const { data } = await supabase.from("user_profiles")
+    const { data } = await supabase.from("public_profiles")
       .select("id, full_name, handle, avatar_url, xp_total, level")
       .or(`handle.ilike.%${term}%,full_name.ilike.%${term}%`)
       .neq("id", user!.id)
@@ -269,7 +269,7 @@ function LeaderboardTab() {
       const { data: lb } = await q.order("xp_this_week", { ascending: false }).limit(50);
       const ids = (lb ?? []).map((r) => r.user_id);
       if (ids.length === 0) return [];
-      const { data: profs } = await supabase.from("user_profiles")
+      const { data: profs } = await supabase.from("public_profiles")
         .select("id, full_name, handle, avatar_url, level").in("id", ids);
       const byId = Object.fromEntries((profs ?? []).map((p) => [p.id, p]));
       return (lb ?? []).map((r) => ({ ...r, profile: byId[r.user_id] }));
