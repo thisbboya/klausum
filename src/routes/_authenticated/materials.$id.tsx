@@ -125,6 +125,14 @@ function MaterialDetail() {
         <div className="flex flex-wrap gap-2 items-center">
           <FocusTimer materialId={material.id} />
           <Link to="/tutor" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10">🧠 Tutor</Link>
+          <Link
+            to="/quizzes"
+            search={{ from: material.id } as any}
+            className="rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-2 text-xs font-semibold hover:bg-emerald-500/25 active:scale-95 transition"
+            title="Generate a quiz from this material"
+          >
+            🎯 Quiz this
+          </Link>
           {deck && <Link to="/review" className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">⚡ Review {deck.total_cards}</Link>}
           <button onClick={handleDownload} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10 inline-flex items-center gap-1.5" title="Download original">
             <Download className="h-3.5 w-3.5" /> Download
