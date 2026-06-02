@@ -98,12 +98,14 @@ Student (currently on page ${data.currentPage} of ${data.totalPages}): ${data.qu
 
 Klausum:`;
 
-    const result = await generateText({
-      model,
-      prompt,
-      maxOutputTokens: 1200,
-      maxRetries: 2,
-    });
+    const result = await withGeminiRetry(PRO_MODEL, (model) =>
+      generateText({
+        model,
+        prompt,
+        maxOutputTokens: 1200,
+        maxRetries: 1,
+      }),
+    );
 
     return { reply: result.text.trim() };
   });
