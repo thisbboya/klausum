@@ -253,6 +253,84 @@ export function QuizzesPage() {
           </label>
         </div>
 
+        {selectedMaterial && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+              🎯 Pick which part of <span className="truncate">"{selectedMaterial.title}"</span> to quiz
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {([
+                ["all", "Whole material"],
+                ["range", "Page range"],
+                ["concepts", "Specific concepts"],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setScope(key)}
+                  className={`text-xs rounded-full px-3 py-1.5 border transition ${
+                    scope === key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {scope === "range" && (
+              <div className="flex items-end gap-2 text-xs">
+                <label className="flex flex-col">
+                  <span className="text-muted-foreground mb-1">From page</span>
+                  <input
+                    type="number" min={1}
+                    value={pageFrom}
+                    onChange={(e) => setPageFrom(Math.max(1, parseInt(e.target.value || "1", 10)))}
+                    className="input w-24"
+                  />
+                </label>
+                <label className="flex flex-col">
+                  <span className="text-muted-foreground mb-1">To page</span>
+                  <input
+                    type="number" min={pageFrom}
+                    value={pageTo}
+                    onChange={(e) => setPageTo(Math.max(pageFrom, parseInt(e.target.value || String(pageFrom), 10)))}
+                    className="input w-24"
+                  />
+                </label>
+                {selectedMaterial.total_pages ? (
+                  <span className="text-muted-foreground self-center pb-2">of {selectedMaterial.total_pages}</span>
+                ) : null}
+              </div>
+            )}
+
+            {scope === "concepts" && (
+              materialConcepts.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No concepts extracted yet — try "Whole material".</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {materialConcepts.map((c) => {
+                    const on = selectedConcepts.includes(c.concept);
+                    return (
+                      <button
+                        type="button"
+                        key={c.id}
+                        onClick={() => setSelectedConcepts((cur) => on ? cur.filter((x) => x !== c.concept) : [...cur, c.concept])}
+                        className={`text-[11px] rounded-full px-2.5 py-1 border ${
+                          on ? "bg-primary/15 border-primary/40 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {c.concept}
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
+        )}
+
         <div>
           <button
             type="button"
