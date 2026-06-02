@@ -16,7 +16,7 @@ function PublicProfilePage() {
     queryKey: ["public-profile", clean],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_profiles")
+        .from("public_profiles")
         .select(
           "id, full_name, handle, avatar_url, school, country, level, field_of_study, companion_id, companion_name, xp_total, streak_days, longest_streak, is_day1_pioneer, cohort_units, created_at",
         )
