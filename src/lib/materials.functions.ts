@@ -210,6 +210,7 @@ export const processMaterial = createServerFn({ method: "POST" })
     if (data.fileBase64 && data.mimeType) {
       const fileB64 = data.fileBase64;
       const mt = data.mimeType;
+      const extraction = await withGeminiRetry(DEFAULT_MODEL, (model) =>
         generateText({
           model,
           messages: [
@@ -217,7 +218,7 @@ export const processMaterial = createServerFn({ method: "POST" })
               role: "user",
               content: [
                 { type: "text", text: "Extract the readable study content from this file as plain text. Keep headings, equations, lists, slide titles, bullet points and important labels. For slides, prefix each slide with '## Slide N:'. Do not summarize." },
-                { type: "file", data: data.fileBase64, mediaType: data.mimeType },
+                { type: "file", data: fileB64, mediaType: mt },
               ],
             },
           ],
