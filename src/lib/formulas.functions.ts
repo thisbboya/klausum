@@ -1,12 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { resolveModel, DEFAULT_MODEL } from "./ai-gateway";
 import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
 
-function model() {
-  return resolveModel(DEFAULT_MODEL);
-}
 
 const Input = z.object({
   accessToken: z.string(),
