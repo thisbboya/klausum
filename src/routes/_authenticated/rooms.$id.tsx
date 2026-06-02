@@ -39,21 +39,26 @@ function RoomPage() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: r }, { data: ms }, { data: mems }, { data: qs }, { data: prof }] = await Promise.all([
+      // Profile fetch + ensure room membership BEFORE reading restricted tables
+      const { data: prof } = await supabase
+        .from("user_profiles").select("full_name").eq("id", user.id).maybeSingle();
+      const dn = prof?.full_name ?? "Student";
+      setName(dn);
+      await supabase.from("room_members").upsert(
+        { room_id: id, user_id: user.id, display_name: dn },
+        { onConflict: "room_id,user_id" },
+      );
+
+      const [{ data: r }, { data: ms }, { data: mems }, { data: qs }] = await Promise.all([
         supabase.from("study_rooms").select("*").eq("id", id).maybeSingle(),
         supabase.from("room_messages").select("*").eq("room_id", id).order("created_at").limit(200),
         supabase.from("room_members").select("*").eq("room_id", id),
         supabase.from("room_questions").select("*").eq("room_id", id).order("upvotes", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("user_profiles").select("full_name").eq("id", user.id).maybeSingle(),
       ]);
       setRoom(r);
       setMessages((ms ?? []) as Msg[]);
       setQuestions((qs ?? []) as Question[]);
-      const dn = prof?.full_name ?? "Student";
-      setName(dn);
-      await supabase.from("room_members").upsert({ room_id: id, user_id: user.id, display_name: dn }, { onConflict: "room_id,user_id" });
-      const { data: refreshed } = await supabase.from("room_members").select("*").eq("room_id", id);
-      setMembers(refreshed ?? mems ?? []);
+      setMembers(mems ?? []);
     })();
 
     const ch = supabase
