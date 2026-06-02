@@ -43,6 +43,8 @@ function TakeQuiz() {
   const [reviewMode, setReviewMode] = useState(false);
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [flash, setFlash] = useState<"green" | "red" | null>(null);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
 
   useEffect(() => {
     (async () => {
