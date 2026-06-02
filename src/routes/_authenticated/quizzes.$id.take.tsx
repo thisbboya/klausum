@@ -286,10 +286,10 @@ function TakeQuiz() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.25 }}
-          className={`rounded-xl border border-border bg-card p-6 ${isChecked && !isCorrect ? "answer-wrong" : ""}`}
+          className={`rounded-xl border border-border bg-card p-6 md:p-8 ${isChecked && !isCorrect ? "answer-wrong" : ""}`}
         >
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-base md:text-lg leading-relaxed">{q.question}</h2>
+            <h2 className="text-xl md:text-2xl font-semibold leading-relaxed">{q.question}</h2>
             <button
               onClick={toggleFlag}
               className={`shrink-0 rounded-full p-2 ${flags.has(idx) ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-accent/10"}`}
@@ -298,7 +298,7 @@ function TakeQuiz() {
               <Flag className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-5 space-y-2">
+          <div className="mt-6 space-y-3">
             {(["A", "B", "C", "D"] as const).map((letter) => {
               const sel = userAnswer === letter;
               const isRightAns = letter === q.correct;
@@ -315,24 +315,32 @@ function TakeQuiz() {
                   key={letter}
                   onClick={() => pick(letter)}
                   disabled={isChecked}
-                  className={`w-full text-left rounded-lg border px-4 py-3 text-sm transition flex items-center justify-between ${cls}`}
+                  className={`w-full text-left rounded-xl border-2 px-5 py-4 min-h-[56px] text-base md:text-lg transition flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-primary/40 ${cls}`}
                 >
-                  <span>
-                    <span className="font-mono text-xs text-muted-foreground mr-2">{letter}.</span>
-                    {q.options[letter]}
+                  <span className="flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-current/30 font-mono text-sm font-bold shrink-0">{letter}</span>
+                    <span>{q.options[letter]}</span>
                   </span>
-                  {isChecked && isRightAns && <Check className="h-4 w-4" />}
-                  {isChecked && sel && !isRightAns && <X className="h-4 w-4" />}
+                  {isChecked && isRightAns && <Check className="h-5 w-5 shrink-0" />}
+                  {isChecked && sel && !isRightAns && <X className="h-5 w-5 shrink-0" />}
                 </button>
               );
             })}
           </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
             <span>Bloom L{q.bloom_level} · {q.difficulty}</span>
-            <span>{q.topic}</span>
+            <span className="truncate ml-2">{q.topic}</span>
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {combo >= 2 && !isChecked && (
+        <div className="text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30 px-3 py-1 text-xs font-bold">
+            🔥 {combo}× streak{combo >= 5 ? " — 2× XP!" : combo >= 3 ? " — 1.5× XP" : ""}
+          </span>
+        </div>
+      )}
 
       {/* Duolingo-style instant feedback banner */}
       <AnimatePresence>
