@@ -352,17 +352,40 @@ export function PDFViewer({
         )}
 
         <button
-          onClick={() => setScale((s) => Math.max(0.5, parseFloat((s - 0.15).toFixed(2))))}
+          onClick={() => {
+            setFitMode("manual");
+            setScale((s) => {
+              const next = Math.max(0.5, parseFloat((s - 0.15).toFixed(2)));
+              try { localStorage.setItem("klausum:pdfScale", String(next)); } catch {}
+              return next;
+            });
+          }}
           className="w-8 h-8 rounded-md bg-muted border border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
           aria-label="Zoom out"
         >
           −
         </button>
-        <span className="text-muted-foreground text-xs w-10 text-center font-mono">
-          {Math.round(scale * 100)}%
-        </span>
         <button
-          onClick={() => setScale((s) => Math.min(3, parseFloat((s + 0.15).toFixed(2))))}
+          onClick={() => setFitMode((m) => (m === "width" ? "manual" : "width"))}
+          className={`px-2 h-8 rounded-md border text-[10px] font-semibold transition active:scale-95 ${
+            fitMode === "width"
+              ? "bg-primary/15 border-primary/40 text-primary"
+              : "bg-muted border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Fit to width"
+          title="Fit to width"
+        >
+          {fitMode === "width" ? "FIT" : `${Math.round(scale * 100)}%`}
+        </button>
+        <button
+          onClick={() => {
+            setFitMode("manual");
+            setScale((s) => {
+              const next = Math.min(3, parseFloat((s + 0.15).toFixed(2)));
+              try { localStorage.setItem("klausum:pdfScale", String(next)); } catch {}
+              return next;
+            });
+          }}
           className="w-8 h-8 rounded-md bg-muted border border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
           aria-label="Zoom in"
         >
