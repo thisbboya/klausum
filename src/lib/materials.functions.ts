@@ -208,7 +208,8 @@ export const processMaterial = createServerFn({ method: "POST" })
     let sourceText = data.text?.slice(0, 60000) ?? "";
 
     if (data.fileBase64 && data.mimeType) {
-      const extraction = await withGeminiRetry(DEFAULT_MODEL, (model) =>
+      const fileB64 = data.fileBase64;
+      const mt = data.mimeType;
         generateText({
           model,
           messages: [
