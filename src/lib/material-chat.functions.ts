@@ -40,7 +40,7 @@ export const chatWithMaterial = createServerFn({ method: "POST" })
   .inputValidator((d) => ChatInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const model = resolveModel(PRO_MODEL);
+    
 
     const styleHint = STYLE_HINTS[data.userPrimaryStyle ?? "Reading"] ?? STYLE_HINTS.Reading;
 
