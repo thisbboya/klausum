@@ -124,7 +124,15 @@ export function PDFViewer({
       try {
         const pageObj = await pdf.getPage(page);
         if (cancelled) return;
-        const viewport = pageObj.getViewport({ scale });
+        let effectiveScale = scale;
+        if (fitMode === "width" && wrapRef.current) {
+          const baseViewport = pageObj.getViewport({ scale: 1 });
+          const containerWidth = wrapRef.current.clientWidth - 32; // padding
+          if (containerWidth > 0) {
+            effectiveScale = Math.min(3, Math.max(0.6, containerWidth / baseViewport.width));
+          }
+        }
+        const viewport = pageObj.getViewport({ scale: effectiveScale });
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext("2d")!;
         canvas.height = viewport.height;
