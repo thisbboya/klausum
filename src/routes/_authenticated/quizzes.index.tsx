@@ -85,13 +85,67 @@ export function QuizzesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("study_materials")
-        .select("id,title,subject,original_content,ai_summary")
+        .select("id,title,subject,original_content,ai_summary,key_concepts,total_pages")
         .eq("processing_status", "ready")
         .order("created_at", { ascending: false })
         .limit(50);
       return data ?? [];
     },
   });
+
+  const selectedMaterial = (materials ?? []).find((x) => x.id === materialId);
+  const materialConcepts: { id: string; concept: string }[] = Array.isArray(selectedMaterial?.key_concepts)
+    ? (selectedMaterial!.key_concepts as any[]).map((c: any, i: number) => ({
+        id: c.id ?? `c${i}`,
+        concept: c.concept ?? c.term ?? c.name ?? `Concept ${i + 1}`,
+      }))
+    : [];
+
+  // Slice the material text by scope: all / page range / chosen concepts.
+  function buildContextFromMaterial(): string | undefined {
+    if (!selectedMaterial) return undefined;
+    const fullText: string = selectedMaterial.original_content || selectedMaterial.ai_summary || "";
+    if (!fullText) return undefined;
+    if (scope === "all") return fullText.slice(0, 30000);
+
+    if (scope === "range") {
+      // Chunk by ~1800-char pages, similar to the text reader, and pick the range.
+      const paragraphs = fullText.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+      const pages: string[] = [];
+      let current = "";
+      for (const p of paragraphs.length ? paragraphs : [fullText]) {
+        if ((current + "\n\n" + p).length > 1800 && current) {
+          pages.push(current.trim());
+          current = p;
+        } else current = current ? `${current}\n\n${p}` : p;
+      }
+      if (current.trim()) pages.push(current.trim());
+      const total = pages.length;
+      const lo = Math.max(1, Math.min(pageFrom, total));
+      const hi = Math.max(lo, Math.min(pageTo, total));
+      return pages.slice(lo - 1, hi).join("\n\n").slice(0, 30000);
+    }
+
+    if (scope === "concepts" && selectedConcepts.length) {
+      const lower = fullText.toLowerCase();
+      const slices: string[] = [];
+      for (const c of selectedConcepts) {
+        const needle = c.toLowerCase();
+        let from = 0;
+        while (slices.join("\n\n").length < 25000) {
+          const idx = lower.indexOf(needle, from);
+          if (idx < 0) break;
+          const start = Math.max(0, idx - 400);
+          const end = Math.min(fullText.length, idx + 600);
+          slices.push(fullText.slice(start, end));
+          from = end;
+        }
+      }
+      return slices.join("\n\n---\n\n").slice(0, 30000) || fullText.slice(0, 15000);
+    }
+
+    return fullText.slice(0, 30000);
+  }
 
   async function generate() {
     if (!session || !user) return;
