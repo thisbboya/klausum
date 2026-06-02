@@ -189,7 +189,15 @@ export function PDFViewer({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdf, page, scale]);
+  }, [pdf, page, scale, fitMode]);
+
+  // Re-render on window resize when in fit-width mode
+  useEffect(() => {
+    if (fitMode !== "width") return;
+    const onResize = () => setScale((s) => s + 0.0001); // nudge to re-trigger
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [fitMode]);
 
   // Selection tracking — works for mouse AND touch (mobile)
   const checkSelection = useCallback(() => {
