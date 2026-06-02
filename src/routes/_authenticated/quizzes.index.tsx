@@ -28,16 +28,21 @@ export function QuizzesPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const genFn = useServerFn(generateQuiz);
+  const { from } = Route.useSearch();
 
   const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("General");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | "expert">("medium");
   const [count, setCount] = useState(5);
-  const [materialId, setMaterialId] = useState<string>("");
+  const [materialId, setMaterialId] = useState<string>(from ?? "");
   const [busy, setBusy] = useState(false);
   const [bloom, setBloom] = useState<number[]>([20, 20, 20, 15, 15, 10]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [timer, setTimer] = useState(false);
+  const [scope, setScope] = useState<"all" | "range" | "concepts">("all");
+  const [pageFrom, setPageFrom] = useState(1);
+  const [pageTo, setPageTo] = useState(10);
+  const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
 
   const bloomTotal = bloom.reduce((a, b) => a + b, 0);
 
