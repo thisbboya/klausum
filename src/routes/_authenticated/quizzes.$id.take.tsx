@@ -216,9 +216,22 @@ function TakeQuiz() {
       if (gapsRows.length) await supabase.from("knowledge_gaps").insert(gapsRows);
     }
 
-    // Award XP
-    const xp = Math.round((score / total) * 75);
-    await awardXp({ userId: user.id, amount: xp, action: "quiz_completed", description: `${score}/${total} on ${title}` });
+    // Award XP — base + combo bonus
+    const baseXp = Math.round((score / total) * 75);
+    const comboBonus = Math.min(50, bestCombo * 3);
+    const xp = baseXp + comboBonus;
+    await awardXp({ userId: user.id, amount: xp, action: "quiz_completed", description: `${score}/${total} on ${title}${bestCombo >= 3 ? ` · ${bestCombo}× combo` : ""}` });
+
+    // Perfect-quiz chest (5+ questions, 100%)
+    if (total >= 5 && score === total) {
+      try {
+        await supabase.rpc("grant_rewards", { _xp: 25, _gems: 10 });
+        await supabase.from("chest_openings").insert({
+          user_id: user.id, tier: "perfect_quiz", reward_xp: 25, reward_gems: 10,
+        });
+        toast.success("💎 Perfect quiz! +25 XP, +10 gems");
+      } catch {}
+    }
 
     // Refill review hearts if user scored >= 70%
     if (total > 0 && score / total >= 0.7) {
