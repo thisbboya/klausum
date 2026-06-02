@@ -97,7 +97,7 @@ function RoomPage() {
   }
 
   async function upvote(q: Question) {
-    await supabase.from("room_questions").update({ upvotes: q.upvotes + 1 }).eq("id", q.id);
+    await supabase.rpc("upvote_room_question", { p_question_id: q.id });
   }
   async function resolveQ(q: Question) {
     await supabase.from("room_questions").update({ resolved: !q.resolved }).eq("id", q.id);
