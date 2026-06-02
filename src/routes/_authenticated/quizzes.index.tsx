@@ -8,7 +8,13 @@ import { toast } from "sonner";
 import { ListChecks, Sparkles, Loader2, Play, RotateCcw } from "lucide-react";
 import { generateQuiz } from "@/lib/study.functions";
 
-export const Route = createFileRoute("/_authenticated/quizzes/")({ component: QuizzesPage });
+type QuizSearch = { from?: string };
+export const Route = createFileRoute("/_authenticated/quizzes/")({
+  validateSearch: (s: Record<string, unknown>): QuizSearch => ({
+    from: typeof s.from === "string" ? s.from : undefined,
+  }),
+  component: QuizzesPage,
+});
 
 const PRESETS: Record<string, number[]> = {
   Balanced: [20, 20, 20, 15, 15, 10],
