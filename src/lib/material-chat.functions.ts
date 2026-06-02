@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
-import { resolveModel, PRO_MODEL } from "./ai-gateway";
+import { withGeminiRetry, PRO_MODEL } from "./ai-gateway";
 import { getUserIdFromToken } from "./server-auth";
 
 const ChatInput = z.object({
