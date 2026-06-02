@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
-import { resolveModel, PRO_MODEL } from "./ai-gateway";
+import { withGeminiRetry, PRO_MODEL } from "./ai-gateway";
 import { getUserIdFromToken } from "./server-auth";
 
 const ChatInput = z.object({
@@ -40,7 +40,7 @@ export const chatWithMaterial = createServerFn({ method: "POST" })
   .inputValidator((d) => ChatInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const model = resolveModel(PRO_MODEL);
+    
 
     const styleHint = STYLE_HINTS[data.userPrimaryStyle ?? "Reading"] ?? STYLE_HINTS.Reading;
 
@@ -98,12 +98,14 @@ Student (currently on page ${data.currentPage} of ${data.totalPages}): ${data.qu
 
 Klausum:`;
 
-    const result = await generateText({
-      model,
-      prompt,
-      maxOutputTokens: 1200,
-      maxRetries: 2,
-    });
+    const result = await withGeminiRetry(PRO_MODEL, (model) =>
+      generateText({
+        model,
+        prompt,
+        maxOutputTokens: 1200,
+        maxRetries: 1,
+      }),
+    );
 
     return { reply: result.text.trim() };
   });

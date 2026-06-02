@@ -1,90 +1,86 @@
-# Fix all non-working buttons & tools
+## What I'll build
 
-I went page by page. Here's what's actually broken vs. what only feels broken, and the fix for each.
+A focused rebuild of the **material reader + AI chat**, the **quiz pipeline**, and the **engagement loop**, plus the missing **PowerPoint upload** path and **proper Gemini key rotation** across your 5+ keys.
 
-## 1. Dark mode is hardcoded (the big one)
+I grouped the work into 6 themes. Each item maps to a real symptom you described.
 
-**Problem:** `src/routes/__root.tsx` renders `<html className="dark">` literally — the `dark_mode` checkbox in Settings → Preferences saves to the DB but **nothing reads it**. Toggling does nothing visible.
+---
 
-**Fix:**
-- New `src/components/theme-provider.tsx` with `ThemeProvider` + `useTheme()`. On mount it reads `localStorage("klausum-theme")` (fallback: `"dark"`), then keeps `<html>`'s `class` (`dark` / removed) in sync. Mount it in `RootComponent`.
-- New `src/components/theme-toggle.tsx` — sun/moon icon button. Place it in:
-  - the desktop sidebar footer (next to "Sign out")
-  - the mobile top bar
-- `Settings → Preferences` "Dark mode" checkbox now writes to BOTH the profile (so it follows the user across devices) AND the `useTheme()` setter, so it takes effect instantly.
-- On login / when profile loads, if `profile.dark_mode` differs from local theme, sync local → profile value (so the device picks up the saved preference).
-- Remove the literal `className="dark"` from the `<html>` shell so the provider can control it.
+### 1. AI key rotation actually works (your 5 Gemini keys + Lovable fallback)
 
-## 2. Mobile nav is mostly missing
+Right now `resolveModel` only reads `GEMINI_API_KEY` and ignores `GEMINI_API_KEY_2..8`. The rotating pool file (`gemini-keys.server.ts`) exists but nothing calls it.
 
-`MobileTopBar` only links to Dashboard/Materials/Review/Tutor + Sign out. No Quizzes, Code Lab, Admin, Settings, etc. — which is why on mobile most things "don't respond" (you can't reach them).
+- Rewrite `src/lib/ai-gateway.ts` so `resolveModel` calls `pickGeminiKey()` from the pool — Round-robin by lowest call count, soft cap 15 req/min/key.
+- Wrap every AI call (`generateText`, `generateObject`) with a retry helper that on 429/quota/permission errors calls `blockGeminiKey(key, 60s)` and re-resolves with the next key. Fall back to Lovable AI Gateway when the whole pool is blocked.
+- Apply the helper everywhere we generate: material processing, quiz generation, material chat, formulas, voice, video-quiz, transcribe.
 
-**Fix:** Replace the inline strip with a hamburger ⇒ slide-in `Sheet` containing the SAME nav list as the desktop sidebar (including the conditional `Admin` link and the new theme toggle + Sign out).
+### 2. PDF reader fixes (size + AI awareness + scanned-PDF OCR fallback)
 
-## 3. Admin tab
+- **Bigger viewer.** Switch the reader layout to `h-[calc(100vh-7rem)]`, drop the outer card padding inside the read tab, and use a 70/30 split on desktop (PDF on left, AI panel on right). On mobile, the reader takes full height.
+- **Fit-to-width by default**, with a "Fit page / Fit width / Actual" toggle next to the +/- zoom. Persist last zoom per user in localStorage.
+- **Page-aware AI for real.** Today the page text gets sent, but flaky on first paint because chat mounts before the first render finishes. I'll make `onPageChange` fire synchronously with the cached page text and gate the chat send button until at least page 1 text is captured. Add a small "AI is reading p.X" indicator so it's visible.
+- **Scanned PDFs.** If pdf.js extracts <500 chars / <100 letters for a page, call a new server fn `ocrPdfPage` that streams the page image to Gemini Vision and stores the OCR text in `pdf_ocr_pages` (cached per material+page). Chat then uses the OCR text transparently.
+- **Highlight-to-explain** (Anara): the "Ask AI about this" pill that pops above a selection already exists — I'll wire a second action "Explain this passage" that sends a pre-built prompt with definition + example + analogy, plus stores the highlight as a yellow underline overlay you can revisit.
+- **Citations**: AI replies already emit `[p.N]` jump chips. I'll also have the model return a short quoted snippet for each citation and render it as a hoverable tooltip.
 
-The hook + server fns are correct, but two practical issues:
+### 3. Quizzes — bigger text, pick the section, generate from material, generate from PDF pages
 
-- The `useIsAdmin` query never runs until the user is loaded, and during that gap the sidebar Admin link briefly disappears/reappears. **Fix:** keep query enabled but show the link only when `data` resolved with admin (no flash).
-- "Make admin / Remove admin" buttons fire `setRoleFn` with no loading state; on slow networks the user double-clicks → toast spam. **Fix:** add `disabled` while pending and per-row spinner.
-- Confirm `adminListUsers` returns; if `auth.admin.listUsers` errors (e.g. cold start), the table renders empty with no message. **Fix:** surface error toast and an inline retry button.
-- Admin link still hidden on mobile — fixed by item 2.
+- **Typography:** question text bumped to `text-xl md:text-2xl leading-relaxed`, options to `text-base md:text-lg`, with bigger tap targets (min-h 56px) and a focus ring. Same for the per-question feedback panel.
+- **"Quiz this material" button** in `materials/$id` — pre-fills the quiz generator with the material AND opens the new section picker.
+- **Section/page-range picker** in the quiz creation form. When a material is chosen:
+   - For PDFs we use the indexed page map already collected by the reader. The picker shows: "All pages", "Current page only", "Pages X–Y", and (if the material has `key_concepts`) a multi-select of concepts.
+   - For text materials we use the chunked pages from `chunkTextPages`.
+   - The selected text becomes the `context` sent to `generateQuiz`, and the picked range is also saved on the quiz row so you can rerun it.
+- **Bloom Q&A → quiz**: in the material reader's Bloom Q&A tab, each level gets a one-click "Make a 5-question quiz from L3" button.
+- **Server fix**: pass full `extracted_text` (we already store it on materials) for binary uploads — current path uses `original_content` which can be empty for PDFs, which is why "no questions from material" was happening.
 
-## 4. Code Lab
+### 4. PowerPoint upload + better extraction
 
-The page itself works but two things make people say "doesn't work":
+- Accept `.ppt, .pptx` in the file input.
+- Server-side `processMaterial` already accepts `mimeType` — I'll add `application/vnd.openxmlformats-officedocument.presentationml.presentation` and `application/vnd.ms-powerpoint` to the allowlist and forward the file directly to Gemini as `file` content (Gemini natively reads PPTX). For very large decks (>20 MB) we surface a friendly error.
+- Same path opens the door for `.docx` (already in the accept attribute but mime wasn't allowlisted) and `.xlsx`.
 
-- **"Run" calls public Piston API** (`emkc.org`) — sometimes blocked / rate-limited. On failure we show "Run failed: …" but no hint. **Fix:** show a clear toast + an inline note ("Public sandbox is busy — try again or use Explain/Tests"). No backend change required.
-- **AI buttons (Explain / Tests / Hint)** silently fail when the session expired. They go through `getAccessToken()` already — we'll wrap each in a `try/catch` that on `Unauthorized` redirects to `/login` with a returnTo, instead of a silent toast.
-- **Snippets rail "Save"** — verify the save button writes to `code_snippets` and refreshes the list (read `SnippetsRail.tsx` and patch if the insert path is broken).
+### 5. Anara-style reader upgrades
 
-## 5. Quizzes
+Concrete subset implemented (you can flag any to skip when you approve):
 
-Generation and Take pages look wired correctly. Two real bugs:
+- **Voice mode**: a mic button in the AI chat that records, transcribes via your existing `/api/transcribe`, and speaks the AI reply with the Web Speech API. Reuses the rotating Gemini pool.
+- **Audio recap**: from the material header, a "🎧 Listen to recap" button generates a 2-minute spoken summary of `ai_summary + key_concepts` using Web Speech with proper pacing; queued so it plays slide-by-slide if you change pages.
+- **Smart questions panel**: under the AI chat, 4 dynamically generated follow-up questions pulled from the page you're on (regenerated when the page changes).
+- **Multi-page synthesis**: an "Explain across pages X–Y" command — picks a page range from the indexed text and asks the AI to synthesise without losing citations.
+- **Pinned snippets**: any highlight can be saved as a card on a right-hand "Pins" tray; pins are sent as additional context in subsequent chats.
+- **Notes side tab**: a markdown notes pane per material that persists to `material_notes` (new table), with a "Save AI reply as note" button on every assistant message.
 
-- The "Take" link from the list uses `search={{ timer: 0 }}` but the `validateSearch` only accepts `number` — that works. However when generation finishes we navigate with `timer: timer ? 30 : 0` — if `timer === false` it's `0`, OK. The actual failure people hit: **`generateQuiz` server fn occasionally returns < 1 question and we still insert** → "Take" page renders empty and looks frozen. **Fix:** if `r.questions.length === 0` toast an error and don't insert/navigate.
-- **"Bloom Normalize" button** on advanced panel rounds to integers and can land at 99% or 101%, then "Generate" rejects. **Fix:** fix the rounding so the last bucket absorbs the remainder; also make the validator accept ±3% (already ±2 — bump and self-correct).
-- **Per-row "Take" button** works; no change.
+### 6. Duolingo-style engagement loop
 
-## 6. Sweep of remaining buttons
+- **Streak save dialog**: when you load any authenticated page and missed yesterday, show a 1-tap "Use a streak freeze" sheet (table already supports this).
+- **Daily goal ring** on the dashboard with a satisfying fill animation when you cross the daily XP target, plus a small confetti burst.
+- **Combo multipliers in quizzes**: 3 in a row = 1.5×, 5 = 2× XP. Shows a side rail with the current combo and breaks on a wrong answer.
+- **Perfect-quiz chest**: 100% on a 5+ question quiz drops a chest with gems via the capped `grant_rewards` RPC.
+- **League promotion toast**: when your weekly XP crosses a threshold, throw a "You're now in Gold!" celebration.
+- **Achievement badges**: 10 new ones — First Quiz, First Material, 7-Day Streak, 30-Day Streak, Bloom Champion, Night Owl, Speed Demon, Perfectionist, Polyglot, Sage. Persisted in a new `user_achievements` table.
+- **Weekly Wrapped**: extend the existing `/wrapped` route with charts of XP per day, hardest concept, best subject.
 
-I'll do a fast pass through every authenticated route and verify each button does what its label says. Known suspects to confirm/repair:
+---
 
-- `materials.tsx` — "Process again" / retry on a failed material (current page only shows status, no retry). Add a "Retry" button that re-runs `processMaterial` for the failed row.
-- `materials.$id.tsx` — "Generate quiz from this" / "Generate flashcards" buttons (verify they navigate correctly).
-- `notes.tsx`, `mindmaps.tsx`, `formulas.tsx`, `voice.tsx` — verify create/save/delete buttons all hit Supabase and refetch. Patch any that don't invalidate queries (so the UI updates without a refresh).
-- `rooms.tsx` / `rooms.$id.tsx` — "Create room", "Join", "Leave", "Send" — verify Realtime subscription is wired; fix any handler that's a no-op.
-- `schedule.tsx` — "Mark complete" toggle, drag-resize handles.
-- `exams.tsx`, `gaps.tsx`, `progress.tsx` — verify all action buttons.
-- `videos.tsx` — search/play buttons.
-- `tutor.tsx` — Send button + "New chat" button.
+### Technical notes (skip if not interested)
 
-For each, the fix pattern is the same: if the handler is missing, add it; if the mutation succeeds but UI doesn't update, add `qc.invalidateQueries`; if it throws, surface a toast.
+- All AI keys stay server-only. The rotation helper lives in `src/lib/ai-gateway.ts` next to `resolveModel`.
+- OCR cache table:
+  ```text
+  pdf_ocr_pages (material_id, page_number, text, created_at)
+  PK (material_id, page_number); RLS scoped via materials owner
+  ```
+- New tables: `material_notes`, `material_pins`, `user_achievements`. All RLS-scoped to `auth.uid()` and granted to `authenticated` + `service_role`.
+- The `material_chat_messages` RLS already covers chat history; no schema change there.
+- Quiz `questions` JSON shape unchanged → no migration; only the form + take page evolve.
+- `processMaterial` will get a new `mimeType` allowlist and a longer `maxOutputTokens` for PPTX (decks need more headroom).
+- Server-fn rate-limit handling will return a typed `{ error: "rate_limited" | "credits" | "unknown" }` so the client toasts cleanly.
 
-I won't list every individual repair in this plan — I'll do them in the implementation pass and report a checklist at the end.
+### Out of scope (call out and confirm)
 
-## Out of scope (not changing)
+- I'm not adding a public Anara-style "drop a URL" web import this round — say the word and I'll bolt it on next.
+- "Anara features" is broad — I picked the most-cited ones (highlight-to-explain, citations, voice mode, audio recap, pins, multi-page synthesis). If you want anything else (e.g. cross-document chat across all your materials), flag it before approval.
+- I'll keep the existing color tokens and dark theme; no visual redesign of the rest of the app.
 
-- Auth flow, RLS policies, edge functions, AI prompts, file-upload pipeline (already fixed last round).
-- Visual redesign — only the new theme toggle and mobile sheet add UI.
-- The DB schema — no migration needed.
-
-## Files I'll touch
-
-**New:**
-- `src/components/theme-provider.tsx`
-- `src/components/theme-toggle.tsx`
-- `src/components/mobile-nav.tsx` (Sheet-based drawer)
-
-**Edited:**
-- `src/routes/__root.tsx` (remove hardcoded dark class, mount ThemeProvider)
-- `src/routes/_authenticated.tsx` (sidebar footer toggle, swap MobileTopBar for MobileNav)
-- `src/routes/_authenticated/settings.tsx` (Preferences dark-mode wired to ThemeProvider)
-- `src/routes/_authenticated/admin.tsx` (loading/disabled states, error toast)
-- `src/routes/_authenticated/codelab.tsx` (better Run failure UX, auth-expired handling)
-- `src/routes/_authenticated/quizzes.tsx` (empty-quiz guard, normalize rounding fix)
-- `src/components/codelab/SnippetsRail.tsx` (verify save flow)
-- `src/routes/_authenticated/materials.tsx` (Retry on failed)
-- Targeted patches in any other route page where I find a dead button during the sweep.
-
-After implementation I'll list, in chat, every button I touched and confirm it now does what its label promises.
+When you approve I'll execute in this order so each step is independently usable: **(a)** Gemini rotation → **(b)** reader layout + AI awareness fixes → **(c)** PPTX + extraction fixes → **(d)** quiz section picker + typography → **(e)** Anara additions → **(f)** engagement loop. Each migration runs only after the code that uses it is staged.

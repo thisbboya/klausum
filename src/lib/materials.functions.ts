@@ -1,14 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject, generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { withGeminiRetry, DEFAULT_MODEL } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
+import { generateObject, generateText } from "ai";
 import { getUserIdFromToken } from "./server-auth";
-
-function gateway() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key);
-}
 
 const ProcessInput = z.object({
   accessToken: z.string().max(4096),
@@ -29,6 +24,15 @@ const ProcessInput = z.object({
       "image/gif",
       "text/plain",
       "text/markdown",
+      // PowerPoint
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.ms-powerpoint",
+      // Word
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      // Excel
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
     ])
     .optional(),
 });
@@ -199,27 +203,29 @@ export const processMaterial = createServerFn({ method: "POST" })
   .inputValidator((d) => ProcessInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const provider = gateway();
-    const model = provider(DEFAULT_MODEL);
 
     const stem = data.isStem ?? false;
     let sourceText = data.text?.slice(0, 60000) ?? "";
 
     if (data.fileBase64 && data.mimeType) {
-      const extraction = await generateText({
-        model,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extract the readable study content from this file as plain text. Keep headings, equations, lists, and important labels. Do not summarize." },
-              { type: "file", data: data.fileBase64, mediaType: data.mimeType },
-            ],
-          },
-        ],
-        maxOutputTokens: 12000,
-        maxRetries: 2,
-      });
+      const fileB64 = data.fileBase64;
+      const mt = data.mimeType;
+      const extraction = await withGeminiRetry(DEFAULT_MODEL, (model) =>
+        generateText({
+          model,
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Extract the readable study content from this file as plain text. Keep headings, equations, lists, slide titles, bullet points and important labels. For slides, prefix each slide with '## Slide N:'. Do not summarize." },
+                { type: "file", data: fileB64, mediaType: mt },
+              ],
+            },
+          ],
+          maxOutputTokens: 16000,
+          maxRetries: 1,
+        }),
+      );
       sourceText = extraction.text.trim() || `No readable text could be extracted from ${data.title}.`;
     } else if (data.text) {
       sourceText = data.text.slice(0, 60000);
@@ -235,18 +241,22 @@ export const processMaterial = createServerFn({ method: "POST" })
 
     let raw: any = {};
     try {
-      const { object } = await generateObject({
-        model,
-        schema: ProcessedSchema,
-        prompt,
-        maxOutputTokens: 16000,
-        maxRetries: 2,
-        experimental_repairText: async ({ text }) => extractJson(text),
-      });
+      const { object } = await withGeminiRetry(DEFAULT_MODEL, (model) =>
+        generateObject({
+          model,
+          schema: ProcessedSchema,
+          prompt,
+          maxOutputTokens: 16000,
+          maxRetries: 1,
+          experimental_repairText: async ({ text }) => extractJson(text),
+        }),
+      );
       raw = object;
     } catch (error) {
       console.error("Structured material generation failed, retrying as text", error);
-      const retry = await generateText({ model, prompt, maxOutputTokens: 16000, maxRetries: 1 });
+      const retry = await withGeminiRetry(DEFAULT_MODEL, (model) =>
+        generateText({ model, prompt, maxOutputTokens: 16000, maxRetries: 1 }),
+      );
       raw = parseObjectText(retry.text);
     }
 
@@ -270,9 +280,7 @@ export const evaluateFeynman = createServerFn({ method: "POST" })
   .inputValidator((d) => FeynmanInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const provider = gateway();
-    const { object } = await generateObject({
-      model: provider(DEFAULT_MODEL),
+    const { object } = await generateObjectSafe({
       schema: FeynmanSchema,
       prompt:
         `Evaluate this student's Feynman explanation. Be warm and encouraging.\n` +
@@ -281,3 +289,28 @@ export const evaluateFeynman = createServerFn({ method: "POST" })
     });
     return object;
   });
+
+// Smart follow-up questions for the page the student is reading.
+const FollowupInput = z.object({
+  accessToken: z.string(),
+  materialTitle: z.string().max(300),
+  subject: z.string().max(100).optional(),
+  pageText: z.string().max(8000),
+  pageNumber: z.number().int().min(1).max(10000),
+});
+export const suggestFollowups = createServerFn({ method: "POST" })
+  .inputValidator((d) => FollowupInput.parse(d))
+  .handler(async ({ data }) => {
+    await getUserIdFromToken(data.accessToken);
+    const { object } = await generateObjectSafe({
+      schema: z.object({ questions: z.array(z.string().min(8).max(140)).min(3).max(4) }),
+      prompt:
+        `You are an inquisitive study buddy for "${data.materialTitle}" (${data.subject ?? "General"}). ` +
+        `The student is on page ${data.pageNumber}. Suggest exactly 4 short, specific follow-up ` +
+        `questions they could ask to deepen their understanding of THIS page. Mix one definitional, ` +
+        `one applied, one comparison, one "why does this matter". Each question max 14 words. ` +
+        `No numbering, no quotes around them.\n\n--- PAGE ---\n${data.pageText.slice(0, 6000)}`,
+    });
+    return object;
+  });
+

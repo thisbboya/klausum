@@ -27,7 +27,14 @@ export function PDFViewer({
   const renderTaskRef = useRef<any>(null);
   const [pdf, setPdf] = useState<any>(null);
   const [totalPages, setTotalPages] = useState(0);
-  const [scale, setScale] = useState(1.3);
+  const [scale, setScale] = useState(() => {
+    try {
+      const saved = parseFloat(localStorage.getItem("klausum:pdfScale") || "");
+      if (!Number.isNaN(saved) && saved >= 0.5 && saved <= 3) return saved;
+    } catch {}
+    return 1.6;
+  });
+  const [fitMode, setFitMode] = useState<"manual" | "width">("width");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isRendering, setIsRendering] = useState(false);
@@ -117,7 +124,15 @@ export function PDFViewer({
       try {
         const pageObj = await pdf.getPage(page);
         if (cancelled) return;
-        const viewport = pageObj.getViewport({ scale });
+        let effectiveScale = scale;
+        if (fitMode === "width" && wrapRef.current) {
+          const baseViewport = pageObj.getViewport({ scale: 1 });
+          const containerWidth = wrapRef.current.clientWidth - 32; // padding
+          if (containerWidth > 0) {
+            effectiveScale = Math.min(3, Math.max(0.6, containerWidth / baseViewport.width));
+          }
+        }
+        const viewport = pageObj.getViewport({ scale: effectiveScale });
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext("2d")!;
         canvas.height = viewport.height;
@@ -174,7 +189,15 @@ export function PDFViewer({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdf, page, scale]);
+  }, [pdf, page, scale, fitMode]);
+
+  // Re-render on window resize when in fit-width mode
+  useEffect(() => {
+    if (fitMode !== "width") return;
+    const onResize = () => setScale((s) => s + 0.0001); // nudge to re-trigger
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [fitMode]);
 
   // Selection tracking — works for mouse AND touch (mobile)
   const checkSelection = useCallback(() => {
@@ -329,17 +352,40 @@ export function PDFViewer({
         )}
 
         <button
-          onClick={() => setScale((s) => Math.max(0.5, parseFloat((s - 0.15).toFixed(2))))}
+          onClick={() => {
+            setFitMode("manual");
+            setScale((s) => {
+              const next = Math.max(0.5, parseFloat((s - 0.15).toFixed(2)));
+              try { localStorage.setItem("klausum:pdfScale", String(next)); } catch {}
+              return next;
+            });
+          }}
           className="w-8 h-8 rounded-md bg-muted border border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
           aria-label="Zoom out"
         >
           −
         </button>
-        <span className="text-muted-foreground text-xs w-10 text-center font-mono">
-          {Math.round(scale * 100)}%
-        </span>
         <button
-          onClick={() => setScale((s) => Math.min(3, parseFloat((s + 0.15).toFixed(2))))}
+          onClick={() => setFitMode((m) => (m === "width" ? "manual" : "width"))}
+          className={`px-2 h-8 rounded-md border text-[10px] font-semibold transition active:scale-95 ${
+            fitMode === "width"
+              ? "bg-primary/15 border-primary/40 text-primary"
+              : "bg-muted border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Fit to width"
+          title="Fit to width"
+        >
+          {fitMode === "width" ? "FIT" : `${Math.round(scale * 100)}%`}
+        </button>
+        <button
+          onClick={() => {
+            setFitMode("manual");
+            setScale((s) => {
+              const next = Math.min(3, parseFloat((s + 0.15).toFixed(2)));
+              try { localStorage.setItem("klausum:pdfScale", String(next)); } catch {}
+              return next;
+            });
+          }}
           className="w-8 h-8 rounded-md bg-muted border border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
           aria-label="Zoom in"
         >

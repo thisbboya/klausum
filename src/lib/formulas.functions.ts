@@ -1,12 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { resolveModel, DEFAULT_MODEL } from "./ai-gateway";
 import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
 
-function model() {
-  return resolveModel(DEFAULT_MODEL);
-}
 
 const Input = z.object({
   accessToken: z.string(),
@@ -36,7 +32,6 @@ export const generateReferenceSheet = createServerFn({ method: "POST" })
     await getUserIdFromToken(data.accessToken);
     const existing = (data.existing ?? []).slice(0, 30).join("; ");
     const { object } = await generateObjectSafe({
-      model: model(),
       schema: Schema,
       prompt:
         `You are a STEM tutor building a single-page reference sheet for a student.\n` +

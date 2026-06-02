@@ -125,6 +125,14 @@ function MaterialDetail() {
         <div className="flex flex-wrap gap-2 items-center">
           <FocusTimer materialId={material.id} />
           <Link to="/tutor" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10">🧠 Tutor</Link>
+          <Link
+            to="/quizzes"
+            search={{ from: material.id } as any}
+            className="rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-2 text-xs font-semibold hover:bg-emerald-500/25 active:scale-95 transition"
+            title="Generate a quiz from this material"
+          >
+            🎯 Quiz this
+          </Link>
           {deck && <Link to="/review" className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">⚡ Review {deck.total_cards}</Link>}
           <button onClick={handleDownload} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10 inline-flex items-center gap-1.5" title="Download original">
             <Download className="h-3.5 w-3.5" /> Download
@@ -507,7 +515,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
 
   if (isMobile) {
     return (
-      <div className="flex h-[calc(100vh-12rem)] flex-col overflow-hidden rounded-xl border border-border">
+      <div className="flex h-[calc(100vh-7rem)] min-h-[520px] flex-col overflow-hidden rounded-xl border border-border">
         <div className="flex shrink-0 border-b border-border bg-card">
           {(["read", "chat"] as const).map((t) => (
             <button key={t} onClick={() => setMobileTab(t)} className={`flex-1 py-2.5 text-xs font-semibold ${mobileTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}>
@@ -521,9 +529,9 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
   }
 
   return (
-    <div className="flex h-[calc(100vh-13rem)] overflow-hidden rounded-xl border border-border">
-      <div className="w-[58%] border-r border-border">{reader}</div>
-      <div className="w-[42%]">{chat}</div>
+    <div className="flex h-[calc(100vh-8rem)] min-h-[600px] overflow-hidden rounded-xl border border-border">
+      <div className="w-[60%] border-r border-border">{reader}</div>
+      <div className="w-[40%]">{chat}</div>
     </div>
   );
 }
@@ -642,7 +650,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col h-[calc(100vh-12rem)] rounded-xl border border-border overflow-hidden">
+      <div className="flex flex-col h-[calc(100vh-7rem)] min-h-[520px] rounded-xl border border-border overflow-hidden">
         <div className="flex bg-card border-b border-border shrink-0">
           {(["read", "chat"] as const).map((t) => (
             <button
@@ -677,8 +685,8 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-13rem)] rounded-xl border border-border overflow-hidden">
-      <div className="w-[60%] border-r border-border">
+    <div className="flex h-[calc(100vh-8rem)] min-h-[600px] rounded-xl border border-border overflow-hidden">
+      <div className="w-[62%] border-r border-border">
         <PDFViewer
           pdfUrl={signedUrl}
           page={page}
@@ -688,7 +696,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
           onAskAboutSelection={handleAskAboutSelection}
         />
       </div>
-      <div className="w-[40%]">
+      <div className="w-[38%]">
         <MaterialAIChat {...chatProps} />
       </div>
     </div>

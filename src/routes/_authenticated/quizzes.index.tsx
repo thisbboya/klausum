@@ -8,7 +8,13 @@ import { toast } from "sonner";
 import { ListChecks, Sparkles, Loader2, Play, RotateCcw } from "lucide-react";
 import { generateQuiz } from "@/lib/study.functions";
 
-export const Route = createFileRoute("/_authenticated/quizzes/")({ component: QuizzesPage });
+type QuizSearch = { from?: string };
+export const Route = createFileRoute("/_authenticated/quizzes/")({
+  validateSearch: (s: Record<string, unknown>): QuizSearch => ({
+    from: typeof s.from === "string" ? s.from : undefined,
+  }),
+  component: QuizzesPage,
+});
 
 const PRESETS: Record<string, number[]> = {
   Balanced: [20, 20, 20, 15, 15, 10],
@@ -22,16 +28,21 @@ export function QuizzesPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const genFn = useServerFn(generateQuiz);
+  const { from } = Route.useSearch();
 
   const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("General");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | "expert">("medium");
   const [count, setCount] = useState(5);
-  const [materialId, setMaterialId] = useState<string>("");
+  const [materialId, setMaterialId] = useState<string>(from ?? "");
   const [busy, setBusy] = useState(false);
   const [bloom, setBloom] = useState<number[]>([20, 20, 20, 15, 15, 10]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [timer, setTimer] = useState(false);
+  const [scope, setScope] = useState<"all" | "range" | "concepts">("all");
+  const [pageFrom, setPageFrom] = useState(1);
+  const [pageTo, setPageTo] = useState(10);
+  const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
 
   const bloomTotal = bloom.reduce((a, b) => a + b, 0);
 
@@ -74,13 +85,67 @@ export function QuizzesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("study_materials")
-        .select("id,title,subject,original_content,ai_summary")
+        .select("id,title,subject,original_content,ai_summary,key_concepts,total_pages")
         .eq("processing_status", "ready")
         .order("created_at", { ascending: false })
         .limit(50);
       return data ?? [];
     },
   });
+
+  const selectedMaterial = (materials ?? []).find((x) => x.id === materialId);
+  const materialConcepts: { id: string; concept: string }[] = Array.isArray(selectedMaterial?.key_concepts)
+    ? (selectedMaterial!.key_concepts as any[]).map((c: any, i: number) => ({
+        id: c.id ?? `c${i}`,
+        concept: c.concept ?? c.term ?? c.name ?? `Concept ${i + 1}`,
+      }))
+    : [];
+
+  // Slice the material text by scope: all / page range / chosen concepts.
+  function buildContextFromMaterial(): string | undefined {
+    if (!selectedMaterial) return undefined;
+    const fullText: string = selectedMaterial.original_content || selectedMaterial.ai_summary || "";
+    if (!fullText) return undefined;
+    if (scope === "all") return fullText.slice(0, 30000);
+
+    if (scope === "range") {
+      // Chunk by ~1800-char pages, similar to the text reader, and pick the range.
+      const paragraphs = fullText.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+      const pages: string[] = [];
+      let current = "";
+      for (const p of paragraphs.length ? paragraphs : [fullText]) {
+        if ((current + "\n\n" + p).length > 1800 && current) {
+          pages.push(current.trim());
+          current = p;
+        } else current = current ? `${current}\n\n${p}` : p;
+      }
+      if (current.trim()) pages.push(current.trim());
+      const total = pages.length;
+      const lo = Math.max(1, Math.min(pageFrom, total));
+      const hi = Math.max(lo, Math.min(pageTo, total));
+      return pages.slice(lo - 1, hi).join("\n\n").slice(0, 30000);
+    }
+
+    if (scope === "concepts" && selectedConcepts.length) {
+      const lower = fullText.toLowerCase();
+      const slices: string[] = [];
+      for (const c of selectedConcepts) {
+        const needle = c.toLowerCase();
+        let from = 0;
+        while (slices.join("\n\n").length < 25000) {
+          const idx = lower.indexOf(needle, from);
+          if (idx < 0) break;
+          const start = Math.max(0, idx - 400);
+          const end = Math.min(fullText.length, idx + 600);
+          slices.push(fullText.slice(start, end));
+          from = end;
+        }
+      }
+      return slices.join("\n\n---\n\n").slice(0, 30000) || fullText.slice(0, 15000);
+    }
+
+    return fullText.slice(0, 30000);
+  }
 
   async function generate() {
     if (!session || !user) return;
@@ -90,12 +155,13 @@ export function QuizzesPage() {
     let context: string | undefined;
     let useTopic = topic.trim();
     let useSubject = subject;
-    if (materialId) {
-      const m = (materials ?? []).find((x) => x.id === materialId);
-      if (m) {
-        useTopic = useTopic || m.title;
-        useSubject = m.subject ?? subject;
-        context = m.ai_summary || m.original_content;
+    if (materialId && selectedMaterial) {
+      useTopic = useTopic || selectedMaterial.title;
+      useSubject = selectedMaterial.subject ?? subject;
+      context = buildContextFromMaterial();
+      if (!context) {
+        toast.error("This material has no extracted text yet. Open it once so AI can read it, then try again.");
+        return;
       }
     }
     if (!useTopic) return toast.error("Pick a material or type a topic");
@@ -186,6 +252,84 @@ export function QuizzesPage() {
             <span className="text-xs">30-second timer per question</span>
           </label>
         </div>
+
+        {selectedMaterial && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+              🎯 Pick which part of <span className="truncate">"{selectedMaterial.title}"</span> to quiz
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {([
+                ["all", "Whole material"],
+                ["range", "Page range"],
+                ["concepts", "Specific concepts"],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setScope(key)}
+                  className={`text-xs rounded-full px-3 py-1.5 border transition ${
+                    scope === key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {scope === "range" && (
+              <div className="flex items-end gap-2 text-xs">
+                <label className="flex flex-col">
+                  <span className="text-muted-foreground mb-1">From page</span>
+                  <input
+                    type="number" min={1}
+                    value={pageFrom}
+                    onChange={(e) => setPageFrom(Math.max(1, parseInt(e.target.value || "1", 10)))}
+                    className="input w-24"
+                  />
+                </label>
+                <label className="flex flex-col">
+                  <span className="text-muted-foreground mb-1">To page</span>
+                  <input
+                    type="number" min={pageFrom}
+                    value={pageTo}
+                    onChange={(e) => setPageTo(Math.max(pageFrom, parseInt(e.target.value || String(pageFrom), 10)))}
+                    className="input w-24"
+                  />
+                </label>
+                {selectedMaterial.total_pages ? (
+                  <span className="text-muted-foreground self-center pb-2">of {selectedMaterial.total_pages}</span>
+                ) : null}
+              </div>
+            )}
+
+            {scope === "concepts" && (
+              materialConcepts.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No concepts extracted yet — try "Whole material".</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {materialConcepts.map((c) => {
+                    const on = selectedConcepts.includes(c.concept);
+                    return (
+                      <button
+                        type="button"
+                        key={c.id}
+                        onClick={() => setSelectedConcepts((cur) => on ? cur.filter((x) => x !== c.concept) : [...cur, c.concept])}
+                        className={`text-[11px] rounded-full px-2.5 py-1 border ${
+                          on ? "bg-primary/15 border-primary/40 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {c.concept}
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
+        )}
 
         <div>
           <button
