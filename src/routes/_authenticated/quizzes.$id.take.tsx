@@ -95,9 +95,15 @@ function TakeQuiz() {
     if (right) {
       Sounds.correct();
       setFlash("green");
+      setCombo((c) => {
+        const next = c + 1;
+        setBestCombo((b) => Math.max(b, next));
+        return next;
+      });
     } else {
       Sounds.wrong();
       setFlash("red");
+      setCombo(0);
     }
     setTimeout(() => setFlash(null), 500);
   }
