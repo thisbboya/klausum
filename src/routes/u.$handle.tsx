@@ -56,7 +56,7 @@ function PublicProfilePage() {
         <section className="rounded-2xl border border-border bg-card p-6 flex items-start gap-5">
           <div className="shrink-0">
             {data.avatar_url ? (
-              <img src={data.avatar_url} alt={data.full_name} className="h-20 w-20 rounded-full object-cover" />
+              <img src={data.avatar_url} alt={data.full_name ?? ""} className="h-20 w-20 rounded-full object-cover" />
             ) : (
               <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
                 {data.full_name?.[0] ?? "?"}
