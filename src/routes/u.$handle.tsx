@@ -16,7 +16,7 @@ function PublicProfilePage() {
     queryKey: ["public-profile", clean],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_profiles")
+        .from("public_profiles")
         .select(
           "id, full_name, handle, avatar_url, school, country, level, field_of_study, companion_id, companion_name, xp_total, streak_days, longest_streak, is_day1_pioneer, cohort_units, created_at",
         )
@@ -56,7 +56,7 @@ function PublicProfilePage() {
         <section className="rounded-2xl border border-border bg-card p-6 flex items-start gap-5">
           <div className="shrink-0">
             {data.avatar_url ? (
-              <img src={data.avatar_url} alt={data.full_name} className="h-20 w-20 rounded-full object-cover" />
+              <img src={data.avatar_url} alt={data.full_name ?? ""} className="h-20 w-20 rounded-full object-cover" />
             ) : (
               <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
                 {data.full_name?.[0] ?? "?"}
