@@ -205,8 +205,19 @@ export function MaterialsPage() {
 
   async function handleFile(file: File) {
     if (file.size > 20 * 1024 * 1024) return toast.error("Max 20MB");
+    const lower = file.name.toLowerCase();
     const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    // Office types — browsers sometimes omit the MIME on these.
+    const officeMime: Record<string, string> = {
+      ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ".ppt": "application/vnd.ms-powerpoint",
+      ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".doc": "application/msword",
+      ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ".xls": "application/vnd.ms-excel",
+    };
+    const ext = "." + lower.split(".").pop()!;
     const t = file.name.replace(/\.[^.]+$/, "");
     if (isText) {
       const text = await file.text();
@@ -216,6 +227,7 @@ export function MaterialsPage() {
       });
     } else {
       const fileBase64 = await fileToBase64(file);
+      const resolvedMime = file.type || officeMime[ext] || "application/octet-stream";
       // For PDFs, stash the raw file in storage so the in-app reader can render it.
       let pdfStoragePath: string | undefined;
       if (isPdf && user) {
@@ -228,9 +240,9 @@ export function MaterialsPage() {
       }
       await runProcess({
         title: t, subject, fieldCategory: field, isStem: STEM_FIELDS.has(field),
-        fileBase64, mimeType: file.type || "application/pdf",
+        fileBase64, mimeType: resolvedMime,
         rawContent: `[binary file: ${file.name}]`,
-        fileName: file.name, fileType: isPdf ? "pdf" : file.type,
+        fileName: file.name, fileType: isPdf ? "pdf" : (officeMime[ext] ? ext.slice(1) : file.type),
         pdfStoragePath,
       });
     }
