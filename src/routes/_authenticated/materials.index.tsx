@@ -311,7 +311,7 @@ export function MaterialsPage() {
             <label className="block rounded-xl border-2 border-dashed border-border p-8 text-center cursor-pointer hover:border-primary/40 hover:bg-accent/5 transition">
               <input
                 type="file" className="hidden"
-                accept=".pdf,.txt,.md,.doc,.docx,image/*"
+                accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,image/*"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) handleFile(f);
@@ -320,7 +320,7 @@ export function MaterialsPage() {
               />
               <Upload className="h-7 w-7 mx-auto text-muted-foreground" />
               <p className="mt-3 text-sm font-medium">Drop or click to upload</p>
-              <p className="text-xs text-muted-foreground">PDF, DOCX, TXT, MD, or images. Max 20MB.</p>
+              <p className="text-xs text-muted-foreground">PDF, PowerPoint, Word, Excel, TXT, MD, or images. Max 20MB.</p>
             </label>
           )}
         </div>
