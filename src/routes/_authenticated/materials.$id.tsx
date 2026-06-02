@@ -677,8 +677,8 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-13rem)] rounded-xl border border-border overflow-hidden">
-      <div className="w-[60%] border-r border-border">
+    <div className="flex h-[calc(100vh-8rem)] min-h-[600px] rounded-xl border border-border overflow-hidden">
+      <div className="w-[62%] border-r border-border">
         <PDFViewer
           pdfUrl={signedUrl}
           page={page}
@@ -688,7 +688,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
           onAskAboutSelection={handleAskAboutSelection}
         />
       </div>
-      <div className="w-[40%]">
+      <div className="w-[38%]">
         <MaterialAIChat {...chatProps} />
       </div>
     </div>
