@@ -155,12 +155,13 @@ export function QuizzesPage() {
     let context: string | undefined;
     let useTopic = topic.trim();
     let useSubject = subject;
-    if (materialId) {
-      const m = (materials ?? []).find((x) => x.id === materialId);
-      if (m) {
-        useTopic = useTopic || m.title;
-        useSubject = m.subject ?? subject;
-        context = m.ai_summary || m.original_content;
+    if (materialId && selectedMaterial) {
+      useTopic = useTopic || selectedMaterial.title;
+      useSubject = selectedMaterial.subject ?? subject;
+      context = buildContextFromMaterial();
+      if (!context) {
+        toast.error("This material has no extracted text yet. Open it once so AI can read it, then try again.");
+        return;
       }
     }
     if (!useTopic) return toast.error("Pick a material or type a topic");
