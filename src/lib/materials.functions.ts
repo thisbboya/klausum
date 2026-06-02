@@ -1,14 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject, generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { withGeminiRetry, DEFAULT_MODEL } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
+import { generateObject, generateText } from "ai";
 import { getUserIdFromToken } from "./server-auth";
-
-function gateway() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key);
-}
 
 const ProcessInput = z.object({
   accessToken: z.string().max(4096),
@@ -29,6 +24,15 @@ const ProcessInput = z.object({
       "image/gif",
       "text/plain",
       "text/markdown",
+      // PowerPoint
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.ms-powerpoint",
+      // Word
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      // Excel
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
     ])
     .optional(),
 });
