@@ -1661,7 +1661,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          cohort_units: number | null
+          companion_id: number | null
+          companion_name: string | null
+          country: string | null
+          created_at: string | null
+          field_of_study: string | null
+          full_name: string | null
+          handle: string | null
+          id: string | null
+          is_day1_pioneer: boolean | null
+          level: string | null
+          longest_streak: number | null
+          school: string | null
+          streak_days: number | null
+          xp_total: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          cohort_units?: number | null
+          companion_id?: number | null
+          companion_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          field_of_study?: string | null
+          full_name?: string | null
+          handle?: string | null
+          id?: string | null
+          is_day1_pioneer?: boolean | null
+          level?: string | null
+          longest_streak?: number | null
+          school?: string | null
+          streak_days?: number | null
+          xp_total?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          cohort_units?: number | null
+          companion_id?: number | null
+          companion_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          field_of_study?: string | null
+          full_name?: string | null
+          handle?: string | null
+          id?: string | null
+          is_day1_pioneer?: boolean | null
+          level?: string | null
+          longest_streak?: number | null
+          school?: string | null
+          streak_days?: number | null
+          xp_total?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       complete_challenge: {
@@ -1694,6 +1750,10 @@ export type Database = {
       }
       is_group_member: {
         Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_room_member: {
+        Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
       update_weekly_leaderboard: {
