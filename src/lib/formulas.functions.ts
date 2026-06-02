@@ -36,7 +36,6 @@ export const generateReferenceSheet = createServerFn({ method: "POST" })
     await getUserIdFromToken(data.accessToken);
     const existing = (data.existing ?? []).slice(0, 30).join("; ");
     const { object } = await generateObjectSafe({
-      model: model(),
       schema: Schema,
       prompt:
         `You are a STEM tutor building a single-page reference sheet for a student.\n` +
