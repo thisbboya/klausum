@@ -507,7 +507,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
 
   if (isMobile) {
     return (
-      <div className="flex h-[calc(100vh-12rem)] flex-col overflow-hidden rounded-xl border border-border">
+      <div className="flex h-[calc(100vh-7rem)] min-h-[520px] flex-col overflow-hidden rounded-xl border border-border">
         <div className="flex shrink-0 border-b border-border bg-card">
           {(["read", "chat"] as const).map((t) => (
             <button key={t} onClick={() => setMobileTab(t)} className={`flex-1 py-2.5 text-xs font-semibold ${mobileTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}>
