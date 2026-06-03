@@ -627,6 +627,33 @@ export type Database = {
           },
         ]
       }
+      material_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          material_id: string
+          page_number: number | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          material_id: string
+          page_number?: number | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          material_id?: string
+          page_number?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       mind_maps: {
         Row: {
           created_at: string | null
@@ -1046,6 +1073,7 @@ export type Database = {
           adapted_kinesthetic: string | null
           adapted_reading: string | null
           adapted_visual: string | null
+          ai_overview: Json | null
           ai_summary: string | null
           bloom_questions: Json | null
           concept_graph: Json | null
@@ -1080,6 +1108,7 @@ export type Database = {
           adapted_kinesthetic?: string | null
           adapted_reading?: string | null
           adapted_visual?: string | null
+          ai_overview?: Json | null
           ai_summary?: string | null
           bloom_questions?: Json | null
           concept_graph?: Json | null
@@ -1114,6 +1143,7 @@ export type Database = {
           adapted_kinesthetic?: string | null
           adapted_reading?: string | null
           adapted_visual?: string | null
+          ai_overview?: Json | null
           ai_summary?: string | null
           bloom_questions?: Json | null
           concept_graph?: Json | null
