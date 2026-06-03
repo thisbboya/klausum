@@ -64,7 +64,8 @@ export const Route = createFileRoute("/api/transcribe")({
           const text = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join(" ").trim() ?? "";
           return Response.json({ text });
         } catch (e: any) {
-          return new Response(JSON.stringify({ error: e?.message ?? "Transcription failed" }), { status: 500 });
+          console.error("[transcribe] failed:", e);
+          return new Response(JSON.stringify({ error: "Transcription failed" }), { status: 500 });
         }
       },
     },
