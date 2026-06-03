@@ -316,7 +316,7 @@ export const suggestFollowups = createServerFn({ method: "POST" })
   });
 
 // Document overview: 3-5 sentence summary + auto-detected TOC. Cached on study_materials.ai_overview.
-import { createClient } from "@supabase/supabase-js";
+
 
 const OverviewInput = z.object({
   accessToken: z.string(),
