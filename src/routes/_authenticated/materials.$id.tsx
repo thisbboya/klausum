@@ -666,8 +666,14 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   };
 
   const handleAskAboutSelection = (text: string) => {
+    setAutoSendOnSelection(true);
     setSelection(text);
     if (isMobile) setMobileTab("chat");
+  };
+
+  const clearSel = () => {
+    setSelection(null);
+    setAutoSendOnSelection(false);
   };
 
   const chatProps = {
@@ -681,11 +687,46 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     fullDocumentText: material.original_content ?? "",
     pageIndex,
     selection,
-    onClearSelection: () => setSelection(null),
+    onClearSelection: clearSel,
     onJumpToPage: handleJump,
     userId,
     userPrimaryStyle: undefined as string | undefined,
+    overview: overview?.summary ?? null,
+    autoSendOnSelection,
   };
+
+  const toc = overview?.toc ?? [];
+  const TocPanel = toc.length > 0 ? (
+    <div className="border-b border-border bg-card/60">
+      <button
+        onClick={() => setTocOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold hover:bg-accent/10 transition"
+      >
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+          <List className="h-3.5 w-3.5" /> Table of contents · {toc.length}
+        </span>
+        <span className="text-muted-foreground">{tocOpen ? "▾" : "▸"}</span>
+      </button>
+      {tocOpen && (
+        <ul className="max-h-48 overflow-auto px-2 pb-2 space-y-0.5">
+          {toc.map((e: any, i: number) => (
+            <li key={i}>
+              <button
+                onClick={() => handleJump(e.page)}
+                className={`w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-accent/10 transition flex items-center justify-between gap-2 ${
+                  e.page === page ? "bg-primary/10 text-primary" : "text-foreground/80"
+                }`}
+              >
+                <span className="truncate">{e.title}</span>
+                <span className="text-[10px] text-muted-foreground shrink-0">p.{e.page}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  ) : null;
+
 
   if (isMobile) {
     return (
