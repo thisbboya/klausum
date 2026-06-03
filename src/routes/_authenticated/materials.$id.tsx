@@ -2,8 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network } from "lucide-react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -14,6 +15,8 @@ import { FocusTimer } from "@/components/focus-timer";
 import { PDFViewer } from "@/components/reader/PDFViewer";
 import { MaterialAIChat } from "@/components/reader/MaterialAIChat";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { summarizeMaterial, appendMaterialNote } from "@/lib/materials.functions";
+import { getAccessToken } from "@/lib/auth-helper";
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
@@ -547,8 +550,44 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   const [initialReady, setInitialReady] = useState(false);
   const [pageIndex, setPageIndex] = useState<Record<number, string> | undefined>(undefined);
   const [selection, setSelection] = useState<string | null>(null);
+  const [autoSendOnSelection, setAutoSendOnSelection] = useState(false);
+  const [tocOpen, setTocOpen] = useState(false);
+  const summarizeFn = useServerFn(summarizeMaterial);
+  const addNoteFn = useServerFn(appendMaterialNote);
 
-  // Restore last read page
+  // Document overview + TOC (cached server-side)
+  const { data: overview } = useQuery({
+    queryKey: ["material-overview", material.id],
+    enabled: !!material?.id,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      try {
+        const accessToken = await getAccessToken();
+        return await summarizeFn({ data: { accessToken, materialId: material.id } });
+      } catch (e) {
+        console.error("Overview failed", e);
+        return null;
+      }
+    },
+  });
+
+  const handleAddNote = async (text: string, p: number) => {
+    try {
+      const accessToken = await getAccessToken();
+      await addNoteFn({
+        data: {
+          accessToken,
+          materialId: material.id,
+          content: `> "${text.slice(0, 1500)}" — p.${p}`,
+          pageNumber: p,
+        },
+      });
+      toast.success(`Saved to notes (p.${p})`);
+    } catch (e: any) {
+      toast.error("Couldn't save note");
+    }
+  };
+
   useEffect(() => {
     supabase
       .from("reading_progress")
@@ -627,8 +666,14 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   };
 
   const handleAskAboutSelection = (text: string) => {
+    setAutoSendOnSelection(true);
     setSelection(text);
     if (isMobile) setMobileTab("chat");
+  };
+
+  const clearSel = () => {
+    setSelection(null);
+    setAutoSendOnSelection(false);
   };
 
   const chatProps = {
@@ -642,11 +687,46 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     fullDocumentText: material.original_content ?? "",
     pageIndex,
     selection,
-    onClearSelection: () => setSelection(null),
+    onClearSelection: clearSel,
     onJumpToPage: handleJump,
     userId,
     userPrimaryStyle: undefined as string | undefined,
+    overview: overview?.summary ?? null,
+    autoSendOnSelection,
   };
+
+  const toc = overview?.toc ?? [];
+  const TocPanel = toc.length > 0 ? (
+    <div className="border-b border-border bg-card/60">
+      <button
+        onClick={() => setTocOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold hover:bg-accent/10 transition"
+      >
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+          <List className="h-3.5 w-3.5" /> Table of contents · {toc.length}
+        </span>
+        <span className="text-muted-foreground">{tocOpen ? "▾" : "▸"}</span>
+      </button>
+      {tocOpen && (
+        <ul className="max-h-48 overflow-auto px-2 pb-2 space-y-0.5">
+          {toc.map((e: any, i: number) => (
+            <li key={i}>
+              <button
+                onClick={() => handleJump(e.page)}
+                className={`w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-accent/10 transition flex items-center justify-between gap-2 ${
+                  e.page === page ? "bg-primary/10 text-primary" : "text-foreground/80"
+                }`}
+              >
+                <span className="truncate">{e.title}</span>
+                <span className="text-[10px] text-muted-foreground shrink-0">p.{e.page}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  ) : null;
+
 
   if (isMobile) {
     return (
@@ -666,16 +746,22 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
             </button>
           ))}
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden flex flex-col">
           {mobileTab === "read" ? (
-            <PDFViewer
-              pdfUrl={signedUrl}
-              page={page}
-              onPageChange={handlePageChange}
-              onTotalPages={setTotalPages}
-              onAllPagesIndexed={setPageIndex}
-              onAskAboutSelection={handleAskAboutSelection}
-            />
+            <>
+              {TocPanel}
+              <div className="flex-1 overflow-hidden">
+                <PDFViewer
+                  pdfUrl={signedUrl}
+                  page={page}
+                  onPageChange={handlePageChange}
+                  onTotalPages={setTotalPages}
+                  onAllPagesIndexed={setPageIndex}
+                  onAskAboutSelection={handleAskAboutSelection}
+                  onAddNote={handleAddNote}
+                />
+              </div>
+            </>
           ) : (
             <MaterialAIChat {...chatProps} />
           )}
@@ -686,15 +772,19 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] min-h-[600px] rounded-xl border border-border overflow-hidden">
-      <div className="w-[62%] border-r border-border">
-        <PDFViewer
-          pdfUrl={signedUrl}
-          page={page}
-          onPageChange={handlePageChange}
-          onTotalPages={setTotalPages}
-          onAllPagesIndexed={setPageIndex}
-          onAskAboutSelection={handleAskAboutSelection}
-        />
+      <div className="w-[62%] border-r border-border flex flex-col">
+        {TocPanel}
+        <div className="flex-1 overflow-hidden">
+          <PDFViewer
+            pdfUrl={signedUrl}
+            page={page}
+            onPageChange={handlePageChange}
+            onTotalPages={setTotalPages}
+            onAllPagesIndexed={setPageIndex}
+            onAskAboutSelection={handleAskAboutSelection}
+            onAddNote={handleAddNote}
+          />
+        </div>
       </div>
       <div className="w-[38%]">
         <MaterialAIChat {...chatProps} />

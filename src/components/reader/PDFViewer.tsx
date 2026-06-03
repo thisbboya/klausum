@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import { Search } from "lucide-react";
+import { Search, StickyNote } from "lucide-react";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
@@ -11,6 +11,7 @@ interface PDFViewerProps {
   onTotalPages: (total: number) => void;
   onAllPagesIndexed?: (index: Record<number, string>) => void;
   onAskAboutSelection?: (text: string) => void;
+  onAddNote?: (text: string, page: number) => void;
 }
 
 export function PDFViewer({
@@ -20,6 +21,7 @@ export function PDFViewer({
   onTotalPages,
   onAllPagesIndexed,
   onAskAboutSelection,
+  onAddNote,
 }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
@@ -287,23 +289,41 @@ export function PDFViewer({
           </div>
         )}
 
-        {selection && onAskAboutSelection && (
-          <button
-            onClick={() => {
-              onAskAboutSelection(selection.text);
-              window.getSelection()?.removeAllRanges();
-              setSelection(null);
-            }}
+        {selection && (onAskAboutSelection || onAddNote) && (
+          <div
             style={{
               position: "absolute",
               left: `${selection.x}px`,
               top: `${Math.max(8, selection.y)}px`,
               transform: "translate(-50%, -100%)",
             }}
-            className="z-20 inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 shadow-lg hover:scale-105 transition active:scale-95"
+            className="z-20 flex items-center gap-1 rounded-full bg-card border border-border shadow-lg p-1"
           >
-            <Search className="h-3 w-3" /> Ask AI about this
-          </button>
+            {onAskAboutSelection && (
+              <button
+                onClick={() => {
+                  onAskAboutSelection(selection.text);
+                  window.getSelection()?.removeAllRanges();
+                  setSelection(null);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90 active:scale-95 transition"
+              >
+                <Search className="h-3 w-3" /> Explain this
+              </button>
+            )}
+            {onAddNote && (
+              <button
+                onClick={() => {
+                  onAddNote(selection.text, page);
+                  window.getSelection()?.removeAllRanges();
+                  setSelection(null);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-muted text-foreground text-xs font-semibold px-3 py-1.5 hover:bg-accent active:scale-95 transition border border-border"
+              >
+                <StickyNote className="h-3 w-3" /> Add to notes
+              </button>
+            )}
+          </div>
         )}
       </div>
 

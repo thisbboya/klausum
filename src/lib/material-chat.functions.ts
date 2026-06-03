@@ -75,6 +75,7 @@ Rules:
 3. When you reference any other page, write it as [p.N] (e.g. [p.12]) so the UI can render a jump button.
 4. If asked "where is X mentioned?", scan the PAGE INDEX below and list every matching page as [p.N].
 5. Break complex things down concept by concept.
+6. **CITATIONS ARE MANDATORY.** Whenever you used the document to answer, end your reply with a single line starting with "Sources:" followed by every page you used as [p.N] chips, e.g. "Sources: [p.${data.currentPage}] [p.12]". Never skip this. If the answer is pure general knowledge with no document content, end with "Sources: (general knowledge)".
 
 ═══ FULL DOCUMENT CONTEXT (truncated) ═══
 ${(data.fullDocumentText ?? "").substring(0, 8000)}

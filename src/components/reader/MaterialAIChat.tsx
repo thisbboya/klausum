@@ -31,6 +31,8 @@ interface Props {
   onJumpToPage?: (page: number) => void;
   userId: string;
   userPrimaryStyle?: string;
+  overview?: string | null;
+  autoSendOnSelection?: boolean;
 }
 
 const QUICK_PROMPTS = [
@@ -47,6 +49,7 @@ function formatFocus(s: number) {
 }
 
 // Renders AI markdown with [p.X] / "page X" tokens swapped for jump buttons.
+// Also splits off a trailing "Sources: ..." line into a distinct chip row.
 function ReplyWithJumps({
   content,
   onJump,
@@ -54,40 +57,62 @@ function ReplyWithJumps({
   content: string;
   onJump?: (p: number) => void;
 }) {
-  // We split text on page mentions and intersperse buttons. Markdown is rendered per segment.
+  const { body, sources } = useMemo(() => {
+    const m = content.match(/\n+Sources?:\s*(.+)\s*$/i);
+    if (!m) return { body: content, sources: [] as number[] };
+    const pages = Array.from(m[1].matchAll(/\bp(?:age|\.)\s*(\d{1,4})/gi)).map((x) => parseInt(x[1], 10));
+    return { body: content.slice(0, m.index).trim(), sources: Array.from(new Set(pages)) };
+  }, [content]);
+
   const segments = useMemo(() => {
     const re = /\[?\bp(?:age|\.)\s*(\d{1,4})\]?/gi;
     const parts: { type: "text" | "jump"; value: string; page?: number }[] = [];
     let last = 0;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(content)) !== null) {
-      if (m.index > last) parts.push({ type: "text", value: content.slice(last, m.index) });
+    while ((m = re.exec(body)) !== null) {
+      if (m.index > last) parts.push({ type: "text", value: body.slice(last, m.index) });
       parts.push({ type: "jump", value: m[0], page: parseInt(m[1], 10) });
       last = m.index + m[0].length;
     }
-    if (last < content.length) parts.push({ type: "text", value: content.slice(last) });
+    if (last < body.length) parts.push({ type: "text", value: body.slice(last) });
     return parts;
-  }, [content]);
+  }, [body]);
 
   return (
-    <article className="prose prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-      {segments.map((seg, i) =>
-        seg.type === "text" ? (
-          <ReactMarkdown key={i} remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-            {seg.value}
-          </ReactMarkdown>
-        ) : (
-          <button
-            key={i}
-            onClick={() => seg.page && onJump?.(seg.page)}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-full px-2 py-0.5 mx-0.5 align-baseline transition not-prose"
-            title={`Jump to page ${seg.page}`}
-          >
-            📄 p.{seg.page} →
-          </button>
-        ),
+    <>
+      <article className="prose prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+        {segments.map((seg, i) =>
+          seg.type === "text" ? (
+            <ReactMarkdown key={i} remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {seg.value}
+            </ReactMarkdown>
+          ) : (
+            <button
+              key={i}
+              onClick={() => seg.page && onJump?.(seg.page)}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-full px-2 py-0.5 mx-0.5 align-baseline transition not-prose"
+              title={`Jump to page ${seg.page}`}
+            >
+              📄 p.{seg.page} →
+            </button>
+          ),
+        )}
+      </article>
+      {sources.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-border/50 flex flex-wrap items-center gap-1">
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-1">Sources</span>
+          {sources.map((p) => (
+            <button
+              key={p}
+              onClick={() => onJump?.(p)}
+              className="text-[10px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-full px-2 py-0.5 transition"
+            >
+              p.{p}
+            </button>
+          ))}
+        </div>
       )}
-    </article>
+    </>
   );
 }
 
@@ -106,6 +131,8 @@ export function MaterialAIChat({
   onJumpToPage,
   userId,
   userPrimaryStyle,
+  overview,
+  autoSendOnSelection,
 }: Props) {
   const chatFn = useServerFn(chatWithMaterial);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -149,10 +176,19 @@ export function MaterialAIChat({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
 
-  // When selection arrives, focus the input so user can type their question
+  // When selection arrives, focus the input so user can type their question.
+  // If autoSendOnSelection, immediately send a default "Explain this passage" question.
+  const autoSentRef = useRef<string | null>(null);
   useEffect(() => {
-    if (selection) inputRef.current?.focus();
-  }, [selection]);
+    if (!selection) return;
+    inputRef.current?.focus();
+    if (autoSendOnSelection && autoSentRef.current !== selection) {
+      autoSentRef.current = selection;
+      // small delay so React state for selection chip renders first
+      setTimeout(() => send("Explain this passage in simple terms."), 30);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, autoSendOnSelection]);
 
   async function send(text: string) {
     const q = text.trim();
@@ -290,6 +326,14 @@ export function MaterialAIChat({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {overview && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 px-3.5 py-3 text-sm">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-primary">📄 Document overview</span>
+            </div>
+            <p className="text-foreground/90 leading-relaxed text-[13px]">{overview}</p>
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-muted-foreground text-xs text-center pt-2">
