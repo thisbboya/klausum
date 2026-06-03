@@ -20,14 +20,50 @@ export function LogicGates() {
   const [expr, setExpr] = useState("A & B | !C");
   const exprResult = (() => {
     try {
+      // Strict allow-list: only A-Z, &, |, !, (, ), and whitespace
+      if (!/^[A-Z&|!()\s]*$/.test(expr)) throw new Error("Invalid characters");
       const vars = Array.from(new Set(expr.match(/[A-Z]/g) ?? []));
+      // Safe recursive-descent boolean evaluator (no eval / new Function)
+      const evalExpr = (env: Record<string, boolean>): boolean => {
+        let i = 0;
+        const s = expr.replace(/\s+/g, "");
+        const peek = () => s[i];
+        const eat = (c: string) => { if (s[i] !== c) throw new Error("Parse error"); i++; };
+        // grammar: or := and ('|' and)*  ; and := not ('&' not)* ; not := '!' not | atom ; atom := VAR | '(' or ')'
+        const parseOr = (): boolean => {
+          let v = parseAnd();
+          while (peek() === "|") { eat("|"); v = parseAnd() || v; }
+          return v;
+        };
+        const parseAnd = (): boolean => {
+          let v = parseNot();
+          while (peek() === "&") { eat("&"); v = parseNot() && v; }
+          return v;
+        };
+        const parseNot = (): boolean => {
+          if (peek() === "!") { eat("!"); return !parseNot(); }
+          return parseAtom();
+        };
+        const parseAtom = (): boolean => {
+          const c = peek();
+          if (c === "(") { eat("("); const v = parseOr(); eat(")"); return v; }
+          if (c && /[A-Z]/.test(c)) { i++; return !!env[c]; }
+          throw new Error("Parse error");
+        };
+        const result = parseOr();
+        if (i !== s.length) throw new Error("Trailing tokens");
+        return result;
+      };
       const out: { row: Record<string, number>; result: number }[] = [];
       for (let i = 0; i < (1 << vars.length); i++) {
         const row: Record<string, number> = {};
-        vars.forEach((v, idx) => { row[v] = (i >> (vars.length - idx - 1)) & 1; });
-        // eslint-disable-next-line no-new-func
-        const fn = new Function(...vars, `return (${expr.replace(/!/g, "!").replace(/&/g, "&&").replace(/\|/g, "||")}) ? 1 : 0`);
-        out.push({ row, result: fn(...vars.map((v) => !!row[v])) });
+        const env: Record<string, boolean> = {};
+        vars.forEach((v, idx) => {
+          const bit = (i >> (vars.length - idx - 1)) & 1;
+          row[v] = bit;
+          env[v] = !!bit;
+        });
+        out.push({ row, result: evalExpr(env) ? 1 : 0 });
       }
       return { vars, out, error: null as string | null };
     } catch (e: any) {
