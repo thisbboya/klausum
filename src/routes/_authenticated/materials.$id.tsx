@@ -550,8 +550,44 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   const [initialReady, setInitialReady] = useState(false);
   const [pageIndex, setPageIndex] = useState<Record<number, string> | undefined>(undefined);
   const [selection, setSelection] = useState<string | null>(null);
+  const [autoSendOnSelection, setAutoSendOnSelection] = useState(false);
+  const [tocOpen, setTocOpen] = useState(false);
+  const summarizeFn = useServerFn(summarizeMaterial);
+  const addNoteFn = useServerFn(appendMaterialNote);
 
-  // Restore last read page
+  // Document overview + TOC (cached server-side)
+  const { data: overview } = useQuery({
+    queryKey: ["material-overview", material.id],
+    enabled: !!material?.id,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      try {
+        const accessToken = await getAccessToken();
+        return await summarizeFn({ data: { accessToken, materialId: material.id } });
+      } catch (e) {
+        console.error("Overview failed", e);
+        return null;
+      }
+    },
+  });
+
+  const handleAddNote = async (text: string, p: number) => {
+    try {
+      const accessToken = await getAccessToken();
+      await addNoteFn({
+        data: {
+          accessToken,
+          materialId: material.id,
+          content: `> "${text.slice(0, 1500)}" — p.${p}`,
+          pageNumber: p,
+        },
+      });
+      toast.success(`Saved to notes (p.${p})`);
+    } catch (e: any) {
+      toast.error("Couldn't save note");
+    }
+  };
+
   useEffect(() => {
     supabase
       .from("reading_progress")
