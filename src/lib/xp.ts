@@ -13,7 +13,7 @@ export async function awardXp(opts: {
   try {
     await Promise.all([
       supabase.rpc("increment_xp", { _amount: amount }),
-      supabase.rpc("log_xp_event", { _action: action, _amount: amount, _description: description ?? null }),
+      supabase.rpc("log_xp_event", { _action: action, _amount: amount, _description: description ?? undefined }),
       supabase.rpc("update_weekly_leaderboard", { p_user_id: userId, p_xp: amount }),
     ]);
   } catch (e) {
