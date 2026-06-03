@@ -21,6 +21,7 @@ export function PDFViewer({
   onTotalPages,
   onAllPagesIndexed,
   onAskAboutSelection,
+  onAddNote,
 }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
