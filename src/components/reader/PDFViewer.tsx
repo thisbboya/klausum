@@ -11,6 +11,7 @@ interface PDFViewerProps {
   onTotalPages: (total: number) => void;
   onAllPagesIndexed?: (index: Record<number, string>) => void;
   onAskAboutSelection?: (text: string) => void;
+  onAddNote?: (text: string, page: number) => void;
 }
 
 export function PDFViewer({
