@@ -31,6 +31,8 @@ interface Props {
   onJumpToPage?: (page: number) => void;
   userId: string;
   userPrimaryStyle?: string;
+  overview?: string | null;
+  autoSendOnSelection?: boolean;
 }
 
 const QUICK_PROMPTS = [
