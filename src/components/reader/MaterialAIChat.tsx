@@ -176,10 +176,19 @@ export function MaterialAIChat({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
 
-  // When selection arrives, focus the input so user can type their question
+  // When selection arrives, focus the input so user can type their question.
+  // If autoSendOnSelection, immediately send a default "Explain this passage" question.
+  const autoSentRef = useRef<string | null>(null);
   useEffect(() => {
-    if (selection) inputRef.current?.focus();
-  }, [selection]);
+    if (!selection) return;
+    inputRef.current?.focus();
+    if (autoSendOnSelection && autoSentRef.current !== selection) {
+      autoSentRef.current = selection;
+      // small delay so React state for selection chip renders first
+      setTimeout(() => send("Explain this passage in simple terms."), 30);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, autoSendOnSelection]);
 
   async function send(text: string) {
     const q = text.trim();
