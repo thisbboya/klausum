@@ -57,7 +57,8 @@ export const Route = createFileRoute("/api/transcribe")({
           });
           if (!r.ok) {
             const t = await r.text();
-            return new Response(JSON.stringify({ error: `Gemini: ${t}` }), { status: 502 });
+            console.error(`[transcribe] upstream ${r.status}: ${t}`);
+            return new Response(JSON.stringify({ error: "Transcription temporarily unavailable" }), { status: 502 });
           }
           const j: any = await r.json();
           const text = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join(" ").trim() ?? "";
