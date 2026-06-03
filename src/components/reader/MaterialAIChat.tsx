@@ -326,6 +326,14 @@ export function MaterialAIChat({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {overview && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 px-3.5 py-3 text-sm">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-primary">📄 Document overview</span>
+            </div>
+            <p className="text-foreground/90 leading-relaxed text-[13px]">{overview}</p>
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-muted-foreground text-xs text-center pt-2">
