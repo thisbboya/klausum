@@ -1756,6 +1756,10 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
+      log_xp_event: {
+        Args: { _action: string; _amount: number; _description?: string }
+        Returns: undefined
+      }
       update_weekly_leaderboard: {
         Args: { p_user_id: string; p_xp: number }
         Returns: undefined
