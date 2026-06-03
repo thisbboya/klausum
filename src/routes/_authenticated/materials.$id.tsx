@@ -772,15 +772,19 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] min-h-[600px] rounded-xl border border-border overflow-hidden">
-      <div className="w-[62%] border-r border-border">
-        <PDFViewer
-          pdfUrl={signedUrl}
-          page={page}
-          onPageChange={handlePageChange}
-          onTotalPages={setTotalPages}
-          onAllPagesIndexed={setPageIndex}
-          onAskAboutSelection={handleAskAboutSelection}
-        />
+      <div className="w-[62%] border-r border-border flex flex-col">
+        {TocPanel}
+        <div className="flex-1 overflow-hidden">
+          <PDFViewer
+            pdfUrl={signedUrl}
+            page={page}
+            onPageChange={handlePageChange}
+            onTotalPages={setTotalPages}
+            onAllPagesIndexed={setPageIndex}
+            onAskAboutSelection={handleAskAboutSelection}
+            onAddNote={handleAddNote}
+          />
+        </div>
       </div>
       <div className="w-[38%]">
         <MaterialAIChat {...chatProps} />
