@@ -2,8 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network } from "lucide-react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -14,6 +15,8 @@ import { FocusTimer } from "@/components/focus-timer";
 import { PDFViewer } from "@/components/reader/PDFViewer";
 import { MaterialAIChat } from "@/components/reader/MaterialAIChat";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { summarizeMaterial, appendMaterialNote } from "@/lib/materials.functions";
+import { getAccessToken } from "@/lib/auth-helper";
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
