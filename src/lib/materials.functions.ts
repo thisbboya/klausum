@@ -4,6 +4,7 @@ import { withGeminiRetry, DEFAULT_MODEL } from "./ai-gateway";
 import { generateObjectSafe } from "./ai-safe";
 import { generateObject, generateText } from "ai";
 import { getUserIdFromToken } from "./server-auth";
+import { createClient } from "@supabase/supabase-js";
 
 const ProcessInput = z.object({
   accessToken: z.string().max(4096),
