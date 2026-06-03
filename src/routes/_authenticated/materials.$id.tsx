@@ -746,16 +746,22 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
             </button>
           ))}
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden flex flex-col">
           {mobileTab === "read" ? (
-            <PDFViewer
-              pdfUrl={signedUrl}
-              page={page}
-              onPageChange={handlePageChange}
-              onTotalPages={setTotalPages}
-              onAllPagesIndexed={setPageIndex}
-              onAskAboutSelection={handleAskAboutSelection}
-            />
+            <>
+              {TocPanel}
+              <div className="flex-1 overflow-hidden">
+                <PDFViewer
+                  pdfUrl={signedUrl}
+                  page={page}
+                  onPageChange={handlePageChange}
+                  onTotalPages={setTotalPages}
+                  onAllPagesIndexed={setPageIndex}
+                  onAskAboutSelection={handleAskAboutSelection}
+                  onAddNote={handleAddNote}
+                />
+              </div>
+            </>
           ) : (
             <MaterialAIChat {...chatProps} />
           )}
