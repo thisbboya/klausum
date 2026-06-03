@@ -34,7 +34,8 @@ export const Route = createFileRoute("/api/youtube-search")({
         const res = await fetch(url.toString());
         if (!res.ok) {
           const text = await res.text();
-          return new Response(`YouTube API error [${res.status}]: ${text}`, { status: 502 });
+          console.error(`[youtube-search] upstream ${res.status}: ${text}`);
+          return new Response("Service temporarily unavailable", { status: 502 });
         }
         const data = (await res.json()) as {
           items?: Array<{
