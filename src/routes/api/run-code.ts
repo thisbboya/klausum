@@ -80,13 +80,15 @@ export const Route = createFileRoute("/api/run-code")({
               engine: "ai",
             });
           } catch (e: any) {
+            console.error("[run-code] AI fallback failed:", e);
             return Response.json(
-              { ok: false, error: `Sandbox unavailable and AI fallback failed: ${e?.message ?? "unknown"}` },
+              { ok: false, error: "Sandbox unavailable. Please try again later." },
               { status: 502 },
             );
           }
         } catch (e: any) {
-          return Response.json({ ok: false, error: e?.message ?? "Run failed" }, { status: 500 });
+          console.error("[run-code] failed:", e);
+          return Response.json({ ok: false, error: "Run failed" }, { status: 500 });
         }
       },
     },
