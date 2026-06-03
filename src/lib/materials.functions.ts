@@ -314,3 +314,82 @@ export const suggestFollowups = createServerFn({ method: "POST" })
     return object;
   });
 
+// Document overview: 3-5 sentence summary + auto-detected TOC. Cached on study_materials.ai_overview.
+import { createClient } from "@supabase/supabase-js";
+
+const OverviewInput = z.object({
+  accessToken: z.string(),
+  materialId: z.string().uuid(),
+});
+
+const OverviewSchema = z.object({
+  summary: z.string().min(20).max(1200),
+  toc: z
+    .array(z.object({ title: z.string().min(1).max(160), page: z.number().int().min(1).max(10000) }))
+    .max(40),
+});
+
+export const summarizeMaterial = createServerFn({ method: "POST" })
+  .inputValidator((d) => OverviewInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    const supabaseUrl = process.env.SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    const { data: mat, error } = await admin
+      .from("study_materials")
+      .select("id, user_id, title, subject, original_content, ai_overview, total_pages")
+      .eq("id", data.materialId)
+      .maybeSingle();
+    if (error || !mat) throw new Error("Material not found");
+    if (mat.user_id !== userId) throw new Error("Forbidden");
+
+    if (mat.ai_overview && (mat.ai_overview as any).summary) {
+      return mat.ai_overview as { summary: string; toc: { title: string; page: number }[] };
+    }
+
+    const source = (mat.original_content || "").slice(0, 40000);
+    if (!source) {
+      const empty = { summary: "No extractable text yet.", toc: [] as { title: string; page: number }[] };
+      return empty;
+    }
+
+    const { object } = await generateObjectSafe({
+      schema: OverviewSchema,
+      prompt:
+        `Document: "${mat.title}" (${mat.subject ?? "General"}). Total pages: ${mat.total_pages ?? "unknown"}.\n\n` +
+        `1) Write a friendly 3-5 sentence overview starting with "This document covers..." that tells a student what they're about to read and why it matters.\n` +
+        `2) Build a table of contents from the document. Detect chapter / section / slide headings. Each entry has a short title (max 14 words) and the best-guess page number it starts on (look for "## Slide N:" prefixes or numbered headings). Cap at 20 entries.\n` +
+        `Return JSON: { summary: string, toc: [{title, page}] }.\n\n--- DOCUMENT ---\n${source}`,
+    });
+
+    await admin.from("study_materials").update({ ai_overview: object }).eq("id", mat.id);
+    return object;
+  });
+
+// Append a highlighted snippet (or freeform note) to the material notes.
+const NoteInput = z.object({
+  accessToken: z.string(),
+  materialId: z.string().uuid(),
+  content: z.string().min(1).max(4000),
+  pageNumber: z.number().int().min(1).max(10000).optional(),
+});
+
+export const appendMaterialNote = createServerFn({ method: "POST" })
+  .inputValidator((d) => NoteInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    const supabaseUrl = process.env.SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { error } = await admin.from("material_notes").insert({
+      user_id: userId,
+      material_id: data.materialId,
+      content: data.content,
+      page_number: data.pageNumber ?? null,
+    });
+    if (error) throw new Error("Failed to save note");
+    return { ok: true };
+  });
+
