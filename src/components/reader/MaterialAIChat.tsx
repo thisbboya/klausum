@@ -131,6 +131,8 @@ export function MaterialAIChat({
   onJumpToPage,
   userId,
   userPrimaryStyle,
+  overview,
+  autoSendOnSelection,
 }: Props) {
   const chatFn = useServerFn(chatWithMaterial);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
