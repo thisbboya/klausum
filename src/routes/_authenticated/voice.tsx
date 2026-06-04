@@ -155,7 +155,7 @@ function VoicePage() {
         user_id: user!.id, title: `Voice: ${title || subject}`, subject,
       }).select().single();
       if (deck) {
-        await supabase.from("flashcards").insert(r.flashcards.map((c) => ({
+        await supabase.from("flashcards").insert(r.flashcards.map((c: any) => ({
           deck_id: deck.id, user_id: user!.id, front: c.front, back: c.back, bloom_level: c.bloom_level,
         })));
       }
