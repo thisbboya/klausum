@@ -436,3 +436,27 @@ body.landing::before {
 .react-flow__background {
   background: hsl(var(--background));
 }
+
+/* React Flow popups, tooltips, and selection rectangles — force dark theme */
+.react-flow__node.selected,
+.react-flow__node-default.selected {
+  box-shadow: 0 0 0 2px hsl(var(--primary)) !important;
+}
+.react-flow__selection,
+.react-flow__nodesselection-rect {
+  background: hsla(var(--primary) / 0.15) !important;
+  border: 1px dashed hsl(var(--primary)) !important;
+}
+.react-flow__tooltip,
+.react-flow__context-menu,
+.react-flow__node-toolbar {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+/* Force minimap mask dark */
+.react-flow__minimap-mask {
+  fill: hsla(0, 0%, 0%, 0.5) !important;
+}
