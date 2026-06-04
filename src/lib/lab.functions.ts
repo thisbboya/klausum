@@ -23,6 +23,7 @@ export const debugCode = createServerFn({ method: "POST" })
     await getUserIdFromToken(data.accessToken);
     const { text } = await generateText({
       
+      model: model(),
       prompt:
         `You are a Socratic coding tutor. The student asks: "${data.question ?? "Help me understand this output."}"\n` +
         `Language: ${data.language}\n--- CODE ---\n${data.code}\n--- OUTPUT/ERROR ---\n${data.output ?? "(no output)"}\n\n` +
@@ -59,6 +60,7 @@ export const generateTests = createServerFn({ method: "POST" })
     } catch {
       const { text } = await generateText({
         
+      model: model(),
         prompt: `Write a complete, idiomatic unit-test file for this ${data.language} code. Output ONLY the code, no commentary.\n\n${data.code}`,
       });
       return { framework: "auto", tests: text, notes: "Generated as plain text — pick the right framework for your project." };
@@ -93,6 +95,7 @@ export const explainCode = createServerFn({ method: "POST" })
     } catch {
       const { text } = await generateText({
         
+      model: model(),
         prompt: `Explain this ${data.language} code to an undergraduate in plain English, then list 3 short suggestions.\n\n${data.code}`,
       });
       return { summary: text, line_by_line: [], complexity: "unknown", suggestions: [] };
