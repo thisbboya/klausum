@@ -4,6 +4,18 @@ import { generateText } from "ai";
 import { getUserIdFromToken } from "@/lib/server-auth";
 import { resolveModel, DEFAULT_MODEL } from "@/lib/ai-gateway";
 
+// Judge0 CE language IDs (RapidAPI hosted) keyed by the codelab "piston" id.
+const JUDGE0_LANG_MAP: Record<string, number> = {
+  python: 71,         // Python 3.8.1
+  javascript: 63,     // JavaScript Node.js 12.14.0
+  typescript: 74,     // TypeScript 3.7.4
+  java: 62,           // Java OpenJDK 13.0.1
+  "c++": 54,          // C++ GCC 9.2.0
+  c: 50,              // C GCC 9.2.0
+  go: 60,             // Go 1.13.5
+  rust: 73,           // Rust 1.40.0
+};
+
 async function simulateWithAI(language: string, code: string, stdin: string): Promise<string> {
   const { text } = await generateText({
     model: resolveModel(DEFAULT_MODEL),
