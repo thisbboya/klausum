@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { generateWrapped, saveWrappedSnapshot, type WrappedData } from "@/lib/wrapped";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
+import { VarkRadar } from "@/components/wrapped/VarkRadar";
 import { ChevronLeft, ChevronRight, X, Download, Share2, Sparkles } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -339,18 +339,7 @@ function buildSlides(d: WrappedData) {
       <SlideShell key="vark" bg="bg-gradient-to-br from-purple-800 via-violet-800 to-indigo-900" shareable label="HOW YOUR MIND LEARNS">
         <p className="font-display text-2xl font-bold">Your VARK signature</p>
         <div className="mt-3 h-[300px] w-[300px] overflow-visible">
-          <ResponsiveContainer>
-            <RadarChart data={d.varkRadar} outerRadius="62%" margin={{ top: 16, right: 28, bottom: 16, left: 28 }}>
-              <PolarGrid stroke="rgba(255,255,255,0.25)" />
-              <PolarAngleAxis
-                dataKey="subject"
-                tick={{ fill: "#fff", fontSize: 11 }}
-                tickFormatter={(v: string) => (v?.length > 7 ? v.slice(0, 4) + "." : v)}
-              />
-              <PolarRadiusAxis tick={false} axisLine={false} />
-              <Radar dataKey="A" stroke="#F4A300" fill="#F4A300" fillOpacity={0.55} />
-            </RadarChart>
-          </ResponsiveContainer>
+          <VarkRadar data={d.varkRadar} size={300} />
         </div>
         <p className="mt-2 text-base font-medium text-white">Your dominant style: {dominant}</p>
       </SlideShell>

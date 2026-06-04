@@ -4,6 +4,18 @@ import { generateText } from "ai";
 import { getUserIdFromToken } from "@/lib/server-auth";
 import { resolveModel, DEFAULT_MODEL } from "@/lib/ai-gateway";
 
+// Judge0 CE language IDs (RapidAPI hosted) keyed by the codelab "piston" id.
+const JUDGE0_LANG_MAP: Record<string, number> = {
+  python: 71,         // Python 3.8.1
+  javascript: 63,     // JavaScript Node.js 12.14.0
+  typescript: 74,     // TypeScript 3.7.4
+  java: 62,           // Java OpenJDK 13.0.1
+  "c++": 54,          // C++ GCC 9.2.0
+  c: 50,              // C GCC 9.2.0
+  go: 60,             // Go 1.13.5
+  rust: 73,           // Rust 1.40.0
+};
+
 async function simulateWithAI(language: string, code: string, stdin: string): Promise<string> {
   const { text } = await generateText({
     model: resolveModel(DEFAULT_MODEL),
@@ -43,9 +55,10 @@ export const Route = createFileRoute("/api/run-code")({
             return Response.json({ ok: false, error: "Code too large" }, { status: 413 });
           }
 
-          // Try Piston (real sandbox) first
-          let pistonOk = false;
-          let pistonOut = "";
+          // 1) Try Piston (real sandbox) first — still works for whitelisted callers.
+          let realOk = false;
+          let realOut = "";
+          let realEngine: "piston" | "judge0" = "piston";
           try {
             const r = await fetch("https://emkc.org/api/v2/piston/execute", {
               method: "POST",
@@ -59,16 +72,59 @@ export const Route = createFileRoute("/api/run-code")({
             });
             if (r.ok) {
               const j = (await r.json()) as { run?: { stdout?: string; stderr?: string }; compile?: { stderr?: string } };
-              pistonOut =
+              realOut =
                 (j.run?.stdout ?? "") +
                 (j.run?.stderr ? `\n[stderr]\n${j.run.stderr}` : "") +
                 (j.compile?.stderr ? `\n[compile]\n${j.compile.stderr}` : "");
-              pistonOk = true;
+              realOk = true;
             }
-          } catch { /* fall through to AI simulator */ }
+          } catch { /* fall through */ }
 
-          if (pistonOk) {
-            return Response.json({ ok: true, output: pistonOut || "(no output)", engine: "piston" });
+          // 2) Try Judge0 CE via RapidAPI if Piston failed and a key is configured.
+          const judge0Key = process.env.JUDGE0_RAPIDAPI_KEY;
+          if (!realOk && judge0Key) {
+            try {
+              const langId = JUDGE0_LANG_MAP[body.language!];
+              if (langId) {
+                const submit = await fetch(
+                  "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-RapidAPI-Key": judge0Key,
+                      "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+                    },
+                    body: JSON.stringify({
+                      source_code: body.code,
+                      language_id: langId,
+                      stdin: body.stdin ?? "",
+                    }),
+                  },
+                );
+                if (submit.ok) {
+                  const j = (await submit.json()) as {
+                    stdout?: string | null;
+                    stderr?: string | null;
+                    compile_output?: string | null;
+                    message?: string | null;
+                  };
+                  realOut =
+                    (j.stdout ?? "") +
+                    (j.stderr ? `\n[stderr]\n${j.stderr}` : "") +
+                    (j.compile_output ? `\n[compile]\n${j.compile_output}` : "") +
+                    (j.message && !j.stdout && !j.stderr ? `\n[message]\n${j.message}` : "");
+                  realOk = true;
+                  realEngine = "judge0";
+                }
+              }
+            } catch (e) {
+              console.error("[run-code] Judge0 failed:", e);
+            }
+          }
+
+          if (realOk) {
+            return Response.json({ ok: true, output: realOut || "(no output)", engine: realEngine });
           }
 
           // Fallback: AI-simulated execution (Piston is whitelist-only since Feb 2026)

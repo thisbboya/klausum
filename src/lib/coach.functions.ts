@@ -1,13 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject, generateText } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { DEFAULT_MODEL, resolveModel } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
 
 function model() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key)(DEFAULT_MODEL);
+  return resolveModel(DEFAULT_MODEL);
 }
 
 // Explain a knowledge gap and suggest 3 micro-actions
@@ -68,8 +67,7 @@ export const generateGapCards = createServerFn({ method: "POST" })
   .inputValidator((d) => GapCardsInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
+    const { object } = await generateObjectSafe({
       schema: GapCardsSchema,
       prompt:
         `Create exactly 6 spaced-repetition flashcards to remediate a weak spot on "${data.topic}" in ${data.subject}. ` +
@@ -83,8 +81,7 @@ export const generatePlan = createServerFn({ method: "POST" })
   .inputValidator((d) => PlanInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
+    const { object } = await generateObjectSafe({
       schema: PlanSchema,
       prompt:
         `Build a study plan for the next ${data.daysAhead} days starting ${data.startDate}. ` +

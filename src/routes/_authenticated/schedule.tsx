@@ -52,7 +52,7 @@ function SchedulePage() {
         },
       });
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const rows = r.blocks.map((b) => {
+      const rows = r.blocks.map((b: any) => {
         const s = new Date(today);
         s.setDate(s.getDate() + b.offset_day);
         s.setHours(b.start_hour, 0, 0, 0);

@@ -111,7 +111,7 @@ function GapsPage() {
         .select("id")
         .single();
       if (error || !deck) throw error;
-      const rows = r.cards.map((c) => ({
+      const rows = r.cards.map((c: any) => ({
         deck_id: deck.id,
         user_id: user.id,
         front: c.front,

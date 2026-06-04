@@ -1,13 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject, generateText } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { DEFAULT_MODEL, resolveModel } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
 
 function model() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key)(DEFAULT_MODEL);
+  return resolveModel(DEFAULT_MODEL);
 }
 
 // Debug code: explain errors and suggest a fix
@@ -23,6 +22,7 @@ export const debugCode = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     const { text } = await generateText({
+      
       model: model(),
       prompt:
         `You are a Socratic coding tutor. The student asks: "${data.question ?? "Help me understand this output."}"\n` +
@@ -48,8 +48,8 @@ export const generateTests = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     try {
-      const { object } = await generateObject({
-        model: model(),
+      const { object } = await generateObjectSafe({
+        
         schema: TestsSchema,
         prompt:
           `Write thorough unit tests for the following ${data.language} code. ` +
@@ -59,7 +59,8 @@ export const generateTests = createServerFn({ method: "POST" })
       return object;
     } catch {
       const { text } = await generateText({
-        model: model(),
+        
+      model: model(),
         prompt: `Write a complete, idiomatic unit-test file for this ${data.language} code. Output ONLY the code, no commentary.\n\n${data.code}`,
       });
       return { framework: "auto", tests: text, notes: "Generated as plain text — pick the right framework for your project." };
@@ -83,8 +84,8 @@ export const explainCode = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
     try {
-      const { object } = await generateObject({
-        model: model(),
+      const { object } = await generateObjectSafe({
+        
         schema: ExplainSchema,
         prompt:
           `Explain this ${data.language} code to an undergraduate. ` +
@@ -93,7 +94,8 @@ export const explainCode = createServerFn({ method: "POST" })
       return object;
     } catch {
       const { text } = await generateText({
-        model: model(),
+        
+      model: model(),
         prompt: `Explain this ${data.language} code to an undergraduate in plain English, then list 3 short suggestions.\n\n${data.code}`,
       });
       return { summary: text, line_by_line: [], complexity: "unknown", suggestions: [] };
@@ -119,8 +121,8 @@ export const summarizeVoiceNote = createServerFn({ method: "POST" })
   .inputValidator((d) => TranscriptInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
+    const { object } = await generateObjectSafe({
+      
       schema: TranscriptSchema,
       prompt:
         `Subject: ${data.subject}. Below is a voice-note transcript from a student. ` +

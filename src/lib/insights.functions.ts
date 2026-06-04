@@ -1,14 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
-
-function model() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key)(DEFAULT_MODEL);
-}
 
 const InsightInput = z.object({
   accessToken: z.string(),
@@ -40,8 +33,7 @@ export const generateWeeklyInsight = createServerFn({ method: "POST" })
   .inputValidator((d) => InsightInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
+    const { object } = await generateObjectSafe({
       schema: Schema,
       prompt:
         `Analyse this student's weekly study data and produce EXACTLY 3 insights: one "strength", one "warning", one "action". ` +
