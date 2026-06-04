@@ -81,8 +81,7 @@ export const generatePlan = createServerFn({ method: "POST" })
   .inputValidator((d) => PlanInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
+    const { object } = await generateObjectSafe({
       schema: PlanSchema,
       prompt:
         `Build a study plan for the next ${data.daysAhead} days starting ${data.startDate}. ` +
