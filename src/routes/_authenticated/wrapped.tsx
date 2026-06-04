@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { generateWrapped, saveWrappedSnapshot, type WrappedData } from "@/lib/wrapped";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
+import { VarkRadar } from "@/components/wrapped/VarkRadar";
 import { ChevronLeft, ChevronRight, X, Download, Share2, Sparkles } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
