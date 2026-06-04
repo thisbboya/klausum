@@ -1,13 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject, generateText } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "./ai-gateway";
+import { DEFAULT_MODEL, resolveModel } from "./ai-gateway";
+import { generateObjectSafe } from "./ai-safe";
 import { getUserIdFromToken } from "./server-auth";
 
 function model() {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
-  return createLovableAiGatewayProvider(key)(DEFAULT_MODEL);
+  return resolveModel(DEFAULT_MODEL);
 }
 
 // Explain a knowledge gap and suggest 3 micro-actions
