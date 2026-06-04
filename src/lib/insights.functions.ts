@@ -33,8 +33,7 @@ export const generateWeeklyInsight = createServerFn({ method: "POST" })
   .inputValidator((d) => InsightInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
+    const { object } = await generateObjectSafe({
       schema: Schema,
       prompt:
         `Analyse this student's weekly study data and produce EXACTLY 3 insights: one "strength", one "warning", one "action". ` +
