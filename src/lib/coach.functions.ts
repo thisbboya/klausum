@@ -67,8 +67,7 @@ export const generateGapCards = createServerFn({ method: "POST" })
   .inputValidator((d) => GapCardsInput.parse(d))
   .handler(async ({ data }) => {
     await getUserIdFromToken(data.accessToken);
-    const { object } = await generateObject({
-      model: model(),
+    const { object } = await generateObjectSafe({
       schema: GapCardsSchema,
       prompt:
         `Create exactly 6 spaced-repetition flashcards to remediate a weak spot on "${data.topic}" in ${data.subject}. ` +
