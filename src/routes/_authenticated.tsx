@@ -82,6 +82,7 @@ function AuthLayout() {
           <NavItem to="/videos" icon={Youtube} label="Videos" />
           <NavItem to="/exams" icon={GraduationCap} label="Exams" />
           <NavItem to="/tutor" icon={MessagesSquare} label="AI Tutor" />
+          <NavItem to="/research" icon={FlaskConical} label="Research" />
           <NavItem to="/settings" icon={Settings} label="Settings" />
           {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}
         </nav>
