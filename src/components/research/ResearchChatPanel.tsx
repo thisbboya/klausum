@@ -90,6 +90,17 @@ export function ResearchChatPanel({
     if (!activeSourceId) setScope("project");
   }, [activeSourceId]);
 
+  // Listen for selection-based "Explain this" from the viewer
+  useEffect(() => {
+    function onAsk(e: Event) {
+      const text = (e as CustomEvent<string>).detail;
+      if (!text) return;
+      setInput(`Explain this passage in simple terms:\n\n"${text.slice(0, 600)}"`);
+    }
+    window.addEventListener("research:askSelection", onAsk);
+    return () => window.removeEventListener("research:askSelection", onAsk);
+  }, []);
+
   async function send(question: string) {
     const q = question.trim();
     if (!q || busy) return;
