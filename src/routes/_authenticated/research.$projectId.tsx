@@ -52,9 +52,9 @@ function ResearchProject() {
   const [mobileTab, setMobileTab] = useState<"sources" | "doc" | "chat">("sources");
 
   // Pick first source by default once loaded
-  if (!activeId && sources.length > 0) {
-    setActiveId(sources[0].id);
-  }
+  useEffect(() => {
+    if (!activeId && sources.length > 0) setActiveId((sources[0] as any).id);
+  }, [activeId, sources]);
 
   async function handleDelete(id: string) {
     try {
