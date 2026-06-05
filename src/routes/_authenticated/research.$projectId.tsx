@@ -73,7 +73,6 @@ function ResearchProject() {
   }
 
   function handleAsk(text: string) {
-    setPendingSelection(text);
     if (isMobile) setMobileTab("chat");
     // Push the selection into the chat input through window event — simplest cross-component pass.
     setTimeout(() => {
