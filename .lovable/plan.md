@@ -1,57 +1,73 @@
-# Anara-Style Reader Upgrades
+# Anara-Style Research Workspace (v9 Part 2)
 
-Four tightly scoped additions to the PDF reader + AI chat. No backend schema changes required (uses existing `material_notes` if present; otherwise adds a tiny table).
+A new `/research` area where students collect multiple sources (PDF / URL / YouTube / pasted text) into a project, view them side-by-side with annotations, and chat with an AI that cites the exact source + page for every claim.
 
-## 1. Highlight-to-Ask Popup (PDFViewer)
+## 1. Database (one migration)
 
-In `src/components/reader/PDFViewer.tsx`:
-- Listen for `mouseup`/`selectionchange` inside the PDF text layer.
-- When a non-empty selection exists, render a small floating popup anchored to the selection rect with two buttons:
-  - **Explain this** → calls existing `onSelection(text, page)` prop (already wired to `MaterialAIChat` selection chip) and auto-sends an "Explain this passage" message.
-  - **Add to notes** → appends `> "{text}" — p.N` to the material's notes (Notes tab on `materials.$id`).
-- Popup auto-dismisses on click-away or new selection.
-- Mobile: same popup, larger tap targets, positioned above selection.
+Four new tables, all RLS-scoped to `auth.uid()`, with explicit GRANTs to `authenticated` + `service_role`.
 
-## 2. Page-Cited AI Responses (chip rendering)
+- `research_projects` — id, user_id, title, description, subject, color, source_count, timestamps
+- `research_sources` — id, project_id, user_id, title, source_type (`pdf|url|text|youtube|note`), file_url, raw_url, extracted_text, page_count, word_count, summary, key_claims jsonb, processing_done, created_at
+- `research_annotations` — id, source_id, user_id, page_number, selected_text, note, color, tag, position jsonb, created_at
+- `research_chat_sessions` — id, project_id, user_id, messages jsonb, timestamps
 
-Already partially done — `ReplyWithJumps` in `MaterialAIChat.tsx` renders `[p.N]` tokens as jump chips.
-- Update `chatWithMaterial` system prompt (`src/lib/material-chat.functions.ts`) to **require** every answer end with a `Sources:` line listing `[p.N]` chips for each page used.
-- Strengthen the rule: "If you used the current page, cite it. If you referenced other pages from the index, cite each. Never answer without at least one citation when document content was used."
-- Render the trailing `Sources:` line as a distinct chip row (small, muted, right-aligned) below the markdown body.
+Trigger to keep `research_projects.source_count` and `updated_at` in sync when sources change. Reuse the existing `materials` Storage bucket for PDF uploads (no new bucket).
 
-## 3. Document Summary + TOC on Open
+## 2. Server functions (`src/lib/research.functions.ts`)
 
-New server fn `summarizeMaterial` in `src/lib/materials.functions.ts`:
-- Input: `materialId`, `accessToken`.
-- Reads `extracted_text` + `page_index` (already stored), calls Gemini via `withGeminiRetry` for:
-  - `summary`: 3–5 sentence overview.
-  - `toc`: array of `{ title, page }` detected from headings (regex pre-pass + LLM cleanup).
-- Caches result to a new column `ai_summary jsonb` on `materials` (single migration: `ALTER TABLE materials ADD COLUMN ai_summary jsonb`). Cache hit returns immediately; no re-spend.
+All protected with `requireSupabaseAuth`, JSON validated with Zod, AI calls routed through existing `ai-gateway` + `generateObjectSafe`.
 
-In `materials.$id`:
-- On mount, fetch summary. Show it as the **first AI bubble** in `MaterialAIChat` (pinned, labeled "📄 Document overview").
-- Render TOC in a new collapsible left rail (above the PDF or as a `Sheet` on mobile). Each row is a button → calls `onJumpToPage(page)`.
+- `listProjects` / `createProject` / `updateProject` / `deleteProject`
+- `listSources(projectId)` / `getSource(id)` / `deleteSource`
+- `addSourceFromPdf` — accepts base64, uploads to `materials` bucket, kicks off processing
+- `addSourceFromUrl` — server-side fetch + simple Readability-style strip
+- `addSourceFromYoutube` — reuse existing youtube transcript path
+- `addSourceFromText` — plain paste
+- `processSource` — extract text → 300-word summary → key claims `[{claim, page, confidence}]`, sets `processing_done`
+- `listAnnotations(sourceId)` / `createAnnotation` / `deleteAnnotation`
+- `chatResearch({ projectId, scope: 'source'|'project', sourceId?, message, history })` — builds the scoped system prompt from v9 spec; always returns text with inline `[p.N]` (single-source) or `[Source Name, p.N]` (multi-source) citations
+- `generateReference({ sourceId, style })` — APA/MLA/Chicago/Harvard/Vancouver/IEEE
+- `exportProjectMarkdown(projectId)` — returns a `.md` string with sources, annotations, chat, references
 
-## 4. Notes Append Plumbing
+## 3. Routes & components
 
-If `material_notes` table already exists (per earlier plan), reuse it. Otherwise add:
 ```
-material_notes(id, user_id, material_id, content text, created_at)
+src/routes/_authenticated/research.tsx          # layout w/ <Outlet />
+src/routes/_authenticated/research.index.tsx    # projects grid + create modal
+src/routes/_authenticated/research.$projectId.tsx  # three-panel workspace
+
+src/components/research/
+  ProjectCard.tsx
+  CreateProjectDialog.tsx
+  SourcesPanel.tsx          # add source modal (PDF/URL/YT/text), list, rename/delete/summarise
+  SourceViewer.tsx          # PDF (reuse existing PDFViewer), URL/text/youtube fallbacks
+  AnnotationLayer.tsx       # selection popover: Annotate / Explain / Flashcard / Copy; coloured highlights overlay
+  ResearchChatPanel.tsx     # scope toggle, message list, citation chips, quick actions, references button
+  CitationChip.tsx          # clickable [Source N, p.M] → switches viewer + page
+  GenerateReferencesDialog.tsx
 ```
-with RLS scoped to `auth.uid()` and standard GRANTs. "Add to notes" appends a markdown blockquote with page citation.
 
-## Files touched
+Reuse: existing `PDFViewer.tsx` for PDF rendering + selection plumbing, existing `MarkdownMath` for messages, existing `safeParseJSON`/`generateObjectSafe`.
 
-- `src/components/reader/PDFViewer.tsx` — selection popup, expose selection rect.
-- `src/components/reader/MaterialAIChat.tsx` — pinned summary bubble, citation row rendering, auto-send "Explain this" on popup action.
-- `src/lib/material-chat.functions.ts` — stricter citation rule in system prompt.
-- `src/lib/materials.functions.ts` — new `summarizeMaterial` + `appendMaterialNote` server fns.
-- `src/routes/_authenticated/materials.$id.tsx` — TOC rail, fetch summary on open, wire popup actions.
-- 1 migration: `ai_summary jsonb` on `materials` (+ `material_notes` if missing).
+Sidebar (`src/components/mobile-nav.tsx` and any desktop nav): add "Research" entry below AI Tutor with a flask icon.
 
-## Out of scope
+## 4. Behaviour details
 
-- Voice mode, audio recap, multi-page synthesis, pinned snippets panel, engagement badges, quiz redesign, key rotation changes — all already shipped or covered by separate plans.
-- Cross-document chat.
+- **Citation chips** are parsed from the rendered AI text; clicking sets the active source and jumps the viewer to that page (same mechanism as the existing reader `[p.N]` chips).
+- **Scope = "This source only"**: chunk extracted text (~12k chars) around current page; prompt forbids outside knowledge.
+- **Scope = "All sources"**: inject titles + 300-word summaries for up to 8 sources; prompt requires per-source citation + explicit "sources disagree" handling.
+- **Quick actions** (empty chat): 6 preset prompts from spec.
+- **Annotations** render as coloured rectangles over the PDF page using stored `position` (x/y/w/h normalised to page size).
+- **Mobile**: three-tab switcher (Sources / Document / Chat) instead of three panels.
+- **Export**: client downloads the `.md` blob returned by `exportProjectMarkdown`.
 
-Ready to implement on approval.
+## 5. Out of scope (separate v9 batches)
+
+Parts 3 (Duolingo rebuild), 4 (photo-math), 5 (labs), 6 (polish pack), 7 (security), 8 (perf). The Piston→Judge0→AI fallback chain stays as-is per your decision. No new heavy npm packages in this batch — `react-pdf` and the citation chip logic already exist in the reader.
+
+## Technical notes
+
+- New tables follow project convention: `CREATE TABLE` → `GRANT SELECT,INSERT,UPDATE,DELETE TO authenticated` + `GRANT ALL TO service_role` → `ENABLE RLS` → policies.
+- `research_chat_sessions.messages` stored as `jsonb` array of `{role, content, citations}`; matches existing `tutor_sessions` pattern.
+- PDF processing reuses the existing Gemini base64 extraction path from `processMaterial` so we don't duplicate logic — `addSourceFromPdf` calls a shared helper.
+- All AI calls go through `withGeminiRetry` + `generateObjectSafe` so multi-key pooling and JSON fence stripping apply automatically.
