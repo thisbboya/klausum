@@ -92,11 +92,7 @@ function ResearchProject() {
     return <p className="text-muted-foreground">Project not found.</p>;
   }
 
-  const sourcesMini = sources.map((s: any, i: number) => ({
-    id: s.id,
-    title: s.title,
-    index: i + 1,
-  }));
+  const sourcesMini = (sources as any[]).map((s) => ({ id: s.id, title: s.title }));
 
   if (isMobile) {
     return (
