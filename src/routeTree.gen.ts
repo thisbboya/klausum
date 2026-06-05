@@ -32,6 +32,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/rooms'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
+import { Route as AuthenticatedResearchRouteImport } from './routes/_authenticated/research'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
@@ -44,9 +45,11 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedResearchIndexRouteImport } from './routes/_authenticated/research.index'
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes.index'
 import { Route as AuthenticatedMaterialsIndexRouteImport } from './routes/_authenticated/materials.index'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
+import { Route as AuthenticatedResearchProjectIdRouteImport } from './routes/_authenticated/research.$projectId'
 import { Route as AuthenticatedMaterialsIdRouteImport } from './routes/_authenticated/materials.$id'
 import { Route as AuthenticatedQuizzesIdTakeRouteImport } from './routes/_authenticated/quizzes.$id.take'
 import { Route as AuthenticatedQuizzesIdResultsRouteImport } from './routes/_authenticated/quizzes.$id.results'
@@ -165,6 +168,11 @@ const AuthenticatedReviewRoute = AuthenticatedReviewRouteImport.update({
   path: '/review',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedResearchRoute = AuthenticatedResearchRouteImport.update({
+  id: '/research',
+  path: '/research',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedQuizzesRoute = AuthenticatedQuizzesRouteImport.update({
   id: '/quizzes',
   path: '/quizzes',
@@ -225,6 +233,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedResearchIndexRoute =
+  AuthenticatedResearchIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedResearchRoute,
+  } as any)
 const AuthenticatedQuizzesIndexRoute =
   AuthenticatedQuizzesIndexRouteImport.update({
     id: '/',
@@ -242,6 +256,12 @@ const AuthenticatedRoomsIdRoute = AuthenticatedRoomsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedRoomsRoute,
 } as any)
+const AuthenticatedResearchProjectIdRoute =
+  AuthenticatedResearchProjectIdRouteImport.update({
+    id: '/$projectId',
+    path: '/$projectId',
+    getParentRoute: () => AuthenticatedResearchRoute,
+  } as any)
 const AuthenticatedMaterialsIdRoute =
   AuthenticatedMaterialsIdRouteImport.update({
     id: '/$id',
@@ -279,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRouteWithChildren
+  '/research': typeof AuthenticatedResearchRouteWithChildren
   '/review': typeof AuthenticatedReviewRoute
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
@@ -297,9 +318,11 @@ export interface FileRoutesByFullPath {
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
+  '/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes/': typeof AuthenticatedQuizzesIndexRoute
+  '/research/': typeof AuthenticatedResearchIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -337,9 +360,11 @@ export interface FileRoutesByTo {
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
+  '/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/materials': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes': typeof AuthenticatedQuizzesIndexRoute
+  '/research': typeof AuthenticatedResearchIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -363,6 +388,7 @@ export interface FileRoutesById {
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/_authenticated/quizzes': typeof AuthenticatedQuizzesRouteWithChildren
+  '/_authenticated/research': typeof AuthenticatedResearchRouteWithChildren
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
@@ -381,9 +407,11 @@ export interface FileRoutesById {
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
+  '/_authenticated/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/_authenticated/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/_authenticated/quizzes/': typeof AuthenticatedQuizzesIndexRoute
+  '/_authenticated/research/': typeof AuthenticatedResearchIndexRoute
   '/_authenticated/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/_authenticated/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -407,6 +435,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/progress'
     | '/quizzes'
+    | '/research'
     | '/review'
     | '/rooms'
     | '/schedule'
@@ -425,9 +454,11 @@ export interface FileRouteTypes {
     | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
+    | '/research/$projectId'
     | '/rooms/$id'
     | '/materials/'
     | '/quizzes/'
+    | '/research/'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   fileRoutesByTo: FileRoutesByTo
@@ -465,9 +496,11 @@ export interface FileRouteTypes {
     | '/api/youtube-search'
     | '/u/$handle'
     | '/materials/$id'
+    | '/research/$projectId'
     | '/rooms/$id'
     | '/materials'
     | '/quizzes'
+    | '/research'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   id:
@@ -490,6 +523,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notes'
     | '/_authenticated/progress'
     | '/_authenticated/quizzes'
+    | '/_authenticated/research'
     | '/_authenticated/review'
     | '/_authenticated/rooms'
     | '/_authenticated/schedule'
@@ -508,9 +542,11 @@ export interface FileRouteTypes {
     | '/api/youtube-search'
     | '/u/$handle'
     | '/_authenticated/materials/$id'
+    | '/_authenticated/research/$projectId'
     | '/_authenticated/rooms/$id'
     | '/_authenticated/materials/'
     | '/_authenticated/quizzes/'
+    | '/_authenticated/research/'
     | '/_authenticated/quizzes/$id/results'
     | '/_authenticated/quizzes/$id/take'
   fileRoutesById: FileRoutesById
@@ -695,6 +731,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/research': {
+      id: '/_authenticated/research'
+      path: '/research'
+      fullPath: '/research'
+      preLoaderRoute: typeof AuthenticatedResearchRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/quizzes': {
       id: '/_authenticated/quizzes'
       path: '/quizzes'
@@ -779,6 +822,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/research/': {
+      id: '/_authenticated/research/'
+      path: '/'
+      fullPath: '/research/'
+      preLoaderRoute: typeof AuthenticatedResearchIndexRouteImport
+      parentRoute: typeof AuthenticatedResearchRoute
+    }
     '/_authenticated/quizzes/': {
       id: '/_authenticated/quizzes/'
       path: '/'
@@ -799,6 +849,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/rooms/$id'
       preLoaderRoute: typeof AuthenticatedRoomsIdRouteImport
       parentRoute: typeof AuthenticatedRoomsRoute
+    }
+    '/_authenticated/research/$projectId': {
+      id: '/_authenticated/research/$projectId'
+      path: '/$projectId'
+      fullPath: '/research/$projectId'
+      preLoaderRoute: typeof AuthenticatedResearchProjectIdRouteImport
+      parentRoute: typeof AuthenticatedResearchRoute
     }
     '/_authenticated/materials/$id': {
       id: '/_authenticated/materials/$id'
@@ -855,6 +912,21 @@ const AuthenticatedQuizzesRouteChildren: AuthenticatedQuizzesRouteChildren = {
 const AuthenticatedQuizzesRouteWithChildren =
   AuthenticatedQuizzesRoute._addFileChildren(AuthenticatedQuizzesRouteChildren)
 
+interface AuthenticatedResearchRouteChildren {
+  AuthenticatedResearchProjectIdRoute: typeof AuthenticatedResearchProjectIdRoute
+  AuthenticatedResearchIndexRoute: typeof AuthenticatedResearchIndexRoute
+}
+
+const AuthenticatedResearchRouteChildren: AuthenticatedResearchRouteChildren = {
+  AuthenticatedResearchProjectIdRoute: AuthenticatedResearchProjectIdRoute,
+  AuthenticatedResearchIndexRoute: AuthenticatedResearchIndexRoute,
+}
+
+const AuthenticatedResearchRouteWithChildren =
+  AuthenticatedResearchRoute._addFileChildren(
+    AuthenticatedResearchRouteChildren,
+  )
+
 interface AuthenticatedRoomsRouteChildren {
   AuthenticatedRoomsIdRoute: typeof AuthenticatedRoomsIdRoute
 }
@@ -879,6 +951,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
   AuthenticatedQuizzesRoute: typeof AuthenticatedQuizzesRouteWithChildren
+  AuthenticatedResearchRoute: typeof AuthenticatedResearchRouteWithChildren
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
   AuthenticatedRoomsRoute: typeof AuthenticatedRoomsRouteWithChildren
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
@@ -903,6 +976,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
   AuthenticatedQuizzesRoute: AuthenticatedQuizzesRouteWithChildren,
+  AuthenticatedResearchRoute: AuthenticatedResearchRouteWithChildren,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
   AuthenticatedRoomsRoute: AuthenticatedRoomsRouteWithChildren,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
