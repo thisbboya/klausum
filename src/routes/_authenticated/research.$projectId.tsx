@@ -47,8 +47,7 @@ function ResearchProject() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [_totalPages, setTotalPages] = useState(0);
-  const [pendingSelection, setPendingSelection] = useState<string | null>(null);
+  const [, setTotalPages] = useState(0);
   const [showAdd, setShowAdd] = useState(false);
   const [mobileTab, setMobileTab] = useState<"sources" | "doc" | "chat">("sources");
 
