@@ -224,7 +224,3 @@ function ResearchProject() {
     </div>
   );
 }
-
-// Suppress unused warning
-void pendingSelection_unused;
-function pendingSelection_unused() {}
