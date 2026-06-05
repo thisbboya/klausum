@@ -824,6 +824,246 @@ export type Database = {
           },
         ]
       }
+      research_annotations: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          note: string | null
+          page_number: number | null
+          position: Json | null
+          selected_text: string
+          source_id: string
+          tag: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          page_number?: number | null
+          position?: Json | null
+          selected_text: string
+          source_id: string
+          tag?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          page_number?: number | null
+          position?: Json | null
+          selected_text?: string
+          source_id?: string
+          tag?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_annotations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "research_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_annotations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_annotations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_chat_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "research_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_chat_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_chat_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_projects: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          source_count: number
+          subject: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          source_count?: number
+          subject?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          source_count?: number
+          subject?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_sources: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_path: string | null
+          file_url: string | null
+          id: string
+          key_claims: Json
+          page_count: number | null
+          processing_done: boolean
+          processing_error: string | null
+          project_id: string
+          raw_url: string | null
+          source_type: string
+          summary: string | null
+          title: string
+          user_id: string
+          word_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          key_claims?: Json
+          page_count?: number | null
+          processing_done?: boolean
+          processing_error?: string | null
+          project_id: string
+          raw_url?: string | null
+          source_type: string
+          summary?: string | null
+          title: string
+          user_id: string
+          word_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          key_claims?: Json
+          page_count?: number | null
+          processing_done?: boolean
+          processing_error?: string | null
+          project_id?: string
+          raw_url?: string | null
+          source_type?: string
+          summary?: string | null
+          title?: string
+          user_id?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "research_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_sources_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_sources_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_members: {
         Row: {
           display_name: string | null
