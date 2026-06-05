@@ -687,3 +687,156 @@ ${history || "(first message)"}
 
 ═══ NEW QUESTION ═══
 Student: ${data.question}
+Assistant:`;
+
+    const result = await withGeminiRetry(PRO_MODEL, (model) =>
+      generateText({ model, prompt, maxOutputTokens: 1400, maxRetries: 1 }),
+    );
+    const reply = result.text.trim();
+
+    // Append to chat session (one session per project)
+    const { data: existing } = await admin()
+      .from("research_chat_sessions")
+      .select("id,messages")
+      .eq("project_id", data.projectId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const newMessages = [
+      ...(((existing?.messages as any[]) ?? []).slice(-40)),
+      { role: "user", content: data.question, at: new Date().toISOString(), scope: data.scope, sourceId: data.sourceId ?? null },
+      { role: "ai", content: reply, at: new Date().toISOString(), scope: data.scope, sourceId: data.sourceId ?? null },
+    ];
+    if (existing) {
+      await admin()
+        .from("research_chat_sessions")
+        .update({ messages: newMessages, updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    } else {
+      await admin().from("research_chat_sessions").insert({
+        project_id: data.projectId,
+        user_id: userId,
+        messages: newMessages,
+      });
+    }
+
+    return { reply };
+  });
+
+const GetChatInput = z.object({ accessToken: z.string(), projectId: z.string().uuid() });
+export const getResearchChat = createServerFn({ method: "POST" })
+  .inputValidator((d) => GetChatInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    await assertOwnsProject(userId, data.projectId);
+    const { data: row } = await admin()
+      .from("research_chat_sessions")
+      .select("messages")
+      .eq("project_id", data.projectId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    return { messages: ((row?.messages as any[]) ?? []) };
+  });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Citation generator
+// ─────────────────────────────────────────────────────────────────────────────
+const GenRefInput = z.object({
+  accessToken: z.string(),
+  sourceId: z.string().uuid(),
+  style: z.enum(["APA", "MLA", "Chicago", "Harvard", "Vancouver", "IEEE"]),
+});
+export const generateReference = createServerFn({ method: "POST" })
+  .inputValidator((d) => GenRefInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    const src = await assertOwnsSource(userId, data.sourceId);
+    const { data: row } = await admin()
+      .from("research_sources")
+      .select("title,raw_url,source_type,summary")
+      .eq("id", src.id)
+      .single();
+
+    const { text } = await generateTextSafe({
+      prompt:
+        `Generate a correctly formatted ${data.style} reference for this source. ` +
+        `Title: ${row?.title}\nURL: ${row?.raw_url ?? "N/A"}\nType: ${row?.source_type}\n` +
+        `Context: ${(row?.summary ?? "").slice(0, 400)}\n\n` +
+        `Use today's accessed-on date when relevant. Return ONLY the formatted reference string, nothing else.`,
+      maxOutputTokens: 400,
+    });
+    return { reference: text.trim() };
+  });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Export
+// ─────────────────────────────────────────────────────────────────────────────
+const ExportInput = z.object({ accessToken: z.string(), projectId: z.string().uuid() });
+export const exportProjectMarkdown = createServerFn({ method: "POST" })
+  .inputValidator((d) => ExportInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    await assertOwnsProject(userId, data.projectId);
+
+    const { data: project } = await admin()
+      .from("research_projects")
+      .select("title,description,subject,created_at")
+      .eq("id", data.projectId)
+      .single();
+    const { data: sources } = await admin()
+      .from("research_sources")
+      .select("id,title,source_type,raw_url,summary,key_claims,page_count")
+      .eq("project_id", data.projectId)
+      .order("created_at", { ascending: true });
+    const sourceIds = (sources ?? []).map((s) => s.id);
+    const { data: anns } = sourceIds.length
+      ? await admin()
+          .from("research_annotations")
+          .select("source_id,page_number,selected_text,note,color,tag,created_at")
+          .in("source_id", sourceIds)
+          .order("source_id", { ascending: true })
+      : { data: [] as any[] };
+    const { data: chat } = await admin()
+      .from("research_chat_sessions")
+      .select("messages")
+      .eq("project_id", data.projectId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const lines: string[] = [];
+    lines.push(`# ${project?.title ?? "Research Project"}\n`);
+    if (project?.subject) lines.push(`**Subject:** ${project.subject}`);
+    if (project?.description) lines.push(`\n${project.description}\n`);
+    lines.push(`\n*Exported ${new Date().toISOString().slice(0, 10)}*\n`);
+
+    lines.push(`\n## Sources (${sources?.length ?? 0})\n`);
+    for (let i = 0; i < (sources ?? []).length; i++) {
+      const s = sources![i];
+      lines.push(`### ${i + 1}. ${s.title}`);
+      lines.push(`*Type:* ${s.source_type}${s.raw_url ? ` · ${s.raw_url}` : ""}${s.page_count ? ` · ${s.page_count} pages` : ""}`);
+      if (s.summary) lines.push(`\n${s.summary}\n`);
+      const claims = (s.key_claims as any[]) ?? [];
+      if (claims.length) {
+        lines.push(`\n**Key claims:**`);
+        for (const c of claims) lines.push(`- ${c.claim}${c.page ? ` *(p.${c.page})*` : ""}`);
+      }
+      const sourceAnns = (anns ?? []).filter((a: any) => a.source_id === s.id);
+      if (sourceAnns.length) {
+        lines.push(`\n**Annotations:**`);
+        for (const a of sourceAnns) {
+          lines.push(`- ${a.page_number ? `p.${a.page_number} — ` : ""}"${a.selected_text}"${a.note ? ` — *${a.note}*` : ""}`);
+        }
+      }
+      lines.push("");
+    }
+
+    const messages = ((chat?.messages as any[]) ?? []);
+    if (messages.length) {
+      lines.push(`\n## Chat history\n`);
+      for (const m of messages) {
+        lines.push(`**${m.role === "user" ? "You" : "Assistant"}:** ${m.content}\n`);
+      }
+    }
+
+    return { markdown: lines.join("\n") };
+  });
