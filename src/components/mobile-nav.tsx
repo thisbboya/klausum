@@ -32,6 +32,7 @@ const LINKS: NavLink[] = [
   { to: "/videos", label: "Videos", icon: Youtube },
   { to: "/exams", label: "Exams", icon: GraduationCap },
   { to: "/tutor", label: "AI Tutor", icon: MessagesSquare },
+  { to: "/research", label: "Research", icon: FlaskConical },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
