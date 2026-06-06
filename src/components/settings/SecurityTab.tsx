@@ -343,3 +343,99 @@ function SessionSection() {
     </div>
   );
 }
+
+// ───────────────────────────── AI Keys (admin) ─────────────────────────────
+
+function GeminiKeyHealthSection() {
+  const fn = useServerFn(checkGeminiKeys);
+  const [busy, setBusy] = useState(false);
+  const [results, setResults] = useState<
+    { label: string; suffix: string; ok: boolean; projectId: string | null; error: string | null }[] | null
+  >(null);
+
+  async function run() {
+    setBusy(true);
+    try {
+      const accessToken = await getAccessToken();
+      const { keys } = await fn({ data: { accessToken } });
+      setResults(keys);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Check failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const failing = (results ?? []).filter((r) => !r.ok);
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="rounded-lg bg-primary/15 p-2 text-primary">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <div className="font-semibold">AI key health</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Admin-only. Pings the Generative Language API for each pooled Gemini key and flags any
+            key whose Google Cloud project has the API disabled.
+          </p>
+          <button
+            onClick={run}
+            disabled={busy}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {busy ? "Checking…" : "Check Gemini key health"}
+          </button>
+        </div>
+      </div>
+
+      {results && (
+        <div className="space-y-2 text-sm">
+          {results.length === 0 && (
+            <p className="text-muted-foreground text-xs">No Gemini keys configured.</p>
+          )}
+          {results.map((r) => (
+            <div
+              key={r.label}
+              className={`rounded-lg border p-3 ${
+                r.ok ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs">
+                  {r.label} <span className="text-muted-foreground">…{r.suffix}</span>
+                </span>
+                <span className={`text-xs font-semibold ${r.ok ? "text-emerald-400" : "text-amber-400"}`}>
+                  {r.ok ? "OK" : "Disabled"}
+                </span>
+              </div>
+              {!r.ok && (
+                <div className="mt-2 space-y-1.5 text-xs">
+                  {r.error && <p className="text-muted-foreground break-words">{r.error}</p>}
+                  {r.projectId && (
+                    <a
+                      href={`https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview?project=${r.projectId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                    >
+                      Enable API for project {r.projectId} <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          {failing.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Tip: after enabling the API in Google Cloud, wait 2-3 minutes for propagation, then re-run this check.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
