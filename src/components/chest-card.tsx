@@ -23,15 +23,15 @@ export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: stri
   async function openChest() {
     if (!userId || !unlocked || opening) return;
     setOpening(true);
-    const xp = roll(TIER_REWARDS[tier].xp);
-    const gems = roll(TIER_REWARDS[tier].gems);
-    await supabase.rpc("grant_rewards", { _xp: xp, _gems: gems });
-    await supabase.from("chest_openings").insert({
-      user_id: userId,
-      tier,
-      reward_xp: xp,
-      reward_gems: gems,
-    });
+    const { data, error } = await supabase.rpc("open_chest", { _tier: tier });
+    if (error) {
+      setOpening(false);
+      toast.error(error.message);
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    const xp = row?.reward_xp ?? 0;
+    const gems = row?.reward_gems ?? 0;
     sounds.levelUp?.();
     setReward({ xp, gems });
     toast.success(`Chest opened! +${xp} XP · +${gems} 💎`);

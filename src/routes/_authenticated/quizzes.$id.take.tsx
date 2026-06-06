@@ -225,10 +225,7 @@ function TakeQuiz() {
     // Perfect-quiz chest (5+ questions, 100%)
     if (total >= 5 && score === total) {
       try {
-        await supabase.rpc("grant_rewards", { _xp: 25, _gems: 10 });
-        await supabase.from("chest_openings").insert({
-          user_id: user.id, tier: "perfect_quiz", reward_xp: 25, reward_gems: 10,
-        });
+        await supabase.rpc("open_chest", { _tier: "perfect_quiz" });
         toast.success("💎 Perfect quiz! +25 XP, +10 gems");
       } catch {}
     }
