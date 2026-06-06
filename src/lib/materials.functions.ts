@@ -266,8 +266,10 @@ export const processMaterial = createServerFn({ method: "POST" })
 
     const prompt =
       `You are Klausum, an adaptive learning engine. Return one valid JSON object only. ` +
-      `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract formulas." : "Non-STEM — formulas array should be empty."} ` +
+      `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract every mathematical formula, equation and constant. Each formula MUST have a field named exactly \"latex\" (not \"formula\", \"expression\" or \"equation\") containing the LaTeX source." : "Non-STEM — formulas array should be empty."} ` +
       `Keys required: extracted_text, summary, key_concepts, concept_graph, visual, auditory, reading, kinesthetic, cornell, flashcards, formulas, bloom_questions, word_count, estimated_read_minutes. ` +
+      `Each key_concept MUST have a SPECIFIC, distinct definition drawn from the material — never reuse the summary text. ` +
+      `Each bloom_questions[Lx] item MUST be specific to the material — never write generic placeholders like "What should you understand about ${data.title}?". ` +
       `Create 8-15 key concepts, 6-15 useful flashcards, Cornell notes, and Bloom questions for L1-L6.\n\n--- MATERIAL ---\n${sourceText}`;
 
     let raw: any = {};
