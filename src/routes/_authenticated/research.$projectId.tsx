@@ -9,6 +9,7 @@ import {
   getResearchProject,
   listResearchSources,
   deleteResearchSource,
+  reprocessSource,
 } from "@/lib/research.functions";
 import { SourcesPanel } from "@/components/research/SourcesPanel";
 import { SourceViewer } from "@/components/research/SourceViewer";
