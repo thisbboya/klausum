@@ -435,10 +435,7 @@ function GroupsTab() {
 
   async function joinGroup() {
     if (!joinCode.trim()) return;
-    const code = joinCode.trim().toUpperCase();
-    const { data: g } = await supabase.from("study_groups").select("id").eq("invite_code", code).maybeSingle();
-    if (!g) return toast.error("Invite code not found");
-    const { error } = await supabase.from("study_group_members").insert({ group_id: g.id, user_id: user!.id });
+    const { error } = await supabase.rpc("join_study_group", { p_invite_code: joinCode.trim().toUpperCase() });
     if (error) return toast.error(error.message);
     setJoinCode(""); setJoining(false);
     qc.invalidateQueries({ queryKey: ["study_groups", user?.id] });
