@@ -492,7 +492,7 @@ export const addTextSource = createServerFn({ method: "POST" })
   });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Add source: YouTube (transcript fetched via youtube oembed + open transcript)
+// Add source: YouTube (server-side transcript via watch-page timedtext URL)
 // ─────────────────────────────────────────────────────────────────────────────
 const AddYoutubeInput = z.object({
   accessToken: z.string(),
@@ -503,16 +503,61 @@ function extractYouTubeId(url: string): string | null {
   const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{6,})/);
   return m?.[1] ?? null;
 }
-export const addYoutubeSource = createServerFn({ method: "POST" })
-  .inputValidator((d) => AddYoutubeInput.parse(d))
-  .handler(async ({ data }) => {
-    const userId = await getUserIdFromToken(data.accessToken);
-    await assertOwnsProject(userId, data.projectId);
-    const videoId = extractYouTubeId(data.url);
-    if (!videoId) throw new Error("Could not parse YouTube URL");
 
-    // Get title via oembed
-    let title = "YouTube video";
+async function fetchYoutubeContent(videoId: string): Promise<{
+  title: string;
+  transcript: string;
+  description: string;
+  hasTranscript: boolean;
+}> {
+  let title = "YouTube video";
+  let description = "";
+  let transcript = "";
+  let hasTranscript = false;
+
+  try {
+    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: { "Accept-Language": "en-US,en;q=0.9", "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (pageRes.ok) {
+      const html = await pageRes.text();
+      const tMatch = html.match(/"title":"((?:[^"\\]|\\.)+)"/);
+      if (tMatch) title = JSON.parse(`"${tMatch[1]}"`).replace(/ - YouTube$/, "");
+      const dMatch = html.match(/"shortDescription":"((?:[^"\\]|\\.){0,500})"/);
+      if (dMatch) description = JSON.parse(`"${dMatch[1]}"`);
+
+      const capMatch = html.match(/"captionTracks":\s*\[.*?"baseUrl":"([^"]+)"/);
+      if (capMatch) {
+        const capUrl = capMatch[1].replace(/\\u0026/g, "&");
+        const ttRes = await fetch(capUrl, { signal: AbortSignal.timeout(10000) });
+        if (ttRes.ok) {
+          const xml = await ttRes.text();
+          const lines = xml.match(/<text[^>]*>([^<]+)<\/text>/g) ?? [];
+          transcript = lines
+            .map((line) =>
+              line
+                .replace(/<[^>]+>/g, "")
+                .replace(/&amp;/g, "&")
+                .replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">")
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/\n/g, " ")
+                .trim(),
+            )
+            .filter(Boolean)
+            .join(" ");
+          if (transcript.trim().length > 50) hasTranscript = true;
+        }
+      }
+    }
+  } catch {
+    // ignore — return whatever we have
+  }
+
+  if (!hasTranscript && title === "YouTube video") {
+    // Fallback to oembed if watch-page failed entirely
     try {
       const oe = await fetch(
         `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
@@ -525,35 +570,34 @@ export const addYoutubeSource = createServerFn({ method: "POST" })
     } catch {
       // ignore
     }
+  }
 
-    // Best-effort transcript: try the public timedtext endpoint
-    let transcript = "";
-    try {
-      const tt = await fetch(
-        `https://video.google.com/timedtext?lang=en&v=${videoId}`,
-        { signal: AbortSignal.timeout(8000) },
-      );
-      if (tt.ok) {
-        const xml = await tt.text();
-        transcript = htmlToText(xml);
-      }
-    } catch {
-      // ignore
-    }
-    if (!transcript) {
-      transcript = `(Transcript not available automatically. Title: ${title}. URL: ${data.url})`;
-    }
+  return { title, transcript, description, hasTranscript };
+}
+
+export const addYoutubeSource = createServerFn({ method: "POST" })
+  .inputValidator((d) => AddYoutubeInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    await assertOwnsProject(userId, data.projectId);
+    const videoId = extractYouTubeId(data.url);
+    if (!videoId) throw new Error("Could not parse YouTube URL");
+
+    const meta = await fetchYoutubeContent(videoId);
+    const body = meta.hasTranscript
+      ? `[YOUTUBE TRANSCRIPT]\nTitle: ${meta.title}\n\n${meta.transcript}`
+      : `[YOUTUBE VIDEO — no transcript available]\nTitle: ${meta.title}\n${meta.description}`;
 
     const { data: row, error } = await admin()
       .from("research_sources")
       .insert({
         project_id: data.projectId,
         user_id: userId,
-        title,
+        title: meta.title,
         source_type: "youtube",
         raw_url: data.url,
-        extracted_text: transcript,
-        word_count: transcript.trim().split(/\s+/).filter(Boolean).length,
+        extracted_text: body,
+        word_count: body.trim().split(/\s+/).filter(Boolean).length,
         processing_done: false,
       })
       .select()
@@ -561,7 +605,7 @@ export const addYoutubeSource = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     try {
-      const sum = await runSummaryPipeline(transcript, title);
+      const sum = await runSummaryPipeline(body, meta.title);
       await admin()
         .from("research_sources")
         .update({ summary: sum.summary, key_claims: sum.key_claims, processing_done: true })
@@ -574,6 +618,84 @@ export const addYoutubeSource = createServerFn({ method: "POST" })
     }
     return { id: row.id };
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reprocess an existing source (used by the "Retry" button on AI errors)
+// ─────────────────────────────────────────────────────────────────────────────
+const ReprocessInput = z.object({ accessToken: z.string(), sourceId: z.string().uuid() });
+export const reprocessSource = createServerFn({ method: "POST" })
+  .inputValidator((d) => ReprocessInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    await assertOwnsSource(userId, data.sourceId);
+    const sa = admin();
+
+    const { data: row, error } = await sa
+      .from("research_sources")
+      .select("id,title,source_type,extracted_text,raw_url,file_path")
+      .eq("id", data.sourceId)
+      .single();
+    if (error || !row) throw new Error("Source not found");
+
+    await sa
+      .from("research_sources")
+      .update({ processing_error: null, processing_done: false })
+      .eq("id", row.id);
+
+    let body = row.extracted_text ?? "";
+
+    try {
+      if (row.source_type === "pdf" && row.file_path && (!body || body.length < 60)) {
+        const { data: dl, error: dlErr } = await sa.storage.from("materials").download(row.file_path);
+        if (dlErr) throw dlErr;
+        const buf = Buffer.from(await dl.arrayBuffer());
+        body = await extractPdfText(buf.toString("base64"), "application/pdf");
+        await sa
+          .from("research_sources")
+          .update({ extracted_text: body, word_count: body.trim().split(/\s+/).filter(Boolean).length })
+          .eq("id", row.id);
+      } else if (row.source_type === "youtube" && row.raw_url) {
+        const vid = extractYouTubeId(row.raw_url);
+        if (vid) {
+          const meta = await fetchYoutubeContent(vid);
+          body = meta.hasTranscript
+            ? `[YOUTUBE TRANSCRIPT]\nTitle: ${meta.title}\n\n${meta.transcript}`
+            : `[YOUTUBE VIDEO — no transcript available]\nTitle: ${meta.title}\n${meta.description}`;
+          await sa
+            .from("research_sources")
+            .update({ extracted_text: body, word_count: body.trim().split(/\s+/).filter(Boolean).length })
+            .eq("id", row.id);
+        }
+      } else if (row.source_type === "url" && row.raw_url && (!body || body.length < 60)) {
+        await assertSafePublicUrl(row.raw_url);
+        const res = await fetch(row.raw_url, {
+          headers: { "User-Agent": "KlausumResearch/1.0" },
+          signal: AbortSignal.timeout(15000),
+          redirect: "error",
+        });
+        const html = await res.text();
+        body = htmlToText(html);
+        await sa
+          .from("research_sources")
+          .update({ extracted_text: body, word_count: body.trim().split(/\s+/).filter(Boolean).length })
+          .eq("id", row.id);
+      }
+
+      const sum = await runSummaryPipeline(body, row.title);
+      await sa
+        .from("research_sources")
+        .update({ summary: sum.summary, key_claims: sum.key_claims, processing_done: true })
+        .eq("id", row.id);
+      return { ok: true };
+    } catch (e: any) {
+      await sa
+        .from("research_sources")
+        .update({ processing_error: String(e?.message ?? e), processing_done: true })
+        .eq("id", row.id);
+      throw e instanceof Error ? e : new Error(String(e));
+    }
+  });
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Annotations
