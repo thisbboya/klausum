@@ -333,12 +333,57 @@ export const addPdfSource = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────────────────────────────────────
 // Add source: URL
 // ─────────────────────────────────────────────────────────────────────────────
-const AddUrlInput = z.object({
-  accessToken: z.string(),
-  projectId: z.string().uuid(),
-  title: z.string().min(1).max(300).optional(),
-  url: z.string().url().max(2000),
-});
+function isPrivateIPv4(ip: string): boolean {
+  const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!m) return false;
+  const a = +m[1], b = +m[2];
+  if (a === 10 || a === 127 || a === 0) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a >= 224) return true; // multicast/reserved
+  return false;
+}
+
+async function assertSafePublicUrl(raw: string) {
+  let u: URL;
+  try { u = new URL(raw); } catch { throw new Error("Invalid URL"); }
+  if (u.protocol !== "https:" && u.protocol !== "http:") {
+    throw new Error("Only http(s) URLs are allowed");
+  }
+  const host = u.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    host === "metadata.google.internal"
+  ) throw new Error("Blocked host");
+  if (host.startsWith("[")) throw new Error("IPv6 literals are blocked");
+  if (isPrivateIPv4(host)) throw new Error("Private IPs are blocked");
+
+  // Resolve hostname via DNS-over-HTTPS and reject private results
+  try {
+    const r = await fetch(`https://1.1.1.1/dns-query?name=${encodeURIComponent(host)}&type=A`, {
+      headers: { accept: "application/dns-json" },
+      signal: AbortSignal.timeout(5000),
+    });
+    const j: any = await r.json();
+    const answers: any[] = j?.Answer ?? [];
+    let sawA = false;
+    for (const ans of answers) {
+      if (ans?.type === 1 && typeof ans.data === "string") {
+        sawA = true;
+        if (isPrivateIPv4(ans.data)) throw new Error("Host resolves to a private IP");
+      }
+    }
+    if (!sawA && answers.length === 0) throw new Error("Host could not be resolved");
+  } catch (e: any) {
+    if (/private|blocked|resolved/i.test(e?.message ?? "")) throw e;
+    throw new Error("Could not validate host");
+  }
+}
+
 export const addUrlSource = createServerFn({ method: "POST" })
   .inputValidator((d) => AddUrlInput.parse(d))
   .handler(async ({ data }) => {
@@ -348,9 +393,11 @@ export const addUrlSource = createServerFn({ method: "POST" })
     let text = "";
     let finalTitle = data.title ?? data.url;
     try {
+      await assertSafePublicUrl(data.url);
       const res = await fetch(data.url, {
         headers: { "User-Agent": "KlausumResearch/1.0" },
         signal: AbortSignal.timeout(15000),
+        redirect: "error",
       });
       const html = await res.text();
       text = htmlToText(html);
