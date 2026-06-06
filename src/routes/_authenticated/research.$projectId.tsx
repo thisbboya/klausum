@@ -141,6 +141,7 @@ function ResearchProject() {
               }}
               onAdd={() => setShowAdd(true)}
               onDelete={handleDelete}
+              onRetry={handleRetry}
             />
           )}
           {mobileTab === "doc" && (
