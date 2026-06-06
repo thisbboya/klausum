@@ -177,8 +177,8 @@ function MaterialDetail() {
           )}
           {tab === "cornell" && <CornellTab material={material} />}
           {tab === "graph" && <ConceptGraphTab graph={material.concept_graph as any[]} concepts={material.key_concepts as any[]} />}
-          {tab === "formulas" && <FormulasTab formulas={material.formulas as any[]} />}
-          {tab === "questions" && <BloomTab questions={material.bloom_questions as any} />}
+          {tab === "formulas" && <FormulasTab material={material} />}
+          {tab === "questions" && <BloomTab material={material} />}
         </>
 
       )}
