@@ -333,6 +333,13 @@ export const addPdfSource = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────────────────────────────────────
 // Add source: URL
 // ─────────────────────────────────────────────────────────────────────────────
+const AddUrlInput = z.object({
+  accessToken: z.string(),
+  projectId: z.string().uuid(),
+  title: z.string().min(1).max(300).optional(),
+  url: z.string().url().max(2000),
+});
+
 function isPrivateIPv4(ip: string): boolean {
   const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (!m) return false;
