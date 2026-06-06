@@ -68,6 +68,18 @@ function ResearchProject() {
     }
   }
 
+  async function handleRetry(id: string) {
+    try {
+      toast.info("Re-processing source…");
+      await retryFn({ data: { accessToken: await getAccessToken(), sourceId: id } });
+      qc.invalidateQueries({ queryKey: ["research-sources", projectId] });
+      toast.success("Source re-processed");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Retry failed");
+      qc.invalidateQueries({ queryKey: ["research-sources", projectId] });
+    }
+  }
+
   function handleJump(sourceId: string, page?: number) {
     if (sourceId) setActiveId(sourceId);
     if (page) setCurrentPage(page);
