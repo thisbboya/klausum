@@ -1,73 +1,62 @@
-# Anara-Style Research Workspace (v9 Part 2)
+## Klausum bug-fix batch (6 confirmed bugs + YouTube transcript)
 
-A new `/research` area where students collect multiple sources (PDF / URL / YouTube / pasted text) into a project, view them side-by-side with annotations, and chat with an AI that cites the exact source + page for every claim.
+Minimum-change fixes, scoped to the components and server functions named in the brief. No refactors.
 
-## 1. Database (one migration)
+### Bug 1 — Formulas tab renders "undefined"
+- `src/routes/_authenticated/materials.$id.tsx` → `FormulasTab`:
+  - Resolve `latex` defensively: `f.latex ?? f.formula ?? f.expression ?? f.equation ?? f.content ?? ""`.
+  - Resolve name: `f.name ?? f.title ?? "Formula"`.
+  - Use resolved string for both KaTeX render and `Copy LaTeX` handler.
+  - When resolved string is empty, render an "Formula could not be rendered" card with a `Regenerate` button that calls the new server fn below.
+- `src/lib/materials.functions.ts`:
+  - Tighten the extraction prompt so each formula MUST use the key `latex` (explicit "not formula/expression/equation").
+  - In `normalizeProcessed`, normalise each formula to `{ name, latex, variables, subject }` using the same fallback chain so stored rows always have `latex`.
 
-Four new tables, all RLS-scoped to `auth.uid()`, with explicit GRANTs to `authenticated` + `service_role`.
+### Bug 2 — Gemini keys / disabled GCP projects (code-side improvements)
+The actual enable-API step is user action in GCP. Code side:
+- `src/lib/ai-gateway.ts` / `withGeminiRetry`:
+  - Detect `403` + message containing `not been used in project` / `SERVICE_DISABLED` → **permanently** block that key (long TTL, e.g. 24h) via `blockGeminiKey`, and tag the error as `GEMINI_API_DISABLED` with the offending project id so callers can surface it.
+  - Do not retry on this class of error (kept retry for 429/quota only).
+- New server fn `checkGeminiKeys` in `src/lib/admin.functions.ts` (admin-gated): pings `…/v1beta/models?key=…` for every pooled key and returns `{ key: lastEightChars, ok, projectId? }`. Used by Settings.
+- `src/components/settings/SecurityTab.tsx` (or a small new "AI Keys" card on Settings): button "Check Gemini key health" → renders table + deep links to `console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview?project=<id>` for any disabled key.
 
-- `research_projects` — id, user_id, title, description, subject, color, source_count, timestamps
-- `research_sources` — id, project_id, user_id, title, source_type (`pdf|url|text|youtube|note`), file_url, raw_url, extracted_text, page_count, word_count, summary, key_claims jsonb, processing_done, created_at
-- `research_annotations` — id, source_id, user_id, page_number, selected_text, note, color, tag, position jsonb, created_at
-- `research_chat_sessions` — id, project_id, user_id, messages jsonb, timestamps
+### Bug 3 — Research source "Error" badge
+- `src/components/research/SourcesPanel.tsx`:
+  - Badge logic: red `Upload failed` only when `source_type === 'pdf' && !file_url`; yellow `Processing…` when `!processing_done && !processing_error`; amber `AI Error` + `Retry` button when `processing_error`; green `Ready` otherwise.
+- `src/lib/research.functions.ts`: add `reprocessSource({ sourceId })` server fn → clears `processing_error` + `processing_done=false`, re-runs the existing processing pipeline. Wire to the Retry button.
 
-Trigger to keep `research_projects.source_count` and `updated_at` in sync when sources change. Reuse the existing `materials` Storage bucket for PDF uploads (no new bucket).
+### Bug 4 — Per-page chat "I had trouble responding"
+- `src/components/reader/MaterialAIChat.tsx`: in the catch branch, inspect `err.message` and show:
+  - `GEMINI_API_DISABLED` → "⚠️ AI service isn't configured. Check Settings → AI keys."
+  - `429`/rate-limit → "⏱ The AI is busy. Wait a minute and try again."
+  - otherwise the existing generic line.
+- Same treatment in `src/components/research/ResearchChatPanel.tsx`.
 
-## 2. Server functions (`src/lib/research.functions.ts`)
+### Bug 5 — Summary key-ideas all identical
+- `src/lib/materials.functions.ts` `normalizeProcessed`:
+  - Remove the synthetic `key_concepts[0] = { concept: title, definition: summary, … }` fallback. Leave the array empty when Gemini gave nothing real.
+  - Remove the per-item fallback `definition: firstSentences(summary, 1)` — keep only items that have a real definition.
+- `src/routes/_authenticated/materials.$id.tsx` `SummaryTab`:
+  - When `key_concepts` is missing/empty, render an honest empty state with `↺ Extract Key Concepts` button.
+  - Button calls new server fn `regenerateKeyConcepts({ materialId })` (uses `generateObjectSafe` + Gemini Flash, prompt explicitly requires 8–12 *different* concept-specific definitions, persists to `study_materials.key_concepts`).
+  - Suppress any concept whose `definition === material.ai_summary` (defensive against legacy rows).
 
-All protected with `requireSupabaseAuth`, JSON validated with Zod, AI calls routed through existing `ai-gateway` + `generateObjectSafe`.
+### Bug 6 — Bloom Q&A generic template
+- `src/lib/materials.functions.ts`: drop the `bloom_questions[level].push({ question: \`${level}: What should you understand…\` })` fallback. Leave levels empty when Gemini returned nothing.
+- `src/routes/_authenticated/materials.$id.tsx` `BloomTab`:
+  - Compute `hasRealQuestions` (any level has an item whose question doesn't include "What should you understand about").
+  - If false, render empty state + `↺ Generate Bloom Questions`.
+  - Server fn `regenerateBloomQuestions({ materialId })` with the prompt from the brief; persist to `study_materials.bloom_questions`.
 
-- `listProjects` / `createProject` / `updateProject` / `deleteProject`
-- `listSources(projectId)` / `getSource(id)` / `deleteSource`
-- `addSourceFromPdf` — accepts base64, uploads to `materials` bucket, kicks off processing
-- `addSourceFromUrl` — server-side fetch + simple Readability-style strip
-- `addSourceFromYoutube` — reuse existing youtube transcript path
-- `addSourceFromText` — plain paste
-- `processSource` — extract text → 300-word summary → key claims `[{claim, page, confidence}]`, sets `processing_done`
-- `listAnnotations(sourceId)` / `createAnnotation` / `deleteAnnotation`
-- `chatResearch({ projectId, scope: 'source'|'project', sourceId?, message, history })` — builds the scoped system prompt from v9 spec; always returns text with inline `[p.N]` (single-source) or `[Source Name, p.N]` (multi-source) citations
-- `generateReference({ sourceId, style })` — APA/MLA/Chicago/Harvard/Vancouver/IEEE
-- `exportProjectMarkdown(projectId)` — returns a `.md` string with sources, annotations, chat, references
+### YouTube transcript (secondary fix)
+Stack rule: no Supabase Edge Functions. Implement as a TanStack server fn.
+- New `fetchYoutubeTranscriptServer({ videoId })` in `src/lib/research.functions.ts` (uses Worker-safe `fetch`, regex extraction of `captionTracks` → timedtext XML → plain text; falls back to title + `shortDescription`). Reused by `addSourceFromYoutube` instead of the current oembed-only path.
+- `src/components/research/SourceViewer.tsx`: when a YouTube source has no transcript, render the "no transcript" card with "Watch on YouTube ↗".
 
-## 3. Routes & components
+### Files touched
+- Edited: `src/routes/_authenticated/materials.$id.tsx`, `src/lib/materials.functions.ts`, `src/lib/research.functions.ts`, `src/lib/ai-gateway.ts`, `src/lib/admin.functions.ts`, `src/components/reader/MaterialAIChat.tsx`, `src/components/research/ResearchChatPanel.tsx`, `src/components/research/SourcesPanel.tsx`, `src/components/research/SourceViewer.tsx`, `src/components/settings/SecurityTab.tsx`.
+- No new tables, no new packages, no migrations.
 
-```
-src/routes/_authenticated/research.tsx          # layout w/ <Outlet />
-src/routes/_authenticated/research.index.tsx    # projects grid + create modal
-src/routes/_authenticated/research.$projectId.tsx  # three-panel workspace
-
-src/components/research/
-  ProjectCard.tsx
-  CreateProjectDialog.tsx
-  SourcesPanel.tsx          # add source modal (PDF/URL/YT/text), list, rename/delete/summarise
-  SourceViewer.tsx          # PDF (reuse existing PDFViewer), URL/text/youtube fallbacks
-  AnnotationLayer.tsx       # selection popover: Annotate / Explain / Flashcard / Copy; coloured highlights overlay
-  ResearchChatPanel.tsx     # scope toggle, message list, citation chips, quick actions, references button
-  CitationChip.tsx          # clickable [Source N, p.M] → switches viewer + page
-  GenerateReferencesDialog.tsx
-```
-
-Reuse: existing `PDFViewer.tsx` for PDF rendering + selection plumbing, existing `MarkdownMath` for messages, existing `safeParseJSON`/`generateObjectSafe`.
-
-Sidebar (`src/components/mobile-nav.tsx` and any desktop nav): add "Research" entry below AI Tutor with a flask icon.
-
-## 4. Behaviour details
-
-- **Citation chips** are parsed from the rendered AI text; clicking sets the active source and jumps the viewer to that page (same mechanism as the existing reader `[p.N]` chips).
-- **Scope = "This source only"**: chunk extracted text (~12k chars) around current page; prompt forbids outside knowledge.
-- **Scope = "All sources"**: inject titles + 300-word summaries for up to 8 sources; prompt requires per-source citation + explicit "sources disagree" handling.
-- **Quick actions** (empty chat): 6 preset prompts from spec.
-- **Annotations** render as coloured rectangles over the PDF page using stored `position` (x/y/w/h normalised to page size).
-- **Mobile**: three-tab switcher (Sources / Document / Chat) instead of three panels.
-- **Export**: client downloads the `.md` blob returned by `exportProjectMarkdown`.
-
-## 5. Out of scope (separate v9 batches)
-
-Parts 3 (Duolingo rebuild), 4 (photo-math), 5 (labs), 6 (polish pack), 7 (security), 8 (perf). The Piston→Judge0→AI fallback chain stays as-is per your decision. No new heavy npm packages in this batch — `react-pdf` and the citation chip logic already exist in the reader.
-
-## Technical notes
-
-- New tables follow project convention: `CREATE TABLE` → `GRANT SELECT,INSERT,UPDATE,DELETE TO authenticated` + `GRANT ALL TO service_role` → `ENABLE RLS` → policies.
-- `research_chat_sessions.messages` stored as `jsonb` array of `{role, content, citations}`; matches existing `tutor_sessions` pattern.
-- PDF processing reuses the existing Gemini base64 extraction path from `processMaterial` so we don't duplicate logic — `addSourceFromPdf` calls a shared helper.
-- All AI calls go through `withGeminiRetry` + `generateObjectSafe` so multi-key pooling and JSON fence stripping apply automatically.
+### Out of scope
+- Actually enabling the GCP APIs (user action).
+- Any refactor not listed above.
