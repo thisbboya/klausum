@@ -63,7 +63,10 @@ export function resolveModel(modelId: string = DEFAULT_MODEL): LanguageModel {
   return resolveModelWithKey(modelId).model;
 }
 
-/** Retry a Gemini call up to 4 times, rotating keys on 429/quota/permission. */
+/** Retry a Gemini call up to 4 times, rotating keys on 429/quota/permission.
+ *  Permanently (24h) blocks a key whose GCP project has the Generative
+ *  Language API disabled, and rethrows a tagged `GEMINI_API_DISABLED` error so
+ *  the UI can surface an actionable message. */
 export async function withGeminiRetry<T>(
   modelId: string,
   fn: (model: LanguageModel) => Promise<T>,
@@ -77,12 +80,25 @@ export async function withGeminiRetry<T>(
       lastErr = err;
       const msg = String(err?.message ?? err);
       const status = err?.statusCode ?? err?.status;
+      const isApiDisabled =
+        status === 403 &&
+        /not been used in project|SERVICE_DISABLED|generativelanguage\.googleapis\.com/i.test(msg);
+      if (isApiDisabled) {
+        // Long block — manual re-enable required in GCP.
+        if (geminiKey) blockGeminiKey(geminiKey, 24 * 60 * 60 * 1000);
+        const projMatch = msg.match(/project[^0-9]{0,8}(\d{6,})/i);
+        const tagged = new Error(
+          `GEMINI_API_DISABLED${projMatch ? `:${projMatch[1]}` : ""} — Generative Language API is disabled in the Google Cloud project for this key.`,
+        );
+        // Try the next pooled key instead of failing outright.
+        if (attempt < 3) continue;
+        throw tagged;
+      }
       const isRateLimit =
         status === 429 ||
-        /429|quota|rate.?limit|resource.?exhausted|permission/i.test(msg);
+        /429|quota|rate.?limit|resource.?exhausted/i.test(msg);
       if (!isRateLimit) throw err;
       if (geminiKey) blockGeminiKey(geminiKey, 60_000);
-      // Small backoff so a burst of parallel callers don't all retry instantly.
       await new Promise((r) => setTimeout(r, 250 + attempt * 250));
     }
   }

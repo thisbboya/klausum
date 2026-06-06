@@ -9,6 +9,7 @@ import {
   getResearchProject,
   listResearchSources,
   deleteResearchSource,
+  reprocessSource,
 } from "@/lib/research.functions";
 import { SourcesPanel } from "@/components/research/SourcesPanel";
 import { SourceViewer } from "@/components/research/SourceViewer";
@@ -28,6 +29,7 @@ function ResearchProject() {
   const getProjFn = useServerFn(getResearchProject);
   const listSrcFn = useServerFn(listResearchSources);
   const delSrcFn = useServerFn(deleteResearchSource);
+  const retryFn = useServerFn(reprocessSource);
 
   const { data: project, isLoading: pLoading } = useQuery({
     queryKey: ["research-project", projectId],
@@ -63,6 +65,18 @@ function ResearchProject() {
       qc.invalidateQueries({ queryKey: ["research-sources", projectId] });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
+    }
+  }
+
+  async function handleRetry(id: string) {
+    try {
+      toast.info("Re-processing source…");
+      await retryFn({ data: { accessToken: await getAccessToken(), sourceId: id } });
+      qc.invalidateQueries({ queryKey: ["research-sources", projectId] });
+      toast.success("Source re-processed");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Retry failed");
+      qc.invalidateQueries({ queryKey: ["research-sources", projectId] });
     }
   }
 
@@ -127,6 +141,7 @@ function ResearchProject() {
               }}
               onAdd={() => setShowAdd(true)}
               onDelete={handleDelete}
+              onRetry={handleRetry}
             />
           )}
           {mobileTab === "doc" && (
@@ -184,6 +199,7 @@ function ResearchProject() {
           onSelect={setActiveId}
           onAdd={() => setShowAdd(true)}
           onDelete={handleDelete}
+          onRetry={handleRetry}
         />
         <div className="border-r border-border min-w-0">
           {sLoading ? (

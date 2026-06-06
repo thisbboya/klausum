@@ -84,6 +84,46 @@ export function SourceViewer({
   }
 
   const text = source.extracted_text || "";
+  const isYoutube = source.source_type === "youtube";
+  const hasTranscript = isYoutube && text.includes("[YOUTUBE TRANSCRIPT]");
+
+  if (isYoutube && !hasTranscript) {
+    const ytIdMatch = source.raw_url?.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{6,})/);
+    const ytId = ytIdMatch?.[1];
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="px-4 py-2 border-b border-border bg-card text-xs text-muted-foreground truncate">
+          📺 {source.title}
+        </div>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center max-w-sm space-y-3">
+            <span className="text-4xl">📺</span>
+            <p className="font-medium">{source.title}</p>
+            <p className="text-sm text-muted-foreground">
+              This video has no auto-generated transcript. The AI will use the title and
+              description for research.
+            </p>
+            {source.summary && (
+              <p className="text-xs text-muted-foreground italic border-t border-border pt-3">
+                {source.summary}
+              </p>
+            )}
+            {ytId && (
+              <a
+                href={`https://www.youtube.com/watch?v=${ytId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 hover:opacity-90"
+              >
+                Watch on YouTube <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="px-4 py-2 border-b border-border bg-card flex items-center justify-between gap-2">

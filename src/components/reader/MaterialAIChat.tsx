@@ -285,16 +285,20 @@ export function MaterialAIChat({
         description: `Asked AI about p.${currentPage} of ${materialTitle}`,
       }).catch(() => {});
     } catch (err: any) {
+      const msg = String(err?.message ?? "");
+      const friendly = msg.includes("GEMINI_API_DISABLED")
+        ? "⚠️ The AI service isn't configured correctly. An admin needs to enable the Generative Language API in Google Cloud."
+        : msg.includes("429") || /rate.?limit|quota/i.test(msg)
+          ? "⏱ The AI is busy right now. Give me a minute and try again."
+          : msg.includes("402")
+            ? "AI credits exhausted. Please top up to continue."
+            : "I had trouble responding. Please try again. 🙂";
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: "ai",
-          content: err?.message?.includes("429")
-            ? "Rate limit reached — give me a moment and try again. 🙂"
-            : err?.message?.includes("402")
-              ? "AI credits exhausted. Please top up to continue."
-              : "I had trouble responding. Please try again. 🙂",
+          content: friendly,
           page: currentPage,
         },
       ]);

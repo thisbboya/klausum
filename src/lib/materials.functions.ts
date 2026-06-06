@@ -125,31 +125,35 @@ function normalizeProcessed(raw: any, sourceText: string, title: string): Proces
   const extracted_text = asText(raw.extracted_text) || sourceText;
   const summary = asText(raw.summary) || firstSentences(extracted_text);
   const words = extracted_text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Key concepts — only keep entries that have a real, non-summary definition.
+  // Do NOT inject a synthetic concept-from-title fallback (see Bug 5).
   const key_concepts = asArray(raw.key_concepts)
     .map((c, i) => {
       const o = asObject(c);
+      const concept = asText(o.concept ?? o.term ?? o.name);
+      const definition = asText(o.definition ?? o.explanation ?? o.description);
       return {
         id: asText(o.id) || `c${i + 1}`,
-        concept: asText(o.concept ?? o.term ?? o.name) || `Key idea ${i + 1}`,
-        definition: asText(o.definition ?? o.explanation ?? o.description) || firstSentences(summary, 1),
-        example: asText(o.example) || "Review the source material for an example.",
-        importance: ["high", "medium", "low"].includes(asText(o.importance).toLowerCase()) ? asText(o.importance).toLowerCase() : "medium",
+        concept,
+        definition,
+        example: asText(o.example) || "",
+        importance: ["high", "medium", "low"].includes(asText(o.importance).toLowerCase())
+          ? asText(o.importance).toLowerCase()
+          : "medium",
         bloom_level: bloomLevel(o.bloom_level, Math.min(6, i + 1)),
       };
     })
-    .filter((c) => c.concept)
+    .filter((c) => c.concept && c.definition && c.definition !== summary)
     .slice(0, 15);
-
-  if (key_concepts.length === 0) {
-    key_concepts.push({ id: "c1", concept: title, definition: summary, example: "Use this as the anchor topic for review.", importance: "high", bloom_level: 2 });
-  }
 
   const flashcards = asArray(raw.flashcards)
     .map((c, i) => {
       const o = asObject(c);
+      const anchor = key_concepts[i % Math.max(1, key_concepts.length)];
       return {
-        front: asText(o.front ?? o.question) || `What is ${key_concepts[i % key_concepts.length]?.concept}?`,
-        back: asText(o.back ?? o.answer) || key_concepts[i % key_concepts.length]?.definition || summary,
+        front: asText(o.front ?? o.question) || (anchor ? `What is ${anchor.concept}?` : ""),
+        back: asText(o.back ?? o.answer) || (anchor?.definition ?? summary),
         hint: asText(o.hint) || null,
         bloom_level: bloomLevel(o.bloom_level, (i % 6) + 1),
         card_type: ["standard", "formula", "code"].includes(asText(o.card_type)) ? asText(o.card_type) : "standard",
@@ -159,11 +163,13 @@ function normalizeProcessed(raw: any, sourceText: string, title: string): Proces
     .filter((c) => c.front && c.back)
     .slice(0, 20);
 
-  while (flashcards.length < 6) {
+  // Only top up flashcards when we DO have real concepts to anchor them to.
+  while (flashcards.length < 6 && key_concepts.length > 0) {
     const c = key_concepts[flashcards.length % key_concepts.length];
-    flashcards.push({ front: `Explain: ${c.concept}`, back: c.definition, hint: c.example, bloom_level: bloomLevel(c.bloom_level, (flashcards.length % 6) + 1), card_type: "standard", tags: [] });
+    flashcards.push({ front: `Explain: ${c.concept}`, back: c.definition, hint: c.example || null, bloom_level: bloomLevel(c.bloom_level, (flashcards.length % 6) + 1), card_type: "standard", tags: [] });
   }
 
+  // Bloom — no generic fallbacks; empty levels stay empty.
   const bloomRaw = asObject(raw.bloom_questions);
   const bloom_questions: Record<string, { question: string; answer: string }[]> = {};
   for (const level of ["L1", "L2", "L3", "L4", "L5", "L6"]) {
@@ -172,27 +178,51 @@ function normalizeProcessed(raw: any, sourceText: string, title: string): Proces
         const o = asObject(q);
         return { question: asText(o.question ?? o.front), answer: asText(o.answer ?? o.back) };
       })
-      .filter((q) => q.question && q.answer)
+      .filter((q) => q.question && q.answer && !/what should you understand about/i.test(q.question))
       .slice(0, 3);
-    if (bloom_questions[level].length === 0) bloom_questions[level].push({ question: `${level}: What should you understand about ${title}?`, answer: summary });
   }
 
+  // Formulas — Gemini sometimes uses `formula`/`expression`/`equation` instead of `latex`.
+  const formulas = asArray(raw.formulas)
+    .map((f) => {
+      const o = asObject(f);
+      const latex = asText(o.latex ?? o.formula ?? o.expression ?? o.equation ?? o.content);
+      return {
+        name: asText(o.name ?? o.title) || "Formula",
+        latex,
+        subject: asText(o.subject) || undefined,
+        variables: asArray(o.variables)
+          .map((v) => {
+            const vo = asObject(v);
+            return {
+              symbol: asText(vo.symbol),
+              unit: asText(vo.unit) || undefined,
+              meaning: asText(vo.meaning ?? vo.description) || "",
+            };
+          })
+          .filter((v) => v.symbol),
+      };
+    })
+    .filter((f) => f.latex)
+    .slice(0, 30);
+
   const cornell = asObject(raw.cornell);
+  const anchorConcept = key_concepts[0]?.concept ?? title;
   return {
     summary,
     key_concepts,
     concept_graph: asArray(raw.concept_graph).slice(0, 30),
-    visual: asText(raw.visual) || `[KEY TERM: ${key_concepts[0].concept}]\n\n${summary}`,
+    visual: asText(raw.visual) || `[KEY TERM: ${anchorConcept}]\n\n${summary}`,
     auditory: asText(raw.auditory) || `[SAY THIS ALOUD: ${firstSentences(summary, 1)}]\n\n[VERBAL SUMMARY: ${summary}]`,
-    reading: asText(raw.reading) || `I. ${title}\n\nA. ${summary}\n\n[WRITE THIS DOWN: ${key_concepts[0].concept}]`,
-    kinesthetic: asText(raw.kinesthetic) || `[TRY THIS: Teach the main idea in your own words.]\n\n[REAL WORLD: Connect ${key_concepts[0].concept} to a practical example.]`,
+    reading: asText(raw.reading) || `I. ${title}\n\nA. ${summary}\n\n[WRITE THIS DOWN: ${anchorConcept}]`,
+    kinesthetic: asText(raw.kinesthetic) || `[TRY THIS: Teach the main idea in your own words.]\n\n[REAL WORLD: Connect ${anchorConcept} to a practical example.]`,
     cornell: {
-      cue_column: asText(cornell.cue_column ?? cornell.cues) || key_concepts.map((c) => c.concept).join("\n"),
+      cue_column: asText(cornell.cue_column ?? cornell.cues) || key_concepts.map((c) => c.concept).join("\n") || anchorConcept,
       notes_column: asText(cornell.notes_column ?? cornell.notes) || summary,
       summary: asText(cornell.summary) || summary,
     },
     flashcards,
-    formulas: asArray(raw.formulas).slice(0, 30),
+    formulas,
     bloom_questions,
     extracted_text,
     word_count: Number(raw.word_count) || words,
@@ -236,8 +266,10 @@ export const processMaterial = createServerFn({ method: "POST" })
 
     const prompt =
       `You are Klausum, an adaptive learning engine. Return one valid JSON object only. ` +
-      `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract formulas." : "Non-STEM — formulas array should be empty."} ` +
+      `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract every mathematical formula, equation and constant. Each formula MUST have a field named exactly \"latex\" (not \"formula\", \"expression\" or \"equation\") containing the LaTeX source." : "Non-STEM — formulas array should be empty."} ` +
       `Keys required: extracted_text, summary, key_concepts, concept_graph, visual, auditory, reading, kinesthetic, cornell, flashcards, formulas, bloom_questions, word_count, estimated_read_minutes. ` +
+      `Each key_concept MUST have a SPECIFIC, distinct definition drawn from the material — never reuse the summary text. ` +
+      `Each bloom_questions[Lx] item MUST be specific to the material — never write generic placeholders like "What should you understand about ${data.title}?". ` +
       `Create 8-15 key concepts, 6-15 useful flashcards, Cornell notes, and Bloom questions for L1-L6.\n\n--- MATERIAL ---\n${sourceText}`;
 
     let raw: any = {};
@@ -392,5 +424,138 @@ export const appendMaterialNote = createServerFn({ method: "POST" })
     });
     if (error) throw new Error("Failed to save note");
     return { ok: true };
+  });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regenerate helpers (key concepts, Bloom questions, formulas)
+// ─────────────────────────────────────────────────────────────────────────────
+const RegenInput = z.object({ accessToken: z.string(), materialId: z.string().uuid() });
+
+async function loadMaterialForOwner(token: string, materialId: string) {
+  const userId = await getUserIdFromToken(token);
+  const sa = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: mat, error } = await sa
+    .from("study_materials")
+    .select("id, user_id, title, subject, original_content, ai_summary")
+    .eq("id", materialId)
+    .maybeSingle();
+  if (error || !mat) throw new Error("Material not found");
+  if (mat.user_id !== userId) throw new Error("Forbidden");
+  return { sa, mat };
+}
+
+const KeyConceptsSchema = z.object({
+  key_concepts: z.array(
+    z.object({
+      concept: z.string().min(2).max(200),
+      definition: z.string().min(10).max(600),
+      example: z.string().max(400).optional().default(""),
+      importance: z.enum(["high", "medium", "low"]).optional().default("medium"),
+      bloom_level: z.number().int().min(1).max(6).optional().default(2),
+    }),
+  ).min(4).max(15),
+});
+
+export const regenerateKeyConcepts = createServerFn({ method: "POST" })
+  .inputValidator((d) => RegenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { sa, mat } = await loadMaterialForOwner(data.accessToken, data.materialId);
+    const content = (mat.original_content ?? "").slice(0, 14000);
+    if (!content) throw new Error("No source content available");
+    const { object } = await generateObjectSafe({
+      schema: KeyConceptsSchema,
+      prompt:
+        `Extract 8-12 KEY CONCEPTS from this study material titled "${mat.title}" (${mat.subject ?? "General"}).\n` +
+        `Each concept MUST be DIFFERENT and have a SPECIFIC 1-2 sentence definition drawn directly from the material.\n` +
+        `Do NOT reuse the summary text as the definition. Do NOT repeat the same definition across concepts.\n` +
+        `Provide one concrete example per concept from the material itself when possible.\n` +
+        `Return JSON: { key_concepts: [{ concept, definition, example, importance, bloom_level }] }.\n\n` +
+        `--- MATERIAL ---\n${content}`,
+      maxOutputTokens: 2000,
+    });
+    const normalized = object.key_concepts.map((c, i) => ({
+      id: `c${i + 1}`,
+      concept: c.concept,
+      definition: c.definition,
+      example: c.example ?? "",
+      importance: c.importance ?? "medium",
+      bloom_level: c.bloom_level ?? Math.min(6, i + 1),
+    }));
+    await sa.from("study_materials").update({ key_concepts: normalized }).eq("id", mat.id);
+    return { key_concepts: normalized };
+  });
+
+const BloomSchema = z.object({
+  L1: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L2: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L3: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L4: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L5: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L6: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+});
+
+export const regenerateBloomQuestions = createServerFn({ method: "POST" })
+  .inputValidator((d) => RegenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { sa, mat } = await loadMaterialForOwner(data.accessToken, data.materialId);
+    const content = (mat.original_content ?? "").slice(0, 14000);
+    if (!content) throw new Error("No source content available");
+    const { object } = await generateObjectSafe({
+      schema: BloomSchema,
+      prompt:
+        `Generate 2 questions at EACH of Bloom's 6 Taxonomy levels for "${mat.title}" (${mat.subject ?? "General"}).\n` +
+        `Every question must be SPECIFIC to the actual content of the material — never a generic template.\n` +
+        `Do NOT use the material title as the subject of any question.\n` +
+        `Do NOT write any question of the form "What should you understand about ...".\n` +
+        `L1=Remember (define/list/recall), L2=Understand (explain/summarise), L3=Apply (calculate/solve/use), ` +
+        `L4=Analyse (compare/examine), L5=Evaluate (justify/assess/critique), L6=Create (design/construct/devise).\n` +
+        `Return JSON: { L1:[{question,answer}], L2:[...], L3:[...], L4:[...], L5:[...], L6:[...] }.\n\n` +
+        `--- MATERIAL ---\n${content}`,
+      maxOutputTokens: 3000,
+    });
+    // Defensive: scrub any sneaky generic placeholders
+    const cleaned: Record<string, { question: string; answer: string }[]> = {};
+    for (const lvl of ["L1", "L2", "L3", "L4", "L5", "L6"] as const) {
+      cleaned[lvl] = (object[lvl] ?? []).filter(
+        (q) => !/what should you understand about/i.test(q.question),
+      );
+    }
+    await sa.from("study_materials").update({ bloom_questions: cleaned }).eq("id", mat.id);
+    return { bloom_questions: cleaned };
+  });
+
+const FormulasSchema = z.object({
+  formulas: z.array(
+    z.object({
+      name: z.string().min(1).max(200),
+      latex: z.string().min(1).max(800),
+      subject: z.string().max(120).optional(),
+      variables: z.array(z.object({
+        symbol: z.string().min(1).max(40),
+        unit: z.string().max(40).optional(),
+        meaning: z.string().max(300).optional().default(""),
+      })).max(20).optional().default([]),
+    }),
+  ).max(30),
+});
+
+export const regenerateFormulas = createServerFn({ method: "POST" })
+  .inputValidator((d) => RegenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { sa, mat } = await loadMaterialForOwner(data.accessToken, data.materialId);
+    const content = (mat.original_content ?? "").slice(0, 14000);
+    if (!content) throw new Error("No source content available");
+    const { object } = await generateObjectSafe({
+      schema: FormulasSchema,
+      prompt:
+        `Extract every mathematical formula, equation, and constant from this material titled "${mat.title}".\n` +
+        `For each formula, the LaTeX expression MUST be in a field named exactly "latex" (not "formula", not "expression", not "equation").\n` +
+        `Return JSON: { formulas: [{ name, latex, subject, variables: [{ symbol, unit, meaning }] }] }.\n` +
+        `If the material contains no formulas, return { "formulas": [] }.\n\n` +
+        `--- MATERIAL ---\n${content}`,
+      maxOutputTokens: 2400,
+    });
+    await sa.from("study_materials").update({ formulas: object.formulas }).eq("id", mat.id);
+    return { formulas: object.formulas };
   });
 
