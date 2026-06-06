@@ -199,6 +199,7 @@ function ResearchProject() {
           onSelect={setActiveId}
           onAdd={() => setShowAdd(true)}
           onDelete={handleDelete}
+          onRetry={handleRetry}
         />
         <div className="border-r border-border min-w-0">
           {sLoading ? (
