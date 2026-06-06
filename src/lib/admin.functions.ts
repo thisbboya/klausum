@@ -122,3 +122,55 @@ export const adminListMaterials = createServerFn({ method: "POST" })
       materials: (mats ?? []).map((m) => ({ ...m, email: emailMap.get(m.user_id) ?? "" })),
     };
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gemini key health check (admin) — pings the Generative Language API for
+// every pooled key and surfaces the GCP project id of any disabled key.
+// ─────────────────────────────────────────────────────────────────────────────
+export const checkGeminiKeys = createServerFn({ method: "POST" })
+  .inputValidator((d) => TokenInput.parse(d))
+  .handler(async ({ data }) => {
+    await requireAdmin(data.accessToken);
+    const slots = [
+      ["GEMINI_API_KEY", process.env.GEMINI_API_KEY],
+      ["GEMINI_API_KEY_2", process.env.GEMINI_API_KEY_2],
+      ["GEMINI_API_KEY_3", process.env.GEMINI_API_KEY_3],
+      ["GEMINI_API_KEY_4", process.env.GEMINI_API_KEY_4],
+      ["GEMINI_API_KEY_5", process.env.GEMINI_API_KEY_5],
+      ["GEMINI_API_KEY_6", process.env.GEMINI_API_KEY_6],
+      ["GEMINI_API_KEY_7", process.env.GEMINI_API_KEY_7],
+      ["GEMINI_API_KEY_8", process.env.GEMINI_API_KEY_8],
+    ] as const;
+
+    const results = await Promise.all(
+      slots
+        .filter(([, v]) => !!(v ?? "").trim())
+        .map(async ([label, key]) => {
+          const trimmed = (key as string).trim();
+          const suffix = trimmed.slice(-6);
+          try {
+            const r = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models?key=${trimmed}`,
+              { signal: AbortSignal.timeout(8000) },
+            );
+            if (r.ok) return { label, suffix, ok: true as const, projectId: null as string | null, error: null as string | null };
+            let projectId: string | null = null;
+            let errMsg = `HTTP ${r.status}`;
+            try {
+              const j: any = await r.json();
+              errMsg = j?.error?.message ?? errMsg;
+              const m = errMsg.match(/project[^0-9]{0,8}(\d{6,})/i);
+              if (m) projectId = m[1];
+            } catch {
+              // ignore body parse failure
+            }
+            return { label, suffix, ok: false as const, projectId, error: errMsg };
+          } catch (e: any) {
+            return { label, suffix, ok: false as const, projectId: null, error: String(e?.message ?? e) };
+          }
+        }),
+    );
+
+    return { keys: results };
+  });
+
