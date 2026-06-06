@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ShieldCheck, ShieldAlert, KeyRound, Smartphone, LogOut, Loader2 } from "lucide-react";
+import { ShieldCheck, ShieldAlert, KeyRound, Smartphone, LogOut, Loader2, Sparkles, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+import { checkGeminiKeys } from "@/lib/admin.functions";
+import { getAccessToken } from "@/lib/auth-helper";
 
 function inputCls() {
   return "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
 }
 
 export function SecurityTab() {
+  const { isAdmin } = useIsAdmin();
   return (
     <div className="max-w-xl space-y-6">
       <TwoFactorSection />
       <PasswordSection />
       <SessionSection />
+      {isAdmin && <GeminiKeyHealthSection />}
     </div>
   );
 }
