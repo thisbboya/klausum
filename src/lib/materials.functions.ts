@@ -426,3 +426,136 @@ export const appendMaterialNote = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Regenerate helpers (key concepts, Bloom questions, formulas)
+// ─────────────────────────────────────────────────────────────────────────────
+const RegenInput = z.object({ accessToken: z.string(), materialId: z.string().uuid() });
+
+async function loadMaterialForOwner(token: string, materialId: string) {
+  const userId = await getUserIdFromToken(token);
+  const sa = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: mat, error } = await sa
+    .from("study_materials")
+    .select("id, user_id, title, subject, original_content, ai_summary")
+    .eq("id", materialId)
+    .maybeSingle();
+  if (error || !mat) throw new Error("Material not found");
+  if (mat.user_id !== userId) throw new Error("Forbidden");
+  return { sa, mat };
+}
+
+const KeyConceptsSchema = z.object({
+  key_concepts: z.array(
+    z.object({
+      concept: z.string().min(2).max(200),
+      definition: z.string().min(10).max(600),
+      example: z.string().max(400).optional().default(""),
+      importance: z.enum(["high", "medium", "low"]).optional().default("medium"),
+      bloom_level: z.number().int().min(1).max(6).optional().default(2),
+    }),
+  ).min(4).max(15),
+});
+
+export const regenerateKeyConcepts = createServerFn({ method: "POST" })
+  .inputValidator((d) => RegenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { sa, mat } = await loadMaterialForOwner(data.accessToken, data.materialId);
+    const content = (mat.original_content ?? "").slice(0, 14000);
+    if (!content) throw new Error("No source content available");
+    const { object } = await generateObjectSafe({
+      schema: KeyConceptsSchema,
+      prompt:
+        `Extract 8-12 KEY CONCEPTS from this study material titled "${mat.title}" (${mat.subject ?? "General"}).\n` +
+        `Each concept MUST be DIFFERENT and have a SPECIFIC 1-2 sentence definition drawn directly from the material.\n` +
+        `Do NOT reuse the summary text as the definition. Do NOT repeat the same definition across concepts.\n` +
+        `Provide one concrete example per concept from the material itself when possible.\n` +
+        `Return JSON: { key_concepts: [{ concept, definition, example, importance, bloom_level }] }.\n\n` +
+        `--- MATERIAL ---\n${content}`,
+      maxOutputTokens: 2000,
+    });
+    const normalized = object.key_concepts.map((c, i) => ({
+      id: `c${i + 1}`,
+      concept: c.concept,
+      definition: c.definition,
+      example: c.example ?? "",
+      importance: c.importance ?? "medium",
+      bloom_level: c.bloom_level ?? Math.min(6, i + 1),
+    }));
+    await sa.from("study_materials").update({ key_concepts: normalized }).eq("id", mat.id);
+    return { key_concepts: normalized };
+  });
+
+const BloomSchema = z.object({
+  L1: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L2: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L3: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L4: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L5: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+  L6: z.array(z.object({ question: z.string().min(8).max(400), answer: z.string().min(2).max(800) })).min(1).max(3),
+});
+
+export const regenerateBloomQuestions = createServerFn({ method: "POST" })
+  .inputValidator((d) => RegenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { sa, mat } = await loadMaterialForOwner(data.accessToken, data.materialId);
+    const content = (mat.original_content ?? "").slice(0, 14000);
+    if (!content) throw new Error("No source content available");
+    const { object } = await generateObjectSafe({
+      schema: BloomSchema,
+      prompt:
+        `Generate 2 questions at EACH of Bloom's 6 Taxonomy levels for "${mat.title}" (${mat.subject ?? "General"}).\n` +
+        `Every question must be SPECIFIC to the actual content of the material — never a generic template.\n` +
+        `Do NOT use the material title as the subject of any question.\n` +
+        `Do NOT write any question of the form "What should you understand about ...".\n` +
+        `L1=Remember (define/list/recall), L2=Understand (explain/summarise), L3=Apply (calculate/solve/use), ` +
+        `L4=Analyse (compare/examine), L5=Evaluate (justify/assess/critique), L6=Create (design/construct/devise).\n` +
+        `Return JSON: { L1:[{question,answer}], L2:[...], L3:[...], L4:[...], L5:[...], L6:[...] }.\n\n` +
+        `--- MATERIAL ---\n${content}`,
+      maxOutputTokens: 3000,
+    });
+    // Defensive: scrub any sneaky generic placeholders
+    const cleaned: Record<string, { question: string; answer: string }[]> = {};
+    for (const lvl of ["L1", "L2", "L3", "L4", "L5", "L6"] as const) {
+      cleaned[lvl] = (object[lvl] ?? []).filter(
+        (q) => !/what should you understand about/i.test(q.question),
+      );
+    }
+    await sa.from("study_materials").update({ bloom_questions: cleaned }).eq("id", mat.id);
+    return { bloom_questions: cleaned };
+  });
+
+const FormulasSchema = z.object({
+  formulas: z.array(
+    z.object({
+      name: z.string().min(1).max(200),
+      latex: z.string().min(1).max(800),
+      subject: z.string().max(120).optional(),
+      variables: z.array(z.object({
+        symbol: z.string().min(1).max(40),
+        unit: z.string().max(40).optional(),
+        meaning: z.string().max(300).optional().default(""),
+      })).max(20).optional().default([]),
+    }),
+  ).max(30),
+});
+
+export const regenerateFormulas = createServerFn({ method: "POST" })
+  .inputValidator((d) => RegenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { sa, mat } = await loadMaterialForOwner(data.accessToken, data.materialId);
+    const content = (mat.original_content ?? "").slice(0, 14000);
+    if (!content) throw new Error("No source content available");
+    const { object } = await generateObjectSafe({
+      schema: FormulasSchema,
+      prompt:
+        `Extract every mathematical formula, equation, and constant from this material titled "${mat.title}".\n` +
+        `For each formula, the LaTeX expression MUST be in a field named exactly "latex" (not "formula", not "expression", not "equation").\n` +
+        `Return JSON: { formulas: [{ name, latex, subject, variables: [{ symbol, unit, meaning }] }] }.\n` +
+        `If the material contains no formulas, return { "formulas": [] }.\n\n` +
+        `--- MATERIAL ---\n${content}`,
+      maxOutputTokens: 2400,
+    });
+    await sa.from("study_materials").update({ formulas: object.formulas }).eq("id", mat.id);
+    return { formulas: object.formulas };
+  });
+
