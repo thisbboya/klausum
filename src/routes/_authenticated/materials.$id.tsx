@@ -17,7 +17,7 @@ import { MaterialAIChat } from "@/components/reader/MaterialAIChat";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { summarizeMaterial, appendMaterialNote, regenerateKeyConcepts, regenerateBloomQuestions, regenerateFormulas } from "@/lib/materials.functions";
 import { getAccessToken } from "@/lib/auth-helper";
-import { useQueryClient } from "@tanstack/react-query";
+
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
