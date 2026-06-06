@@ -29,6 +29,7 @@ function ResearchProject() {
   const getProjFn = useServerFn(getResearchProject);
   const listSrcFn = useServerFn(listResearchSources);
   const delSrcFn = useServerFn(deleteResearchSource);
+  const retryFn = useServerFn(reprocessSource);
 
   const { data: project, isLoading: pLoading } = useQuery({
     queryKey: ["research-project", projectId],
