@@ -1,4 +1,4 @@
-import { FileText, Globe, Type, Youtube, StickyNote, Plus, Trash2, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { FileText, Globe, Type, Youtube, StickyNote, Plus, Trash2, Loader2, AlertTriangle, CheckCircle2, RotateCcw, AlertCircle } from "lucide-react";
 
 export interface SourceItem {
   id: string;
@@ -6,6 +6,8 @@ export interface SourceItem {
   source_type: "pdf" | "url" | "text" | "youtube" | "note";
   processing_done: boolean;
   processing_error?: string | null;
+  file_url?: string | null;
+  file_path?: string | null;
   page_count?: number | null;
   raw_url?: string | null;
 }
@@ -16,6 +18,7 @@ interface Props {
   onSelect: (id: string) => void;
   onAdd: () => void;
   onDelete: (id: string) => void;
+  onRetry?: (id: string) => void;
 }
 
 const ICONS: Record<SourceItem["source_type"], any> = {
@@ -26,7 +29,11 @@ const ICONS: Record<SourceItem["source_type"], any> = {
   note: StickyNote,
 };
 
-export function SourcesPanel({ sources, activeId, onSelect, onAdd, onDelete }: Props) {
+function uploadFailed(s: SourceItem): boolean {
+  return s.source_type === "pdf" && !s.file_path && !s.file_url;
+}
+
+export function SourcesPanel({ sources, activeId, onSelect, onAdd, onDelete, onRetry }: Props) {
   return (
     <div className="flex flex-col h-full bg-card border-r border-border">
       <div className="p-3 border-b border-border">
@@ -46,6 +53,9 @@ export function SourcesPanel({ sources, activeId, onSelect, onAdd, onDelete }: P
         {sources.map((s) => {
           const Icon = ICONS[s.source_type] ?? FileText;
           const active = s.id === activeId;
+          const isUploadFail = uploadFailed(s);
+          const isProcessing = !isUploadFail && !s.processing_done && !s.processing_error;
+          const isAiError = !isUploadFail && !!s.processing_error;
           return (
             <div
               key={s.id}
@@ -61,15 +71,35 @@ export function SourcesPanel({ sources, activeId, onSelect, onAdd, onDelete }: P
                 <p className={`text-sm leading-tight truncate ${active ? "text-foreground font-medium" : "text-foreground"}`}>
                   {s.title}
                 </p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  {!s.processing_done ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  {isUploadFail ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-destructive">
+                      <AlertCircle className="h-2.5 w-2.5" /> Upload failed
+                    </span>
+                  ) : isProcessing ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-amber-500">
                       <Loader2 className="h-2.5 w-2.5 animate-spin" /> Processing
                     </span>
-                  ) : s.processing_error ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-destructive" title={s.processing_error}>
-                      <AlertCircle className="h-2.5 w-2.5" /> Error
-                    </span>
+                  ) : isAiError ? (
+                    <>
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] text-amber-500"
+                        title={s.processing_error ?? ""}
+                      >
+                        <AlertTriangle className="h-2.5 w-2.5" /> AI Error
+                      </span>
+                      {onRetry && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRetry(s.id);
+                          }}
+                          className="inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline"
+                        >
+                          <RotateCcw className="h-2.5 w-2.5" /> Retry
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[10px] text-emerald-500">
                       <CheckCircle2 className="h-2.5 w-2.5" /> Ready
