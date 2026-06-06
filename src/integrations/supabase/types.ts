@@ -2026,9 +2026,17 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
+      join_study_group: { Args: { p_invite_code: string }; Returns: string }
       log_xp_event: {
         Args: { _action: string; _amount: number; _description?: string }
         Returns: undefined
+      }
+      open_chest: {
+        Args: { _tier: string }
+        Returns: {
+          reward_gems: number
+          reward_xp: number
+        }[]
       }
       update_weekly_leaderboard: {
         Args: { p_user_id: string; p_xp: number }
