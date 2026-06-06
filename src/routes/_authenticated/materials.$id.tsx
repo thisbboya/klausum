@@ -74,7 +74,7 @@ function MaterialDetail() {
     if (!material) return TABS;
     return TABS.filter((t) => {
       if (t.key === "read") return hasPdf || hasReadableText;
-      if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0;
+      if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0 || !!material.is_stem;
       if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
       return true;
     });
