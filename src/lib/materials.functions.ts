@@ -125,31 +125,35 @@ function normalizeProcessed(raw: any, sourceText: string, title: string): Proces
   const extracted_text = asText(raw.extracted_text) || sourceText;
   const summary = asText(raw.summary) || firstSentences(extracted_text);
   const words = extracted_text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Key concepts — only keep entries that have a real, non-summary definition.
+  // Do NOT inject a synthetic concept-from-title fallback (see Bug 5).
   const key_concepts = asArray(raw.key_concepts)
     .map((c, i) => {
       const o = asObject(c);
+      const concept = asText(o.concept ?? o.term ?? o.name);
+      const definition = asText(o.definition ?? o.explanation ?? o.description);
       return {
         id: asText(o.id) || `c${i + 1}`,
-        concept: asText(o.concept ?? o.term ?? o.name) || `Key idea ${i + 1}`,
-        definition: asText(o.definition ?? o.explanation ?? o.description) || firstSentences(summary, 1),
-        example: asText(o.example) || "Review the source material for an example.",
-        importance: ["high", "medium", "low"].includes(asText(o.importance).toLowerCase()) ? asText(o.importance).toLowerCase() : "medium",
+        concept,
+        definition,
+        example: asText(o.example) || "",
+        importance: ["high", "medium", "low"].includes(asText(o.importance).toLowerCase())
+          ? asText(o.importance).toLowerCase()
+          : "medium",
         bloom_level: bloomLevel(o.bloom_level, Math.min(6, i + 1)),
       };
     })
-    .filter((c) => c.concept)
+    .filter((c) => c.concept && c.definition && c.definition !== summary)
     .slice(0, 15);
-
-  if (key_concepts.length === 0) {
-    key_concepts.push({ id: "c1", concept: title, definition: summary, example: "Use this as the anchor topic for review.", importance: "high", bloom_level: 2 });
-  }
 
   const flashcards = asArray(raw.flashcards)
     .map((c, i) => {
       const o = asObject(c);
+      const anchor = key_concepts[i % Math.max(1, key_concepts.length)];
       return {
-        front: asText(o.front ?? o.question) || `What is ${key_concepts[i % key_concepts.length]?.concept}?`,
-        back: asText(o.back ?? o.answer) || key_concepts[i % key_concepts.length]?.definition || summary,
+        front: asText(o.front ?? o.question) || (anchor ? `What is ${anchor.concept}?` : ""),
+        back: asText(o.back ?? o.answer) || (anchor?.definition ?? summary),
         hint: asText(o.hint) || null,
         bloom_level: bloomLevel(o.bloom_level, (i % 6) + 1),
         card_type: ["standard", "formula", "code"].includes(asText(o.card_type)) ? asText(o.card_type) : "standard",
@@ -159,11 +163,13 @@ function normalizeProcessed(raw: any, sourceText: string, title: string): Proces
     .filter((c) => c.front && c.back)
     .slice(0, 20);
 
-  while (flashcards.length < 6) {
+  // Only top up flashcards when we DO have real concepts to anchor them to.
+  while (flashcards.length < 6 && key_concepts.length > 0) {
     const c = key_concepts[flashcards.length % key_concepts.length];
-    flashcards.push({ front: `Explain: ${c.concept}`, back: c.definition, hint: c.example, bloom_level: bloomLevel(c.bloom_level, (flashcards.length % 6) + 1), card_type: "standard", tags: [] });
+    flashcards.push({ front: `Explain: ${c.concept}`, back: c.definition, hint: c.example || null, bloom_level: bloomLevel(c.bloom_level, (flashcards.length % 6) + 1), card_type: "standard", tags: [] });
   }
 
+  // Bloom — no generic fallbacks; empty levels stay empty.
   const bloomRaw = asObject(raw.bloom_questions);
   const bloom_questions: Record<string, { question: string; answer: string }[]> = {};
   for (const level of ["L1", "L2", "L3", "L4", "L5", "L6"]) {
@@ -172,27 +178,51 @@ function normalizeProcessed(raw: any, sourceText: string, title: string): Proces
         const o = asObject(q);
         return { question: asText(o.question ?? o.front), answer: asText(o.answer ?? o.back) };
       })
-      .filter((q) => q.question && q.answer)
+      .filter((q) => q.question && q.answer && !/what should you understand about/i.test(q.question))
       .slice(0, 3);
-    if (bloom_questions[level].length === 0) bloom_questions[level].push({ question: `${level}: What should you understand about ${title}?`, answer: summary });
   }
 
+  // Formulas — Gemini sometimes uses `formula`/`expression`/`equation` instead of `latex`.
+  const formulas = asArray(raw.formulas)
+    .map((f) => {
+      const o = asObject(f);
+      const latex = asText(o.latex ?? o.formula ?? o.expression ?? o.equation ?? o.content);
+      return {
+        name: asText(o.name ?? o.title) || "Formula",
+        latex,
+        subject: asText(o.subject) || undefined,
+        variables: asArray(o.variables)
+          .map((v) => {
+            const vo = asObject(v);
+            return {
+              symbol: asText(vo.symbol),
+              unit: asText(vo.unit) || undefined,
+              meaning: asText(vo.meaning ?? vo.description) || "",
+            };
+          })
+          .filter((v) => v.symbol),
+      };
+    })
+    .filter((f) => f.latex)
+    .slice(0, 30);
+
   const cornell = asObject(raw.cornell);
+  const anchorConcept = key_concepts[0]?.concept ?? title;
   return {
     summary,
     key_concepts,
     concept_graph: asArray(raw.concept_graph).slice(0, 30),
-    visual: asText(raw.visual) || `[KEY TERM: ${key_concepts[0].concept}]\n\n${summary}`,
+    visual: asText(raw.visual) || `[KEY TERM: ${anchorConcept}]\n\n${summary}`,
     auditory: asText(raw.auditory) || `[SAY THIS ALOUD: ${firstSentences(summary, 1)}]\n\n[VERBAL SUMMARY: ${summary}]`,
-    reading: asText(raw.reading) || `I. ${title}\n\nA. ${summary}\n\n[WRITE THIS DOWN: ${key_concepts[0].concept}]`,
-    kinesthetic: asText(raw.kinesthetic) || `[TRY THIS: Teach the main idea in your own words.]\n\n[REAL WORLD: Connect ${key_concepts[0].concept} to a practical example.]`,
+    reading: asText(raw.reading) || `I. ${title}\n\nA. ${summary}\n\n[WRITE THIS DOWN: ${anchorConcept}]`,
+    kinesthetic: asText(raw.kinesthetic) || `[TRY THIS: Teach the main idea in your own words.]\n\n[REAL WORLD: Connect ${anchorConcept} to a practical example.]`,
     cornell: {
-      cue_column: asText(cornell.cue_column ?? cornell.cues) || key_concepts.map((c) => c.concept).join("\n"),
+      cue_column: asText(cornell.cue_column ?? cornell.cues) || key_concepts.map((c) => c.concept).join("\n") || anchorConcept,
       notes_column: asText(cornell.notes_column ?? cornell.notes) || summary,
       summary: asText(cornell.summary) || summary,
     },
     flashcards,
-    formulas: asArray(raw.formulas).slice(0, 30),
+    formulas,
     bloom_questions,
     extracted_text,
     word_count: Number(raw.word_count) || words,
