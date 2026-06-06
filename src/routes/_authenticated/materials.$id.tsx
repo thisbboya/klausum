@@ -364,58 +364,191 @@ function CornellTab({ material }: { material: any }) {
   );
 }
 
-function FormulasTab({ formulas }: { formulas: any[] }) {
-  if (!formulas?.length) return <p className="text-muted-foreground text-sm">No formulas extracted.</p>;
+function resolveLatex(f: any): string {
+  return String(
+    f?.latex ?? f?.formula ?? f?.expression ?? f?.equation ?? f?.content ?? "",
+  ).trim();
+}
+
+function FormulasTab({ material }: { material: any }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(regenerateFormulas);
+  const [busy, setBusy] = useState(false);
+  const formulas: any[] = Array.isArray(material?.formulas) ? material.formulas : [];
+  const usable = formulas
+    .map((f) => ({ ...f, _latex: resolveLatex(f) }))
+    .filter((f) => f._latex);
+
+  async function regenerate() {
+    setBusy(true);
+    try {
+      const accessToken = await getAccessToken();
+      await fn({ data: { accessToken, materialId: material.id } });
+      qc.invalidateQueries({ queryKey: ["material", material.id] });
+      toast.success("Formulas re-extracted");
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      toast.error(
+        msg.includes("GEMINI_API_DISABLED")
+          ? "AI service isn't configured. Check Settings → Security."
+          : "Could not extract formulas. Try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (usable.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card/60 p-6 text-center space-y-3">
+        <span className="text-3xl">🧮</span>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          No formulas extracted yet. Try regenerating if this material contains equations.
+        </p>
+        <button
+          onClick={regenerate}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+        >
+          {busy ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Extracting…</>) : "↺ Extract Formulas"}
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {formulas.map((f, i) => (
-        <div key={i} className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h4 className="font-display font-semibold text-sm">{f.name}</h4>
-            <button onClick={() => navigator.clipboard.writeText(f.latex)}
-              className="text-[10px] text-muted-foreground hover:text-foreground">Copy LaTeX</button>
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button
+          onClick={regenerate}
+          disabled={busy}
+          className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1 disabled:opacity-50"
+        >
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null} ↺ Regenerate
+        </button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {usable.map((f, i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h4 className="font-display font-semibold text-sm">{f.name ?? f.title ?? "Formula"}</h4>
+              <button
+                onClick={() => navigator.clipboard.writeText(f._latex)}
+                className="text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Copy LaTeX
+              </button>
+            </div>
+            <div className="rounded bg-background p-3 text-center overflow-x-auto">
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {`$$${f._latex}$$`}
+              </ReactMarkdown>
+            </div>
+            {f.variables?.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {f.variables.map((v: any, j: number) => (
+                  <li key={j} className="text-xs text-muted-foreground">
+                    <code className="text-primary">{v.symbol}</code> — {v.meaning}{v.unit && ` (${v.unit})`}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div className="rounded bg-background p-3 text-center overflow-x-auto">
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-              {`$$${f.latex}$$`}
-            </ReactMarkdown>
-          </div>
-          {f.variables?.length > 0 && (
-            <ul className="mt-3 space-y-1">
-              {f.variables.map((v: any, j: number) => (
-                <li key={j} className="text-xs text-muted-foreground">
-                  <code className="text-primary">{v.symbol}</code> — {v.meaning}{v.unit && ` (${v.unit})`}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
-function BloomTab({ questions }: { questions: Record<string, { question: string; answer: string }[]> }) {
-  if (!questions || typeof questions !== "object") return <p className="text-muted-foreground text-sm">No question bank.</p>;
+function hasRealBloomQuestions(questions: any): boolean {
+  if (!questions || typeof questions !== "object") return false;
+  return Object.values(questions).some(
+    (arr: any) =>
+      Array.isArray(arr) &&
+      arr.length > 0 &&
+      arr[0]?.question &&
+      !/what should you understand about/i.test(arr[0].question),
+  );
+}
+
+function BloomTab({ material }: { material: any }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(regenerateBloomQuestions);
+  const [busy, setBusy] = useState(false);
+  const questions = material?.bloom_questions as Record<string, { question: string; answer: string }[]>;
+  const real = hasRealBloomQuestions(questions);
+
+  async function regenerate() {
+    setBusy(true);
+    try {
+      const accessToken = await getAccessToken();
+      await fn({ data: { accessToken, materialId: material.id } });
+      qc.invalidateQueries({ queryKey: ["material", material.id] });
+      toast.success("Bloom questions generated");
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      toast.error(
+        msg.includes("GEMINI_API_DISABLED")
+          ? "AI service isn't configured. Check Settings → Security."
+          : "Could not generate Bloom questions. Try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!real) {
+    return (
+      <div className="rounded-xl border border-border bg-card/60 p-6 text-center space-y-3">
+        <span className="text-3xl">🎓</span>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          Bloom-level questions haven't been generated yet.
+        </p>
+        <button
+          onClick={regenerate}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+        >
+          {busy ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</>) : "↺ Generate Bloom Questions"}
+        </button>
+      </div>
+    );
+  }
+
   const labels: Record<string, string> = {
     L1: "Remember", L2: "Understand", L3: "Apply", L4: "Analyse", L5: "Evaluate", L6: "Create",
   };
   return (
     <div className="space-y-4">
-      {(["L1","L2","L3","L4","L5","L6"] as const).map((lvl) => (
-        <div key={lvl} className="rounded-xl border border-border bg-card p-4">
-          <h3 className="font-display font-semibold text-sm mb-3">
-            <span className="px-2 py-0.5 rounded text-xs mr-2" style={{ background: `var(--bloom-${lvl[1]})`, color: "oklch(0.2 0.04 260)" }}>{lvl}</span>
-            {labels[lvl]}
-          </h3>
-          {questions[lvl]?.map((q, i) => (
-            <details key={i} className="mb-2 group">
-              <summary className="cursor-pointer text-sm hover:text-primary">{q.question}</summary>
-              <p className="mt-2 ml-4 text-xs text-muted-foreground">{q.answer}</p>
-            </details>
-          ))}
-        </div>
-      ))}
+      <div className="flex justify-end">
+        <button
+          onClick={regenerate}
+          disabled={busy}
+          className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1 disabled:opacity-50"
+        >
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null} ↺ Regenerate
+        </button>
+      </div>
+      {(["L1","L2","L3","L4","L5","L6"] as const).map((lvl) => {
+        const items = (questions[lvl] ?? []).filter(
+          (q) => q?.question && !/what should you understand about/i.test(q.question),
+        );
+        if (items.length === 0) return null;
+        return (
+          <div key={lvl} className="rounded-xl border border-border bg-card p-4">
+            <h3 className="font-display font-semibold text-sm mb-3">
+              <span className="px-2 py-0.5 rounded text-xs mr-2" style={{ background: `var(--bloom-${lvl[1]})`, color: "oklch(0.2 0.04 260)" }}>{lvl}</span>
+              {labels[lvl]}
+            </h3>
+            {items.map((q, i) => (
+              <details key={i} className="mb-2 group">
+                <summary className="cursor-pointer text-sm hover:text-primary">{q.question}</summary>
+                <p className="mt-2 ml-4 text-xs text-muted-foreground">{q.answer}</p>
+              </details>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
