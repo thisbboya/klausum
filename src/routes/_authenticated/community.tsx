@@ -426,7 +426,7 @@ function GroupsTab() {
       creator_id: user!.id, name: form.name.trim(), subject: form.subject, description: form.description,
     }).select().single();
     if (error || !data) return toast.error(error?.message ?? "Failed");
-    await supabase.from("study_group_members").insert({ group_id: data.id, user_id: user!.id, role: "admin" });
+    // creator is auto-added as admin via DB trigger
     setCreating(false);
     setForm({ name: "", subject: "General", description: "" });
     qc.invalidateQueries({ queryKey: ["study_groups", user?.id] });
