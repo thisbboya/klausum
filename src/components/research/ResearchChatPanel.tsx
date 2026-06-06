@@ -128,9 +128,15 @@ export function ResearchChatPanel({
       });
       setMessages((p) => [...p, { id: crypto.randomUUID(), role: "ai", content: reply }]);
     } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      const friendly = msg.includes("GEMINI_API_DISABLED")
+        ? "⚠️ The AI service isn't configured. An admin needs to enable the Generative Language API in Google Cloud."
+        : msg.includes("429") || /rate.?limit|quota/i.test(msg)
+          ? "⏱ The AI is busy — try again in a minute."
+          : msg || "Sorry, I had trouble responding.";
       setMessages((p) => [
         ...p,
-        { id: crypto.randomUUID(), role: "ai", content: e?.message ?? "Sorry, I had trouble responding." },
+        { id: crypto.randomUUID(), role: "ai", content: friendly },
       ]);
     } finally {
       setBusy(false);
