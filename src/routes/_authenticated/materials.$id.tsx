@@ -208,16 +208,59 @@ function YouTubeLinks({ text }: { text: string }) {
   );
 }
 
+function hasRealConcepts(material: any): boolean {
+  const arr = material?.key_concepts;
+  if (!Array.isArray(arr) || arr.length === 0) return false;
+  const summary = String(material?.ai_summary ?? "").trim();
+  return arr.some((c: any) => {
+    const def = String(c?.definition ?? "").trim();
+    return c?.concept && def && def !== summary;
+  });
+}
+
 function SummaryTab({ material }: { material: any }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(regenerateKeyConcepts);
+  const [busy, setBusy] = useState(false);
+  const real = hasRealConcepts(material);
+
+  async function regenerate() {
+    setBusy(true);
+    try {
+      const accessToken = await getAccessToken();
+      await fn({ data: { accessToken, materialId: material.id } });
+      qc.invalidateQueries({ queryKey: ["material", material.id] });
+      toast.success("Key concepts re-extracted");
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      toast.error(
+        msg.includes("GEMINI_API_DISABLED")
+          ? "AI service isn't configured. Check Settings → Security."
+          : msg.includes("429")
+            ? "AI is busy — try again in a minute."
+            : "Could not extract key concepts. Try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const summary = String(material.ai_summary ?? "").trim();
+  const filtered = real
+    ? (material.key_concepts as any[]).filter(
+        (c) => c?.concept && c?.definition && String(c.definition).trim() !== summary,
+      )
+    : [];
+
   return (
     <div className="space-y-5">
       <article className="prose prose-invert prose-sm md:prose-base max-w-none">
         <h2>Summary</h2>
         <p>{material.ai_summary}</p>
       </article>
-      {Array.isArray(material.key_concepts) && material.key_concepts.length > 0 && (
+      {real ? (
         <div className="grid gap-2 md:grid-cols-2">
-          {material.key_concepts.map((c: any, i: number) => (
+          {filtered.map((c: any, i: number) => (
             <div key={i} className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <h3 className="font-display font-semibold text-sm">{c.concept ?? c.term}</h3>
@@ -227,6 +270,20 @@ function SummaryTab({ material }: { material: any }) {
               {c.example && <p className="text-xs mt-2 italic text-muted-foreground">e.g. {c.example}</p>}
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-card/60 p-6 text-center space-y-3">
+          <span className="text-3xl">🔍</span>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Key concepts haven't been extracted yet, or extraction failed.
+          </p>
+          <button
+            onClick={regenerate}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {busy ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Extracting…</>) : "↺ Extract Key Concepts"}
+          </button>
         </div>
       )}
     </div>
