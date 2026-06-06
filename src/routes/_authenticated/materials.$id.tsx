@@ -15,8 +15,9 @@ import { FocusTimer } from "@/components/focus-timer";
 import { PDFViewer } from "@/components/reader/PDFViewer";
 import { MaterialAIChat } from "@/components/reader/MaterialAIChat";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { summarizeMaterial, appendMaterialNote } from "@/lib/materials.functions";
+import { summarizeMaterial, appendMaterialNote, regenerateKeyConcepts, regenerateBloomQuestions, regenerateFormulas } from "@/lib/materials.functions";
 import { getAccessToken } from "@/lib/auth-helper";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
