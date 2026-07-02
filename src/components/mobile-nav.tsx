@@ -8,7 +8,7 @@ import { StudentBadge } from "@/components/student-badge";
 import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic,
-  GraduationCap, Youtube, Shield, Trophy, FlaskConical,
+  GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark,
 } from "lucide-react";
 
 type NavLink = { to: string; label: string; icon: any };
@@ -16,6 +16,8 @@ type NavLink = { to: string; label: string; icon: any };
 const LINKS: NavLink[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/materials", label: "Materials", icon: BookOpen },
+  { to: "/solve", label: "Snap & Solve", icon: Camera },
+  { to: "/question-bank", label: "Question Bank", icon: Bookmark },
   { to: "/notes", label: "Notes", icon: NotebookPen },
   { to: "/mindmaps", label: "Mind Maps", icon: Network },
   { to: "/quizzes", label: "Quizzes", icon: ListChecks },

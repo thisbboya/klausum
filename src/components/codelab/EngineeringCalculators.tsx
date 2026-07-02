@@ -5,6 +5,12 @@ import { ResistorDecoder } from "./calc/ResistorDecoder";
 import { LogicGates } from "./calc/LogicGates";
 import { StatsCalc } from "./calc/StatsCalc";
 import { MatrixCalc } from "./calc/MatrixCalc";
+import { BeamDeflection } from "./calc/BeamDeflection";
+import { IdealGas } from "./calc/IdealGas";
+import { Bernoulli } from "./calc/Bernoulli";
+import { TimeConstant } from "./calc/TimeConstant";
+import { SnrCalc } from "./calc/SnrCalc";
+import { StressStrain } from "./calc/StressStrain";
 
 const TABS = [
   { id: "units", label: "Units", C: UnitConverter },
@@ -13,6 +19,12 @@ const TABS = [
   { id: "logic", label: "Logic gates", C: LogicGates },
   { id: "stats", label: "Statistics", C: StatsCalc },
   { id: "matrix", label: "Matrix", C: MatrixCalc },
+  { id: "beam", label: "Beam deflection", C: BeamDeflection },
+  { id: "gas", label: "Ideal gas", C: IdealGas },
+  { id: "bern", label: "Bernoulli", C: Bernoulli },
+  { id: "tau", label: "RC / RL / RLC", C: TimeConstant },
+  { id: "snr", label: "SNR", C: SnrCalc },
+  { id: "ss", label: "Stress-Strain", C: StressStrain },
 ];
 
 export function EngineeringCalculators() {

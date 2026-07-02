@@ -14,6 +14,7 @@ const JUDGE0_LANG_MAP: Record<string, number> = {
   c: 50,              // C GCC 9.2.0
   go: 60,             // Go 1.13.5
   rust: 73,           // Rust 1.40.0
+  octave: 66,         // GNU Octave 5.1.0 (MATLAB-compatible)
 };
 
 async function simulateWithAI(language: string, code: string, stdin: string): Promise<string> {
