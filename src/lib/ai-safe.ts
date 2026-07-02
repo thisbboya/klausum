@@ -4,6 +4,33 @@ import { generateObject, generateText, type LanguageModel } from "ai";
 import { z } from "zod";
 import { withGeminiRetry, DEFAULT_MODEL } from "./ai-gateway";
 
+/** Multi-strategy JSON extractor — mirrors the v9 safeParseJSON spec.
+ *  Tries fence-stripping, then greedy array/object matching, and finally
+ *  a slice from the first bracket to the end. Returns fallback if all fail. */
+export function safeParseJSON<T>(raw: string, fallback: T): T {
+  if (!raw || typeof raw !== "string") return fallback;
+  // 1) strip opening + closing markdown fences
+  const s1 = raw.replace(/^[\s\S]*?```json\s*/i, "").replace(/```[\s\S]*$/i, "").trim();
+  try { const r = JSON.parse(s1); if (r !== null) return r as T; } catch {}
+  // 2) strip any backtick variants
+  const s2 = raw.replace(/```[a-z]*\s*/gi, "").replace(/```/g, "").trim();
+  try { const r = JSON.parse(s2); if (r !== null) return r as T; } catch {}
+  // 3) greedy JSON array match
+  const arrMatch = raw.match(/\[[\s\S]*\]/);
+  if (arrMatch) { try { return JSON.parse(arrMatch[0]) as T; } catch {} }
+  // 4) greedy JSON object match
+  const objMatch = raw.match(/\{[\s\S]*\}/);
+  if (objMatch) { try { return JSON.parse(objMatch[0]) as T; } catch {} }
+  // 5) slice from the first bracket to the end
+  const firstArr = raw.indexOf("[");
+  const firstObj = raw.indexOf("{");
+  const candidates = [firstArr, firstObj].filter((n) => n >= 0);
+  if (candidates.length) {
+    try { return JSON.parse(raw.slice(Math.min(...candidates))) as T; } catch {}
+  }
+  return fallback;
+}
+
 function cleanJSON(raw: string): string {
   let s = raw.trim();
   s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
@@ -43,7 +70,11 @@ export async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        throw err instanceof Error ? err : new Error(String(err));
+        // Last-ditch: multi-strategy extractor
+        parsed = safeParseJSON<unknown>(text, null as unknown);
+        if (parsed == null) {
+          throw err instanceof Error ? err : new Error(String(err));
+        }
       }
       const result = opts.schema.safeParse(parsed);
       if (!result.success) throw err instanceof Error ? err : new Error(String(err));
