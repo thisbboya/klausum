@@ -70,7 +70,11 @@ export async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        throw err instanceof Error ? err : new Error(String(err));
+        // Last-ditch: multi-strategy extractor
+        parsed = safeParseJSON<unknown>(text, null as unknown);
+        if (parsed == null) {
+          throw err instanceof Error ? err : new Error(String(err));
+        }
       }
       const result = opts.schema.safeParse(parsed);
       if (!result.success) throw err instanceof Error ? err : new Error(String(err));
