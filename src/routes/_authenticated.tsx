@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { KlausumMark } from "@/components/klausum-mark";
-import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy, FlaskConical } from "lucide-react";
+import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
@@ -66,6 +66,8 @@ function AuthLayout() {
         <nav className="flex flex-col gap-1 text-sm">
           <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem to="/materials" icon={BookOpen} label="Materials" />
+          <NavItem to="/solve" icon={Camera} label="Snap & Solve" />
+          <NavItem to="/question-bank" icon={Bookmark} label="Question Bank" />
           <NavItem to="/notes" icon={NotebookPen} label="Notes" />
           <NavItem to="/mindmaps" icon={Network} label="Mind Maps" />
           <NavItem to="/quizzes" icon={ListChecks} label="Quizzes" />
