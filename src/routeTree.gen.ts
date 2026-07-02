@@ -28,12 +28,14 @@ import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated/timetable'
+import { Route as AuthenticatedSolveRouteImport } from './routes/_authenticated/solve'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/rooms'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
 import { Route as AuthenticatedResearchRouteImport } from './routes/_authenticated/research'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
+import { Route as AuthenticatedQuestionBankRouteImport } from './routes/_authenticated/question-bank'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMindmapsRouteImport } from './routes/_authenticated/mindmaps'
@@ -148,6 +150,11 @@ const AuthenticatedTimetableRoute = AuthenticatedTimetableRouteImport.update({
   path: '/timetable',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSolveRoute = AuthenticatedSolveRouteImport.update({
+  id: '/solve',
+  path: '/solve',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -178,6 +185,12 @@ const AuthenticatedQuizzesRoute = AuthenticatedQuizzesRouteImport.update({
   path: '/quizzes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedQuestionBankRoute =
+  AuthenticatedQuestionBankRouteImport.update({
+    id: '/question-bank',
+    path: '/question-bank',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
@@ -298,12 +311,14 @@ export interface FileRoutesByFullPath {
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/question-bank': typeof AuthenticatedQuestionBankRoute
   '/quizzes': typeof AuthenticatedQuizzesRouteWithChildren
   '/research': typeof AuthenticatedResearchRouteWithChildren
   '/review': typeof AuthenticatedReviewRoute
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/solve': typeof AuthenticatedSolveRoute
   '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
@@ -342,10 +357,12 @@ export interface FileRoutesByTo {
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/question-bank': typeof AuthenticatedQuestionBankRoute
   '/review': typeof AuthenticatedReviewRoute
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/solve': typeof AuthenticatedSolveRoute
   '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
@@ -387,12 +404,14 @@ export interface FileRoutesById {
   '/_authenticated/mindmaps': typeof AuthenticatedMindmapsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
+  '/_authenticated/question-bank': typeof AuthenticatedQuestionBankRoute
   '/_authenticated/quizzes': typeof AuthenticatedQuizzesRouteWithChildren
   '/_authenticated/research': typeof AuthenticatedResearchRouteWithChildren
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/solve': typeof AuthenticatedSolveRoute
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
@@ -434,12 +453,14 @@ export interface FileRouteTypes {
     | '/mindmaps'
     | '/notes'
     | '/progress'
+    | '/question-bank'
     | '/quizzes'
     | '/research'
     | '/review'
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/solve'
     | '/timetable'
     | '/tutor'
     | '/videos'
@@ -478,10 +499,12 @@ export interface FileRouteTypes {
     | '/mindmaps'
     | '/notes'
     | '/progress'
+    | '/question-bank'
     | '/review'
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/solve'
     | '/timetable'
     | '/tutor'
     | '/videos'
@@ -522,12 +545,14 @@ export interface FileRouteTypes {
     | '/_authenticated/mindmaps'
     | '/_authenticated/notes'
     | '/_authenticated/progress'
+    | '/_authenticated/question-bank'
     | '/_authenticated/quizzes'
     | '/_authenticated/research'
     | '/_authenticated/review'
     | '/_authenticated/rooms'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
+    | '/_authenticated/solve'
     | '/_authenticated/timetable'
     | '/_authenticated/tutor'
     | '/_authenticated/videos'
@@ -703,6 +728,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTimetableRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/solve': {
+      id: '/_authenticated/solve'
+      path: '/solve'
+      fullPath: '/solve'
+      preLoaderRoute: typeof AuthenticatedSolveRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -743,6 +775,13 @@ declare module '@tanstack/react-router' {
       path: '/quizzes'
       fullPath: '/quizzes'
       preLoaderRoute: typeof AuthenticatedQuizzesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/question-bank': {
+      id: '/_authenticated/question-bank'
+      path: '/question-bank'
+      fullPath: '/question-bank'
+      preLoaderRoute: typeof AuthenticatedQuestionBankRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/progress': {
@@ -950,12 +989,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMindmapsRoute: typeof AuthenticatedMindmapsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
+  AuthenticatedQuestionBankRoute: typeof AuthenticatedQuestionBankRoute
   AuthenticatedQuizzesRoute: typeof AuthenticatedQuizzesRouteWithChildren
   AuthenticatedResearchRoute: typeof AuthenticatedResearchRouteWithChildren
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
   AuthenticatedRoomsRoute: typeof AuthenticatedRoomsRouteWithChildren
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSolveRoute: typeof AuthenticatedSolveRoute
   AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
@@ -975,12 +1016,14 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMindmapsRoute: AuthenticatedMindmapsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
+  AuthenticatedQuestionBankRoute: AuthenticatedQuestionBankRoute,
   AuthenticatedQuizzesRoute: AuthenticatedQuizzesRouteWithChildren,
   AuthenticatedResearchRoute: AuthenticatedResearchRouteWithChildren,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
   AuthenticatedRoomsRoute: AuthenticatedRoomsRouteWithChildren,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSolveRoute: AuthenticatedSolveRoute,
   AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,

@@ -591,6 +591,7 @@ export type Database = {
       }
       material_chat_messages: {
         Row: {
+          citations: Json | null
           content: string
           created_at: string
           id: string
@@ -600,6 +601,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          citations?: Json | null
           content: string
           created_at?: string
           id?: string
@@ -609,6 +611,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          citations?: Json | null
           content?: string
           created_at?: string
           id?: string
@@ -714,6 +717,51 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           youtube_videos_used?: number | null
+        }
+        Relationships: []
+      }
+      question_bank: {
+        Row: {
+          answer_text: string
+          created_at: string
+          id: string
+          image_url: string | null
+          last_reviewed_at: string | null
+          question_text: string
+          reviewed_count: number
+          source: string
+          steps: Json | null
+          subject: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answer_text: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          last_reviewed_at?: string | null
+          question_text: string
+          reviewed_count?: number
+          source: string
+          steps?: Json | null
+          subject?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          last_reviewed_at?: string | null
+          question_text?: string
+          reviewed_count?: number
+          source?: string
+          steps?: Json | null
+          subject?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

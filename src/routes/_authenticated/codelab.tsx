@@ -20,6 +20,15 @@ const LANGS = [
   { id: "c", piston: "c", version: "10.2.0", sample: '#include <stdio.h>\nint main(){ printf("Hello"); return 0; }\n' },
   { id: "go", piston: "go", version: "1.16.2", sample: 'package main\nimport "fmt"\nfunc main(){ fmt.Println("Hello") }\n' },
   { id: "rust", piston: "rust", version: "1.68.2", sample: 'fn main(){ println!("Hello"); }\n' },
+  { id: "octave", piston: "octave", version: "5.1.0", sample: '% GNU Octave (MATLAB-compatible)\nA = [1 2; 3 4];\nB = [5 6; 7 8];\ndisp(A * B)\ndisp("Eigenvalues:")\ndisp(eig(A))\n' },
+];
+
+const OCTAVE_TEMPLATES: { name: string; code: string }[] = [
+  { name: "Matrix operations", code: "A = [1 2; 3 4];\nB = [5 6; 7 8];\ndisp('A*B ='); disp(A*B)\ndisp('inv(A) ='); disp(inv(A))\ndisp('eig(A) ='); disp(eig(A))\n" },
+  { name: "Linear system Ax = b", code: "A = [3 2 -1; 2 -2 4; -1 0.5 -1];\nb = [1; -2; 0];\nx = A \\ b;\ndisp('x =')\ndisp(x)\n" },
+  { name: "Solve ODE (ode45)", code: "function dydt = f(t, y)\n  dydt = -2*y;\nendfunction\n[t, y] = ode45(@f, [0 5], 1);\ndisp([t y])\n" },
+  { name: "FFT / signal", code: "Fs = 1000; t = 0:1/Fs:1-1/Fs;\nx = sin(2*pi*50*t) + 0.5*sin(2*pi*120*t);\nX = abs(fft(x));\ndisp('Top 5 magnitudes:')\ndisp(sort(X, 'descend')(1:5))\n" },
+  { name: "Descriptive stats", code: "v = [12 15 18 22 25 27 30 31 33 40];\nprintf('mean=%f\\n', mean(v));\nprintf('median=%f\\n', median(v));\nprintf('std=%f\\n', std(v));\n" },
 ];
 
 type AIResult =
