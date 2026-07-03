@@ -11,6 +11,8 @@ import { Bernoulli } from "./calc/Bernoulli";
 import { TimeConstant } from "./calc/TimeConstant";
 import { SnrCalc } from "./calc/SnrCalc";
 import { StressStrain } from "./calc/StressStrain";
+import { Grapher } from "./calc/Grapher";
+import { SpiceDc } from "./calc/SpiceDc";
 
 const TABS = [
   { id: "units", label: "Units", C: UnitConverter },
@@ -25,6 +27,8 @@ const TABS = [
   { id: "tau", label: "RC / RL / RLC", C: TimeConstant },
   { id: "snr", label: "SNR", C: SnrCalc },
   { id: "ss", label: "Stress-Strain", C: StressStrain },
+  { id: "graph", label: "Graphing", C: Grapher },
+  { id: "spice", label: "Circuit (SPICE)", C: SpiceDc },
 ];
 
 export function EngineeringCalculators() {

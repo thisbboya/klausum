@@ -40,6 +40,7 @@ import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMindmapsRouteImport } from './routes/_authenticated/mindmaps'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
+import { Route as AuthenticatedLibraryChatRouteImport } from './routes/_authenticated/library-chat'
 import { Route as AuthenticatedGapsRouteImport } from './routes/_authenticated/gaps'
 import { Route as AuthenticatedFormulasRouteImport } from './routes/_authenticated/formulas'
 import { Route as AuthenticatedExamsRouteImport } from './routes/_authenticated/exams'
@@ -211,6 +212,12 @@ const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
   path: '/materials',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedLibraryChatRoute =
+  AuthenticatedLibraryChatRouteImport.update({
+    id: '/library-chat',
+    path: '/library-chat',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedGapsRoute = AuthenticatedGapsRouteImport.update({
   id: '/gaps',
   path: '/gaps',
@@ -307,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/exams': typeof AuthenticatedExamsRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
+  '/library-chat': typeof AuthenticatedLibraryChatRoute
   '/materials': typeof AuthenticatedMaterialsRouteWithChildren
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
@@ -354,6 +362,7 @@ export interface FileRoutesByTo {
   '/exams': typeof AuthenticatedExamsRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
+  '/library-chat': typeof AuthenticatedLibraryChatRoute
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
@@ -400,6 +409,7 @@ export interface FileRoutesById {
   '/_authenticated/exams': typeof AuthenticatedExamsRoute
   '/_authenticated/formulas': typeof AuthenticatedFormulasRoute
   '/_authenticated/gaps': typeof AuthenticatedGapsRoute
+  '/_authenticated/library-chat': typeof AuthenticatedLibraryChatRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRouteWithChildren
   '/_authenticated/mindmaps': typeof AuthenticatedMindmapsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
@@ -449,6 +459,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/formulas'
     | '/gaps'
+    | '/library-chat'
     | '/materials'
     | '/mindmaps'
     | '/notes'
@@ -496,6 +507,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/formulas'
     | '/gaps'
+    | '/library-chat'
     | '/mindmaps'
     | '/notes'
     | '/progress'
@@ -541,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authenticated/exams'
     | '/_authenticated/formulas'
     | '/_authenticated/gaps'
+    | '/_authenticated/library-chat'
     | '/_authenticated/materials'
     | '/_authenticated/mindmaps'
     | '/_authenticated/notes'
@@ -812,6 +825,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMaterialsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/library-chat': {
+      id: '/_authenticated/library-chat'
+      path: '/library-chat'
+      fullPath: '/library-chat'
+      preLoaderRoute: typeof AuthenticatedLibraryChatRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/gaps': {
       id: '/_authenticated/gaps'
       path: '/gaps'
@@ -985,6 +1005,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedExamsRoute: typeof AuthenticatedExamsRoute
   AuthenticatedFormulasRoute: typeof AuthenticatedFormulasRoute
   AuthenticatedGapsRoute: typeof AuthenticatedGapsRoute
+  AuthenticatedLibraryChatRoute: typeof AuthenticatedLibraryChatRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRouteWithChildren
   AuthenticatedMindmapsRoute: typeof AuthenticatedMindmapsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
@@ -1012,6 +1033,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedExamsRoute: AuthenticatedExamsRoute,
   AuthenticatedFormulasRoute: AuthenticatedFormulasRoute,
   AuthenticatedGapsRoute: AuthenticatedGapsRoute,
+  AuthenticatedLibraryChatRoute: AuthenticatedLibraryChatRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRouteWithChildren,
   AuthenticatedMindmapsRoute: AuthenticatedMindmapsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
