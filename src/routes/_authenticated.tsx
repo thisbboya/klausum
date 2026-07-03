@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { KlausumMark } from "@/components/klausum-mark";
-import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark } from "lucide-react";
+import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark, Library } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
@@ -84,6 +84,7 @@ function AuthLayout() {
           <NavItem to="/videos" icon={Youtube} label="Videos" />
           <NavItem to="/exams" icon={GraduationCap} label="Exams" />
           <NavItem to="/tutor" icon={MessagesSquare} label="AI Tutor" />
+          <NavItem to="/library-chat" icon={Library} label="Library Chat" />
           <NavItem to="/research" icon={FlaskConical} label="Research" />
           <NavItem to="/settings" icon={Settings} label="Settings" />
           {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}
