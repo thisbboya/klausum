@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateText } from "ai";
-import { withGeminiRetry, PRO_MODEL } from "./ai-gateway";
+import { withGeminiRetry, PRO_MODEL, resolveModelWithKey as _r } from "./ai-gateway";
 
 const Input = z.object({
   question: z.string().min(1).max(4000),
