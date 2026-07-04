@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import Editor from "@monaco-editor/react";
+import { useEffect, useRef, useState } from "react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import { useServerFn } from "@tanstack/react-start";
 import { debugCode, generateTests, explainCode } from "@/lib/lab.functions";
 import { getAccessToken } from "@/lib/auth-helper";
 import { toast } from "sonner";
-import { Play, Sparkles, Loader2, FlaskConical, BookOpen, Copy } from "lucide-react";
+import { Play, Sparkles, Loader2, FlaskConical, BookOpen, Copy, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { SnippetsRail, type Snippet } from "@/components/codelab/SnippetsRail";
 import { EngineeringCalculators } from "@/components/codelab/EngineeringCalculators";
+import { parseErrorLine } from "@/lib/parseErrorLine";
 
 export const Route = createFileRoute("/_authenticated/codelab")({ component: CodeLab });
 
@@ -23,13 +24,13 @@ const LANGS = [
   { id: "octave", piston: "octave", version: "5.1.0", sample: '% GNU Octave (MATLAB-compatible)\nA = [1 2; 3 4];\nB = [5 6; 7 8];\ndisp(A * B)\ndisp("Eigenvalues:")\ndisp(eig(A))\n' },
 ];
 
-const OCTAVE_TEMPLATES: { name: string; code: string }[] = [
-  { name: "Matrix operations", code: "A = [1 2; 3 4];\nB = [5 6; 7 8];\ndisp('A*B ='); disp(A*B)\ndisp('inv(A) ='); disp(inv(A))\ndisp('eig(A) ='); disp(eig(A))\n" },
-  { name: "Linear system Ax = b", code: "A = [3 2 -1; 2 -2 4; -1 0.5 -1];\nb = [1; -2; 0];\nx = A \\ b;\ndisp('x =')\ndisp(x)\n" },
-  { name: "Solve ODE (ode45)", code: "function dydt = f(t, y)\n  dydt = -2*y;\nendfunction\n[t, y] = ode45(@f, [0 5], 1);\ndisp([t y])\n" },
-  { name: "FFT / signal", code: "Fs = 1000; t = 0:1/Fs:1-1/Fs;\nx = sin(2*pi*50*t) + 0.5*sin(2*pi*120*t);\nX = abs(fft(x));\ndisp('Top 5 magnitudes:')\ndisp(sort(X, 'descend')(1:5))\n" },
-  { name: "Descriptive stats", code: "v = [12 15 18 22 25 27 30 31 33 40];\nprintf('mean=%f\\n', mean(v));\nprintf('median=%f\\n', median(v));\nprintf('std=%f\\n', std(v));\n" },
-];
+type ExecutionResult = {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  method: "piston" | "judge0" | "gemini-simulation";
+  executionTimeMs?: number;
+};
 
 type AIResult =
   | { kind: "debug"; reply: string }
@@ -40,11 +41,17 @@ function CodeLab() {
   const [lang, setLang] = useState(LANGS[0]);
   const [code, setCode] = useState(LANGS[0].sample);
   const [stdin, setStdin] = useState("");
-  const [output, setOutput] = useState("");
+  const [result, setResult] = useState<ExecutionResult | null>(null);
   const [running, setRunning] = useState(false);
   const [aiBusy, setAiBusy] = useState<null | "debug" | "tests" | "explain">(null);
   const [ai, setAi] = useState<AIResult | null>(null);
   const [question, setQuestion] = useState("");
+  const [proactiveHelp, setProactiveHelp] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const lastAnalyzedError = useRef<string | null>(null);
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
+
   const debug = useServerFn(debugCode);
   const tests = useServerFn(generateTests);
   const explain = useServerFn(explainCode);
@@ -53,24 +60,59 @@ function CodeLab() {
     const l = LANGS.find((x) => x.id === id)!;
     setLang(l);
     setCode(l.sample);
-    setOutput("");
+    setResult(null);
     setAi(null);
+    setProactiveHelp(null);
+    clearMarkers();
   }
 
   function loadSnippet(s: Snippet) {
     const l = LANGS.find((x) => x.id === s.language) ?? LANGS[0];
     setLang(l);
     setCode(s.code);
-    setOutput("");
+    setResult(null);
     setAi(null);
+    setProactiveHelp(null);
+    clearMarkers();
     toast.success(`Loaded "${s.title}"`);
+  }
+
+  function clearMarkers() {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
+    const model = editor.getModel();
+    if (model) monaco.editor.setModelMarkers(model, "klausum-runtime", []);
+  }
+
+  function applyErrorMarker(stderr: string, langId: string) {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
+    const model = editor.getModel();
+    if (!model) return;
+    const parsed = parseErrorLine(stderr, langId);
+    if (parsed.line === null) {
+      monaco.editor.setModelMarkers(model, "klausum-runtime", []);
+      return;
+    }
+    monaco.editor.setModelMarkers(model, "klausum-runtime", [{
+      startLineNumber: parsed.line,
+      endLineNumber: parsed.line,
+      startColumn: 1,
+      endColumn: model.getLineMaxColumn(parsed.line),
+      message: parsed.message,
+      severity: monaco.MarkerSeverity.Error,
+    }]);
+    editor.revealLineInCenter(parsed.line);
   }
 
   async function run() {
     setRunning(true);
-    setOutput("Running…");
+    setResult(null);
+    setProactiveHelp(null);
+    clearMarkers();
     try {
-      const { getAccessToken } = await import("@/lib/auth-helper");
       const accessToken = await getAccessToken();
       const r = await fetch("/api/run-code", {
         method: "POST",
@@ -79,23 +121,65 @@ function CodeLab() {
       });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error ?? `Sandbox ${r.status}`);
-      setOutput(j.output || "(no output)");
+      const res: ExecutionResult = {
+        stdout: j.stdout ?? "",
+        stderr: j.stderr ?? "",
+        exitCode: j.exitCode ?? 0,
+        method: j.method ?? j.engine ?? "piston",
+        executionTimeMs: j.executionTimeMs,
+      };
+      setResult(res);
+      if (res.stderr) applyErrorMarker(res.stderr, lang.id);
     } catch (e: any) {
-      const msg = e?.message ?? String(e);
-      setOutput(`Run failed: ${msg}\n\nThe public code sandbox (Piston) may be busy or rate-limited. Try again in a few seconds, or use Explain / Generate tests / Hint — those use Klausum's own AI.`);
+      setResult({ stdout: "", stderr: e?.message ?? "Execution failed", exitCode: 1, method: "piston" });
       toast.error("Sandbox busy — try again or use the AI tools");
     } finally {
       setRunning(false);
     }
   }
 
+  // Proactive AI tutor: auto-explain any stderr, once per unique error
+  useEffect(() => {
+    if (!result?.stderr) {
+      setProactiveHelp(null);
+      return;
+    }
+    if (result.stderr === lastAnalyzedError.current) return;
+    lastAnalyzedError.current = result.stderr;
+
+    (async () => {
+      setAnalyzing(true);
+      setProactiveHelp(null);
+      try {
+        const accessToken = await getAccessToken();
+        const r = await debug({
+          data: {
+            accessToken,
+            language: lang.id,
+            code,
+            output: result.stderr,
+            question:
+              "Explain this error in ONE short, friendly paragraph (max 40 words). Identify the exact bug and give the corrected line if it's a simple fix. Format: \"Looks like a [ErrorType] — [plain explanation]. Try: `[fix]`\"",
+          },
+        });
+        setProactiveHelp(r.reply.trim());
+      } catch {
+        setProactiveHelp("I couldn't analyze this error automatically, but you can ask me about it below.");
+      } finally {
+        setAnalyzing(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result?.stderr]);
 
   async function runDebug() {
     setAiBusy("debug");
     try {
       const accessToken = await getAccessToken();
-      const r = await debug({ data: { accessToken, language: lang.id, code, output, question } });
+      const combinedOutput = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
+      const r = await debug({ data: { accessToken, language: lang.id, code, output: combinedOutput, question } });
       setAi({ kind: "debug", reply: r.reply });
+      setQuestion("");
     } catch (e: any) { toast.error(e.message ?? "AI failed"); }
     finally { setAiBusy(null); }
   }
@@ -118,6 +202,9 @@ function CodeLab() {
     finally { setAiBusy(null); }
   }
 
+  const hasError = !!result && (result.exitCode !== 0 || result.stderr.length > 0);
+  const busy = running || !!aiBusy;
+
   return (
     <div className="space-y-4">
       <header className="flex items-center justify-between gap-3">
@@ -139,20 +226,21 @@ function CodeLab() {
               height="380px"
               language={lang.id === "cpp" ? "cpp" : lang.id}
               value={code}
-              onChange={(v) => setCode(v ?? "")}
+              onChange={(v) => { setCode(v ?? ""); clearMarkers(); }}
+              onMount={(editor, monaco) => { editorRef.current = editor; monacoRef.current = monaco; }}
               theme="vs-dark"
               options={{ fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false, tabSize: 2 }}
             />
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button onClick={run} disabled={running} className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} Run
+            <button onClick={run} disabled={busy} className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+              {running ? <><Loader2 className="h-4 w-4 animate-spin" /> Running…</> : <><Play className="h-4 w-4" /> Run</>}
             </button>
-            <button onClick={runExplain} disabled={!!aiBusy} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">
+            <button onClick={runExplain} disabled={busy} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">
               {aiBusy === "explain" ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />} Explain
             </button>
-            <button onClick={runTests} disabled={!!aiBusy} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">
+            <button onClick={runTests} disabled={busy} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">
               {aiBusy === "tests" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />} Generate tests
             </button>
           </div>
@@ -164,18 +252,37 @@ function CodeLab() {
             </div>
             <div>
               <label className="text-xs uppercase text-muted-foreground">Output</label>
-              <pre className="mt-1 min-h-20 max-h-48 overflow-auto rounded-lg border border-border bg-background p-2 font-mono text-xs whitespace-pre-wrap">{output || "—"}</pre>
+              <OutputPanel result={result} isRunning={running} />
             </div>
           </div>
 
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-              <Sparkles className="h-4 w-4" /> Ask AI tutor
+              <Sparkles className="h-4 w-4" /> AI Tutor
             </div>
+
+            {analyzing && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground animate-in fade-in">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Looking at your error…
+              </div>
+            )}
+            {proactiveHelp && !analyzing && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 flex gap-2 animate-in fade-in slide-in-from-top-1">
+                <span className="text-lg leading-none">💡</span>
+                <p className="text-sm whitespace-pre-wrap">{proactiveHelp}</p>
+              </div>
+            )}
+
             <div className="flex gap-2">
-              <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What's wrong? Or: explain my output…" className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" />
-              <button onClick={runDebug} disabled={!!aiBusy} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50 shrink-0">
-                {aiBusy === "debug" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Hint
+              <input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !aiBusy && question.trim()) runDebug(); }}
+                placeholder={hasError ? "Ask about this error…" : "What's wrong? Or: explain my output…"}
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              <button onClick={runDebug} disabled={busy || !question.trim()} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50 shrink-0">
+                {aiBusy === "debug" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Ask
               </button>
             </div>
 
@@ -222,6 +329,55 @@ function CodeLab() {
       </div>
 
       <EngineeringCalculators />
+    </div>
+  );
+}
+
+function OutputPanel({ result, isRunning }: { result: ExecutionResult | null; isRunning: boolean }) {
+  if (isRunning) {
+    return (
+      <div className="mt-1 min-h-20 rounded-lg border border-border bg-background p-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Running…
+      </div>
+    );
+  }
+  if (!result) {
+    return <pre className="mt-1 min-h-20 rounded-lg border border-border bg-background p-2 font-mono text-xs text-muted-foreground">—</pre>;
+  }
+  const hasError = result.exitCode !== 0 || result.stderr.length > 0;
+  return (
+    <div className="mt-1 space-y-2">
+      <div className={`flex items-center gap-2 text-xs font-semibold ${hasError ? "text-red-400" : "text-emerald-400"}`}>
+        {hasError ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+        {hasError
+          ? <>Execution failed{result.exitCode ? ` (exit ${result.exitCode})` : ""}</>
+          : <>Ran successfully{result.executionTimeMs ? ` in ${result.executionTimeMs}ms` : ""}</>}
+        {result.method === "gemini-simulation" && (
+          <span className="ml-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] text-primary">✨ AI-simulated</span>
+        )}
+      </div>
+
+      {result.stdout && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+          <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-emerald-400 border-b border-emerald-500/20">Output</div>
+          <pre className="max-h-40 overflow-auto p-2 font-mono text-xs text-emerald-200 whitespace-pre-wrap">{result.stdout}</pre>
+        </div>
+      )}
+
+      {result.stderr && (
+        <div className="rounded-lg border border-red-500/40 bg-red-500/5">
+          <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-red-400 border-b border-red-500/20 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" /> Error
+          </div>
+          <pre className="max-h-40 overflow-auto p-2 font-mono text-xs text-red-200 whitespace-pre-wrap">{result.stderr}</pre>
+        </div>
+      )}
+
+      {!result.stdout && !result.stderr && (
+        <div className="rounded-lg border border-border bg-background p-3 text-xs text-muted-foreground italic">
+          Code ran with no output. Add a print / console.log to see results.
+        </div>
+      )}
     </div>
   );
 }
