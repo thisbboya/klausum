@@ -57,8 +57,11 @@ export const Route = createFileRoute("/api/run-code")({
           }
 
           // 1) Try Piston (real sandbox) first — still works for whitelisted callers.
+          const t0 = Date.now();
           let realOk = false;
-          let realOut = "";
+          let realStdout = "";
+          let realStderr = "";
+          let realExit = 0;
           let realEngine: "piston" | "judge0" = "piston";
           try {
             const r = await fetch("https://emkc.org/api/v2/piston/execute", {
@@ -72,11 +75,10 @@ export const Route = createFileRoute("/api/run-code")({
               }),
             });
             if (r.ok) {
-              const j = (await r.json()) as { run?: { stdout?: string; stderr?: string }; compile?: { stderr?: string } };
-              realOut =
-                (j.run?.stdout ?? "") +
-                (j.run?.stderr ? `\n[stderr]\n${j.run.stderr}` : "") +
-                (j.compile?.stderr ? `\n[compile]\n${j.compile.stderr}` : "");
+              const j = (await r.json()) as { run?: { stdout?: string; stderr?: string; code?: number }; compile?: { stderr?: string; code?: number } };
+              realStdout = j.run?.stdout ?? "";
+              realStderr = [j.compile?.stderr, j.run?.stderr].filter(Boolean).join("\n");
+              realExit = j.run?.code ?? j.compile?.code ?? 0;
               realOk = true;
             }
           } catch { /* fall through */ }
@@ -109,12 +111,11 @@ export const Route = createFileRoute("/api/run-code")({
                     stderr?: string | null;
                     compile_output?: string | null;
                     message?: string | null;
+                    status?: { id?: number };
                   };
-                  realOut =
-                    (j.stdout ?? "") +
-                    (j.stderr ? `\n[stderr]\n${j.stderr}` : "") +
-                    (j.compile_output ? `\n[compile]\n${j.compile_output}` : "") +
-                    (j.message && !j.stdout && !j.stderr ? `\n[message]\n${j.message}` : "");
+                  realStdout = j.stdout ?? "";
+                  realStderr = [j.compile_output, j.stderr, (!j.stdout && !j.stderr ? j.message : null)].filter(Boolean).join("\n");
+                  realExit = j.status?.id && j.status.id > 3 ? 1 : 0;
                   realOk = true;
                   realEngine = "judge0";
                 }
@@ -124,8 +125,18 @@ export const Route = createFileRoute("/api/run-code")({
             }
           }
 
+          const executionTimeMs = Date.now() - t0;
           if (realOk) {
-            return Response.json({ ok: true, output: realOut || "(no output)", engine: realEngine });
+            return Response.json({
+              ok: true,
+              stdout: realStdout,
+              stderr: realStderr,
+              exitCode: realExit,
+              engine: realEngine,
+              method: realEngine,
+              executionTimeMs,
+              output: (realStdout || "") + (realStderr ? `\n[stderr]\n${realStderr}` : ""),
+            });
           }
 
           // Fallback: AI-simulated execution (Piston is whitelist-only since Feb 2026)
@@ -133,8 +144,13 @@ export const Route = createFileRoute("/api/run-code")({
             const out = await simulateWithAI(body.language, body.code, body.stdin ?? "");
             return Response.json({
               ok: true,
-              output: `[AI simulator — sandbox unavailable]\n${out || "(no output)"}`,
+              stdout: out,
+              stderr: "",
+              exitCode: 0,
               engine: "ai",
+              method: "gemini-simulation",
+              executionTimeMs: Date.now() - t0,
+              output: `[AI simulator — sandbox unavailable]\n${out || "(no output)"}`,
             });
           } catch (e: any) {
             console.error("[run-code] AI fallback failed:", e);
