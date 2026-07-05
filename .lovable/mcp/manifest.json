@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://fgimeudtxsqczdgxjwmw.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "klausum-mcp",
+      "version": "0.1.0",
+      "title": "Klausum"
+    },
+    "tools": [
+      {
+        "name": "list_study_materials",
+        "title": "List study materials",
+        "description": "List the signed-in student's study materials (title, subject, id, created_at).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 25,
+              "description": "Max rows to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "subject": {
+              "description": "Filter by subject (case-insensitive contains)",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_library",
+        "title": "Search library",
+        "description": "Keyword search across the signed-in student's study materials. Returns matching materials with a short snippet.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Search term or phrase"
+            },
+            "limit": {
+              "default": 8,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_flashcards_due",
+        "title": "List flashcards due for review",
+        "description": "Return flashcards whose next review date is on or before now for the signed-in student.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_question_bank",
+        "title": "List saved solved problems",
+        "description": "List entries from the signed-in student's Question Bank (saved solved problems).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "subject": {
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_cornell_note",
+        "title": "Create a Cornell note",
+        "description": "Create a Cornell-style note (cues, notes, summary) for the signed-in student.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "cues": {
+              "default": "",
+              "type": "string"
+            },
+            "notes": {
+              "default": "",
+              "type": "string"
+            },
+            "summary": {
+              "default": "",
+              "type": "string"
+            },
+            "subject": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "title"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_study_stats",
+        "title": "Get study stats",
+        "description": "Return the signed-in student's XP total, current streak, and materials count.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
