@@ -20,10 +20,10 @@ export default defineTool({
     const { data, error } = await sb
       .from("cornell_notes")
       .insert({
-        user_id: ctx.getUserId(),
+        user_id: ctx.getUserId()!,
         title: input.title,
-        cues: input.cues,
-        notes: input.notes,
+        cue_column: input.cues,
+        notes_column: input.notes,
         summary: input.summary,
         subject: input.subject ?? null,
       })
