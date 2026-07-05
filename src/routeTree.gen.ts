@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CompanionSelectRouteImport } from './routes/companion-select'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -48,12 +49,16 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedResearchIndexRouteImport } from './routes/_authenticated/research.index'
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes.index'
 import { Route as AuthenticatedMaterialsIndexRouteImport } from './routes/_authenticated/materials.index'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
 import { Route as AuthenticatedResearchProjectIdRouteImport } from './routes/_authenticated/research.$projectId'
 import { Route as AuthenticatedMaterialsIdRouteImport } from './routes/_authenticated/materials.$id'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedQuizzesIdTakeRouteImport } from './routes/_authenticated/quizzes.$id.take'
 import { Route as AuthenticatedQuizzesIdResultsRouteImport } from './routes/_authenticated/quizzes.$id.results'
 
@@ -65,6 +70,11 @@ const SignupRoute = SignupRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -253,6 +263,18 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedResearchIndexRoute =
   AuthenticatedResearchIndexRouteImport.update({
     id: '/',
@@ -288,6 +310,17 @@ const AuthenticatedMaterialsIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedMaterialsRoute,
   } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedQuizzesIdTakeRoute =
   AuthenticatedQuizzesIdTakeRouteImport.update({
     id: '/$id/take',
@@ -305,8 +338,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/companion-select': typeof CompanionSelectRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
@@ -340,6 +376,8 @@ export interface FileRoutesByFullPath {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -353,8 +391,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/companion-select': typeof CompanionSelectRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
@@ -385,6 +426,8 @@ export interface FileRoutesByTo {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -400,8 +443,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/companion-select': typeof CompanionSelectRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/codelab': typeof AuthenticatedCodelabRoute
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
@@ -435,6 +481,8 @@ export interface FileRoutesById {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/_authenticated/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -450,8 +498,11 @@ export interface FileRouteTypes {
     | '/'
     | '/companion-select'
     | '/login'
+    | '/mcp'
     | '/onboarding'
     | '/signup'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/codelab'
     | '/community'
@@ -485,6 +536,8 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/materials/$id'
     | '/research/$projectId'
     | '/rooms/$id'
@@ -498,8 +551,11 @@ export interface FileRouteTypes {
     | '/'
     | '/companion-select'
     | '/login'
+    | '/mcp'
     | '/onboarding'
     | '/signup'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/codelab'
     | '/community'
@@ -530,6 +586,8 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/materials/$id'
     | '/research/$projectId'
     | '/rooms/$id'
@@ -544,8 +602,11 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/companion-select'
     | '/login'
+    | '/mcp'
     | '/onboarding'
     | '/signup'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/_authenticated/codelab'
     | '/_authenticated/community'
@@ -579,6 +640,8 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/materials/$id'
     | '/_authenticated/research/$projectId'
     | '/_authenticated/rooms/$id'
@@ -594,8 +657,11 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   CompanionSelectRoute: typeof CompanionSelectRoute
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiRunCodeRoute: typeof ApiRunCodeRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
@@ -604,6 +670,8 @@ export interface RootRouteChildren {
   ApiVideoQuizRoute: typeof ApiVideoQuizRoute
   ApiYoutubeSearchRoute: typeof ApiYoutubeSearchRoute
   UHandleRoute: typeof UHandleRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -620,6 +688,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -881,6 +956,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/research/': {
       id: '/_authenticated/research/'
       path: '/'
@@ -922,6 +1011,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/materials/$id'
       preLoaderRoute: typeof AuthenticatedMaterialsIdRouteImport
       parentRoute: typeof AuthenticatedMaterialsRoute
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/quizzes/$id/take': {
       id: '/_authenticated/quizzes/$id/take'
@@ -1062,8 +1165,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   CompanionSelectRoute: CompanionSelectRoute,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiChatRoute: ApiChatRoute,
   ApiRunCodeRoute: ApiRunCodeRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
@@ -1072,7 +1179,19 @@ const rootRouteChildren: RootRouteChildren = {
   ApiVideoQuizRoute: ApiVideoQuizRoute,
   ApiYoutubeSearchRoute: ApiYoutubeSearchRoute,
   UHandleRoute: UHandleRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

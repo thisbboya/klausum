@@ -48,7 +48,7 @@ export async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
   maxOutputTokens?: number;
 }): Promise<{ object: z.infer<T> }> {
   const modelId = opts.modelId ?? DEFAULT_MODEL;
-  return await withGeminiRetry(modelId, async (model: LanguageModel) => {
+  return (await withGeminiRetry(modelId, async (model: LanguageModel) => {
     try {
       const r = await generateObject({
         model,
@@ -56,7 +56,7 @@ export async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
         prompt: opts.prompt,
         maxOutputTokens: opts.maxOutputTokens,
       });
-      return { object: r.object };
+      return { object: r.object as z.infer<T> };
     } catch (err) {
       const { text } = await generateText({
         model,
@@ -70,7 +70,6 @@ export async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        // Last-ditch: multi-strategy extractor
         parsed = safeParseJSON<unknown>(text, null as unknown);
         if (parsed == null) {
           throw err instanceof Error ? err : new Error(String(err));
@@ -78,9 +77,9 @@ export async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
       }
       const result = opts.schema.safeParse(parsed);
       if (!result.success) throw err instanceof Error ? err : new Error(String(err));
-      return { object: result.data };
+      return { object: result.data as z.infer<T> };
     }
-  });
+  })) as { object: z.infer<T> };
 }
 
 export async function generateTextSafe(opts: {
