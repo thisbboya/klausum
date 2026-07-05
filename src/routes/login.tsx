@@ -9,10 +9,21 @@ import { toast } from "sonner";
 
 
 
-export const Route = createFileRoute("/login")({ component: LoginPage });
+function safeNext(next: unknown): string {
+  if (typeof next !== "string") return "/dashboard";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/dashboard";
+  return next;
+}
+
+export const Route = createFileRoute("/login")({
+  validateSearch: (s: Record<string, unknown>) => ({ next: typeof s.next === "string" ? s.next : undefined }),
+  component: LoginPage,
+});
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const target = safeNext(next);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,12 +41,12 @@ function LoginPage() {
       return toast.error(error.message);
     }
     toast.success("Welcome back");
-    navigate({ to: "/dashboard" });
+    window.location.href = target;
   }
 
   async function handleGoogle() {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/dashboard",
+      redirect_uri: window.location.origin + target,
     });
     if (result.error) return toast.error(result.error.message ?? "Google sign-in failed");
   }
