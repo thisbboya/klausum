@@ -50,6 +50,7 @@ import { Route as AuthenticatedExamsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
+import { Route as AuthenticatedClipRouteImport } from './routes/_authenticated/clip'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -270,6 +271,11 @@ const AuthenticatedCodelabRoute = AuthenticatedCodelabRouteImport.update({
   path: '/codelab',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedClipRoute = AuthenticatedClipRouteImport.update({
+  id: '/clip',
+  path: '/clip',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -356,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/clip': typeof AuthenticatedClipRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -411,6 +418,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/clip': typeof AuthenticatedClipRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -465,6 +473,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/clip': typeof AuthenticatedClipRoute
   '/_authenticated/codelab': typeof AuthenticatedCodelabRoute
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -522,6 +531,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
+    | '/clip'
     | '/codelab'
     | '/community'
     | '/dashboard'
@@ -577,6 +587,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
+    | '/clip'
     | '/codelab'
     | '/community'
     | '/dashboard'
@@ -630,6 +641,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
+    | '/_authenticated/clip'
     | '/_authenticated/codelab'
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
@@ -987,6 +999,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCodelabRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/clip': {
+      id: '/_authenticated/clip'
+      path: '/clip'
+      fullPath: '/clip'
+      preLoaderRoute: typeof AuthenticatedClipRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -1140,6 +1159,7 @@ const AuthenticatedRoomsRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedClipRoute: typeof AuthenticatedClipRoute
   AuthenticatedCodelabRoute: typeof AuthenticatedCodelabRoute
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -1170,6 +1190,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedClipRoute: AuthenticatedClipRoute,
   AuthenticatedCodelabRoute: AuthenticatedCodelabRoute,
   AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
