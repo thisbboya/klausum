@@ -30,6 +30,7 @@ import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated/timetable'
 import { Route as AuthenticatedSolveRouteImport } from './routes/_authenticated/solve'
+import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/rooms'
@@ -164,6 +165,11 @@ const AuthenticatedTimetableRoute = AuthenticatedTimetableRouteImport.update({
 const AuthenticatedSolveRoute = AuthenticatedSolveRouteImport.update({
   id: '/solve',
   path: '/solve',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedShopRoute = AuthenticatedShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -362,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/shop': typeof AuthenticatedShopRoute
   '/solve': typeof AuthenticatedSolveRoute
   '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -412,6 +419,7 @@ export interface FileRoutesByTo {
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/shop': typeof AuthenticatedShopRoute
   '/solve': typeof AuthenticatedSolveRoute
   '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -467,6 +475,7 @@ export interface FileRoutesById {
   '/_authenticated/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/shop': typeof AuthenticatedShopRoute
   '/_authenticated/solve': typeof AuthenticatedSolveRoute
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
@@ -522,6 +531,7 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/shop'
     | '/solve'
     | '/timetable'
     | '/tutor'
@@ -572,6 +582,7 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/shop'
     | '/solve'
     | '/timetable'
     | '/tutor'
@@ -626,6 +637,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rooms'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
+    | '/_authenticated/shop'
     | '/_authenticated/solve'
     | '/_authenticated/timetable'
     | '/_authenticated/tutor'
@@ -821,6 +833,13 @@ declare module '@tanstack/react-router' {
       path: '/solve'
       fullPath: '/solve'
       preLoaderRoute: typeof AuthenticatedSolveRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/shop': {
+      id: '/_authenticated/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof AuthenticatedShopRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -1120,6 +1139,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRoomsRoute: typeof AuthenticatedRoomsRouteWithChildren
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedShopRoute: typeof AuthenticatedShopRoute
   AuthenticatedSolveRoute: typeof AuthenticatedSolveRoute
   AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
@@ -1148,6 +1168,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRoomsRoute: AuthenticatedRoomsRouteWithChildren,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedShopRoute: AuthenticatedShopRoute,
   AuthenticatedSolveRoute: AuthenticatedSolveRoute,
   AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
