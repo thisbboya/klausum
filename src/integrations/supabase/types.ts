@@ -2086,6 +2086,7 @@ export type Database = {
           reward_xp: number
         }[]
       }
+      purchase_shop_item: { Args: { _item: string }; Returns: Json }
       update_weekly_leaderboard: {
         Args: { p_user_id: string; p_xp: number }
         Returns: undefined

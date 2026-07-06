@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { KlausumMark } from "@/components/klausum-mark";
-import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark, Library } from "lucide-react";
+import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark, Library, Focus, Scissors, Gem } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
@@ -85,6 +85,9 @@ function AuthLayout() {
           <NavItem to="/exams" icon={GraduationCap} label="Exams" />
           <NavItem to="/tutor" icon={MessagesSquare} label="AI Tutor" />
           <NavItem to="/library-chat" icon={Library} label="Library Chat" />
+          <NavItem to="/clip" icon={Scissors} label="Web Clipper" />
+          <NavItem to="/focus" icon={Focus} label="Focus Mode" />
+          <NavItem to="/shop" icon={Gem} label="Gem Shop" />
           <NavItem to="/research" icon={FlaskConical} label="Research" />
           <NavItem to="/settings" icon={Settings} label="Settings" />
           {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}

@@ -30,6 +30,7 @@ import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated/timetable'
 import { Route as AuthenticatedSolveRouteImport } from './routes/_authenticated/solve'
+import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/rooms'
@@ -44,10 +45,12 @@ import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedLibraryChatRouteImport } from './routes/_authenticated/library-chat'
 import { Route as AuthenticatedGapsRouteImport } from './routes/_authenticated/gaps'
 import { Route as AuthenticatedFormulasRouteImport } from './routes/_authenticated/formulas'
+import { Route as AuthenticatedFocusRouteImport } from './routes/_authenticated/focus'
 import { Route as AuthenticatedExamsRouteImport } from './routes/_authenticated/exams'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
+import { Route as AuthenticatedClipRouteImport } from './routes/_authenticated/clip'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -166,6 +169,11 @@ const AuthenticatedSolveRoute = AuthenticatedSolveRouteImport.update({
   path: '/solve',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedShopRoute = AuthenticatedShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -238,6 +246,11 @@ const AuthenticatedFormulasRoute = AuthenticatedFormulasRouteImport.update({
   path: '/formulas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFocusRoute = AuthenticatedFocusRouteImport.update({
+  id: '/focus',
+  path: '/focus',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedExamsRoute = AuthenticatedExamsRouteImport.update({
   id: '/exams',
   path: '/exams',
@@ -256,6 +269,11 @@ const AuthenticatedCommunityRoute = AuthenticatedCommunityRouteImport.update({
 const AuthenticatedCodelabRoute = AuthenticatedCodelabRouteImport.update({
   id: '/codelab',
   path: '/codelab',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedClipRoute = AuthenticatedClipRouteImport.update({
+  id: '/clip',
+  path: '/clip',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -344,10 +362,12 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/clip': typeof AuthenticatedClipRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
+  '/focus': typeof AuthenticatedFocusRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
   '/library-chat': typeof AuthenticatedLibraryChatRoute
@@ -362,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/shop': typeof AuthenticatedShopRoute
   '/solve': typeof AuthenticatedSolveRoute
   '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -397,10 +418,12 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/clip': typeof AuthenticatedClipRoute
   '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
+  '/focus': typeof AuthenticatedFocusRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
   '/library-chat': typeof AuthenticatedLibraryChatRoute
@@ -412,6 +435,7 @@ export interface FileRoutesByTo {
   '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/shop': typeof AuthenticatedShopRoute
   '/solve': typeof AuthenticatedSolveRoute
   '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -449,10 +473,12 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/clip': typeof AuthenticatedClipRoute
   '/_authenticated/codelab': typeof AuthenticatedCodelabRoute
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/exams': typeof AuthenticatedExamsRoute
+  '/_authenticated/focus': typeof AuthenticatedFocusRoute
   '/_authenticated/formulas': typeof AuthenticatedFormulasRoute
   '/_authenticated/gaps': typeof AuthenticatedGapsRoute
   '/_authenticated/library-chat': typeof AuthenticatedLibraryChatRoute
@@ -467,6 +493,7 @@ export interface FileRoutesById {
   '/_authenticated/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/shop': typeof AuthenticatedShopRoute
   '/_authenticated/solve': typeof AuthenticatedSolveRoute
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
@@ -504,10 +531,12 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
+    | '/clip'
     | '/codelab'
     | '/community'
     | '/dashboard'
     | '/exams'
+    | '/focus'
     | '/formulas'
     | '/gaps'
     | '/library-chat'
@@ -522,6 +551,7 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/shop'
     | '/solve'
     | '/timetable'
     | '/tutor'
@@ -557,10 +587,12 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
+    | '/clip'
     | '/codelab'
     | '/community'
     | '/dashboard'
     | '/exams'
+    | '/focus'
     | '/formulas'
     | '/gaps'
     | '/library-chat'
@@ -572,6 +604,7 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/schedule'
     | '/settings'
+    | '/shop'
     | '/solve'
     | '/timetable'
     | '/tutor'
@@ -608,10 +641,12 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
+    | '/_authenticated/clip'
     | '/_authenticated/codelab'
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/exams'
+    | '/_authenticated/focus'
     | '/_authenticated/formulas'
     | '/_authenticated/gaps'
     | '/_authenticated/library-chat'
@@ -626,6 +661,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rooms'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
+    | '/_authenticated/shop'
     | '/_authenticated/solve'
     | '/_authenticated/timetable'
     | '/_authenticated/tutor'
@@ -823,6 +859,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSolveRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/shop': {
+      id: '/_authenticated/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof AuthenticatedShopRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -921,6 +964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormulasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/focus': {
+      id: '/_authenticated/focus'
+      path: '/focus'
+      fullPath: '/focus'
+      preLoaderRoute: typeof AuthenticatedFocusRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/exams': {
       id: '/_authenticated/exams'
       path: '/exams'
@@ -947,6 +997,13 @@ declare module '@tanstack/react-router' {
       path: '/codelab'
       fullPath: '/codelab'
       preLoaderRoute: typeof AuthenticatedCodelabRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/clip': {
+      id: '/_authenticated/clip'
+      path: '/clip'
+      fullPath: '/clip'
+      preLoaderRoute: typeof AuthenticatedClipRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin': {
@@ -1102,10 +1159,12 @@ const AuthenticatedRoomsRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedClipRoute: typeof AuthenticatedClipRoute
   AuthenticatedCodelabRoute: typeof AuthenticatedCodelabRoute
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExamsRoute: typeof AuthenticatedExamsRoute
+  AuthenticatedFocusRoute: typeof AuthenticatedFocusRoute
   AuthenticatedFormulasRoute: typeof AuthenticatedFormulasRoute
   AuthenticatedGapsRoute: typeof AuthenticatedGapsRoute
   AuthenticatedLibraryChatRoute: typeof AuthenticatedLibraryChatRoute
@@ -1120,6 +1179,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRoomsRoute: typeof AuthenticatedRoomsRouteWithChildren
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedShopRoute: typeof AuthenticatedShopRoute
   AuthenticatedSolveRoute: typeof AuthenticatedSolveRoute
   AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
@@ -1130,10 +1190,12 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedClipRoute: AuthenticatedClipRoute,
   AuthenticatedCodelabRoute: AuthenticatedCodelabRoute,
   AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExamsRoute: AuthenticatedExamsRoute,
+  AuthenticatedFocusRoute: AuthenticatedFocusRoute,
   AuthenticatedFormulasRoute: AuthenticatedFormulasRoute,
   AuthenticatedGapsRoute: AuthenticatedGapsRoute,
   AuthenticatedLibraryChatRoute: AuthenticatedLibraryChatRoute,
@@ -1148,6 +1210,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRoomsRoute: AuthenticatedRoomsRouteWithChildren,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedShopRoute: AuthenticatedShopRoute,
   AuthenticatedSolveRoute: AuthenticatedSolveRoute,
   AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
