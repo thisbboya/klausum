@@ -962,7 +962,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] min-h-[600px] rounded-xl border border-border overflow-hidden">
+    <div className="flex h-[calc(100dvh-6rem)] min-h-[640px] rounded-xl border border-border overflow-hidden">
       <div className="w-[62%] border-r border-border flex flex-col">
         {TocPanel}
         <div className="flex-1 overflow-hidden">
