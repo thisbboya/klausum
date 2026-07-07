@@ -295,10 +295,28 @@ export function PDFViewer({
           </div>
         ) : (
           loadError ? (
-            <div className="max-w-md rounded-xl border border-border bg-card p-5 text-center text-sm text-muted-foreground">
-              {loadError}
+            <div className="max-w-md rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground space-y-4">
+              <p>{loadError}</p>
+              <div className="flex items-center justify-center gap-2">
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-4 py-2 hover:opacity-90 transition"
+                >
+                  Open in new tab ↗
+                </a>
+                <a
+                  href={pdfUrl}
+                  download
+                  className="inline-flex items-center gap-1.5 rounded-full bg-muted text-foreground text-xs font-semibold px-4 py-2 hover:bg-accent transition border border-border"
+                >
+                  Download PDF
+                </a>
+              </div>
             </div>
           ) : <div className="relative">
+
             <canvas
               ref={canvasRef}
               className="rounded-lg shadow-2xl max-w-full block bg-white"
