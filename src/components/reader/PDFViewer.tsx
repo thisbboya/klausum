@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+// Vite-native worker URL — resolves to a hashed asset URL that always works in dev + prod.
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { Search, StickyNote } from "lucide-react";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
 
 interface PDFViewerProps {
   pdfUrl: string;
