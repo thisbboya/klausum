@@ -9,7 +9,9 @@ import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic,
   GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark,
+  Scissors, Focus, Gem,
 } from "lucide-react";
+
 
 type NavLink = { to: string; label: string; icon: any };
 
@@ -35,7 +37,11 @@ const LINKS: NavLink[] = [
   { to: "/exams", label: "Exams", icon: GraduationCap },
   { to: "/tutor", label: "AI Tutor", icon: MessagesSquare },
   { to: "/research", label: "Research", icon: FlaskConical },
+  { to: "/clip", label: "Web Clipper", icon: Scissors },
+  { to: "/focus", label: "Focus Mode", icon: Focus },
+  { to: "/shop", label: "Gem Shop", icon: Gem },
   { to: "/settings", label: "Settings", icon: Settings },
+
 ];
 
 export function MobileNav({
