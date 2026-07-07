@@ -62,7 +62,7 @@ export function PDFViewer({
           // Let pdf.js stream + range-request against signed URLs — that's the whole
           // point of the storage signed URL. We only disable this in the fetch-bytes
           // fallback below, where we already have the full ArrayBuffer.
-          isEvalSupported: false,
+          
         });
         return await task.promise;
       };
@@ -84,7 +84,7 @@ export function PDFViewer({
           if (cancelled) return;
           const task = pdfjsLib.getDocument({
             data: new Uint8Array(buf),
-            isEvalSupported: false,
+            
             disableRange: true,
             disableStream: true,
           });
