@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+// Vite-native worker URL — resolves to a hashed asset URL that always works in dev + prod.
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { Search, StickyNote } from "lucide-react";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
 
 interface PDFViewerProps {
   pdfUrl: string;
@@ -56,8 +59,10 @@ export function PDFViewer({
         const task = pdfjsLib.getDocument({
           ...src,
           withCredentials: false,
-          disableRange: true,
-          disableStream: true,
+          // Let pdf.js stream + range-request against signed URLs — that's the whole
+          // point of the storage signed URL. We only disable this in the fetch-bytes
+          // fallback below, where we already have the full ArrayBuffer.
+          
         });
         return await task.promise;
       };
@@ -70,13 +75,20 @@ export function PDFViewer({
         onTotalPages(doc.numPages);
         setIsLoading(false);
       } catch (err) {
-        // Fallback: fetch as ArrayBuffer and hand raw bytes to pdf.js
+        // Fallback: fetch as ArrayBuffer and hand raw bytes to pdf.js (works around
+        // range-request / CORS quirks on some CDNs).
         try {
           const res = await fetch(pdfUrl, { credentials: "omit", cache: "no-store" });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const buf = await res.arrayBuffer();
           if (cancelled) return;
-          const doc = await tryLoad({ data: new Uint8Array(buf) });
+          const task = pdfjsLib.getDocument({
+            data: new Uint8Array(buf),
+            
+            disableRange: true,
+            disableStream: true,
+          });
+          const doc = await task.promise;
           if (cancelled) return;
           setPdf(doc);
           setTotalPages(doc.numPages);
@@ -91,6 +103,7 @@ export function PDFViewer({
         }
       }
     }
+
 
     load();
     return () => {
