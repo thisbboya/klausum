@@ -9,7 +9,9 @@ import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic,
   GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark,
+  Scissors, Focus, Gem,
 } from "lucide-react";
+
 
 type NavLink = { to: string; label: string; icon: any };
 
