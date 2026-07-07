@@ -45,32 +45,60 @@ export function PDFViewer({
   const [selection, setSelection] = useState<{ text: string; x: number; y: number } | null>(null);
   const pageTextCache = useRef<Record<number, string>>({});
 
-  // Load PDF
+  // Load PDF (try direct URL, then fall back to fetch → blob for CORS / range-request issues)
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     setLoadError("");
-    pdfjsLib
-      .getDocument({ url: pdfUrl, withCredentials: false })
-      .promise.then((doc: any) => {
+
+    async function load() {
+      const tryLoad = async (src: any) => {
+        const task = pdfjsLib.getDocument({
+          ...src,
+          withCredentials: false,
+          disableRange: true,
+          disableStream: true,
+        });
+        return await task.promise;
+      };
+
+      try {
+        const doc = await tryLoad({ url: pdfUrl });
         if (cancelled) return;
         setPdf(doc);
         setTotalPages(doc.numPages);
         onTotalPages(doc.numPages);
         setIsLoading(false);
-      })
-      .catch((err: any) => {
-        if (!cancelled) {
-          console.error("PDF load error:", err);
-          setLoadError("This PDF could not be rendered here, but the extracted text and AI study view are still available.");
+      } catch (err) {
+        // Fallback: fetch as ArrayBuffer and hand raw bytes to pdf.js
+        try {
+          const res = await fetch(pdfUrl, { credentials: "omit", cache: "no-store" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const buf = await res.arrayBuffer();
+          if (cancelled) return;
+          const doc = await tryLoad({ data: new Uint8Array(buf) });
+          if (cancelled) return;
+          setPdf(doc);
+          setTotalPages(doc.numPages);
+          onTotalPages(doc.numPages);
           setIsLoading(false);
+        } catch (err2) {
+          if (!cancelled) {
+            console.error("PDF load error:", err, err2);
+            setLoadError("This PDF could not be rendered inline. Use the buttons below to open or download it — the extracted text and AI study view still work.");
+            setIsLoading(false);
+          }
         }
-      });
+      }
+    }
+
+    load();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdfUrl]);
+
 
   // Background index of all pages (so AI can search across the doc)
   useEffect(() => {
@@ -267,10 +295,28 @@ export function PDFViewer({
           </div>
         ) : (
           loadError ? (
-            <div className="max-w-md rounded-xl border border-border bg-card p-5 text-center text-sm text-muted-foreground">
-              {loadError}
+            <div className="max-w-md rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground space-y-4">
+              <p>{loadError}</p>
+              <div className="flex items-center justify-center gap-2">
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-4 py-2 hover:opacity-90 transition"
+                >
+                  Open in new tab ↗
+                </a>
+                <a
+                  href={pdfUrl}
+                  download
+                  className="inline-flex items-center gap-1.5 rounded-full bg-muted text-foreground text-xs font-semibold px-4 py-2 hover:bg-accent transition border border-border"
+                >
+                  Download PDF
+                </a>
+              </div>
             </div>
           ) : <div className="relative">
+
             <canvas
               ref={canvasRef}
               className="rounded-lg shadow-2xl max-w-full block bg-white"
