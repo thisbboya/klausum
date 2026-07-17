@@ -49,11 +49,9 @@ export function MaterialsPage() {
   const [uploading, setUploading] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
-  const [tab, setTab] = useState<"text" | "file">("text");
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("General");
   const [field, setField] = useState("Sciences");
-  const [pasteText, setPasteText] = useState("");
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -66,7 +64,7 @@ export function MaterialsPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any).from("courses").select("*").order("created_at");
       if (error) return [];
-      return data as { id: string; name: string; description: string | null; icon: string; color: string }[];
+      return data as { id: string; user_id: string; name: string; description: string | null; icon: string; color: string; share_code: string | null }[];
     },
   });
   const courseByName = Object.fromEntries(courses.map((c) => [c.name, c]));
@@ -232,8 +230,6 @@ export function MaterialsPage() {
       setUploading(false);
       setStepIdx(0);
       setTitle("");
-      setPasteText("");
-      setTab("text");
     }
   }
 
@@ -252,7 +248,7 @@ export function MaterialsPage() {
       ".xls": "application/vnd.ms-excel",
     };
     const ext = "." + lower.split(".").pop()!;
-    const t = file.name.replace(/\.[^.]+$/, "");
+    const t = title.trim() || file.name.replace(/\.[^.]+$/, "");
     if (isText) {
       const text = await file.text();
       await runProcess({
@@ -282,20 +278,43 @@ export function MaterialsPage() {
     }
   }
 
-  async function handlePaste() {
-    if (!title.trim() || !pasteText.trim()) return toast.error("Title and content required");
-    await runProcess({
-      title: title.trim(),
-      subject,
-      fieldCategory: field,
-      isStem: STEM_FIELDS.has(field),
-      text: pasteText,
-      rawContent: pasteText,
-    });
+  async function joinCourse() {
+    const code = window.prompt("Enter the course share code (e.g. AB12CD):");
+    if (!code?.trim()) return;
+    const { data, error } = await (supabase as any).rpc("join_course_by_code", { p_code: code.trim() });
+    if (error) return toast.error(error.message);
+    toast.success(`Joined "${data.name}" — its materials are now in your library`);
+    qc.invalidateQueries({ queryKey: ["courses"] });
+    qc.invalidateQueries({ queryKey: ["materials"] });
   }
 
-  const wordCount = pasteText.trim().split(/\s+/).filter(Boolean).length;
-  const readMins = Math.max(1, Math.round(wordCount / 220));
+  async function shareCourse(subjectName: string) {
+    if (!user) return;
+    let course = courseByName[subjectName];
+    // Sharing a plain subject folder promotes it to a real course first
+    if (!course) {
+      const { data, error } = await (supabase as any)
+        .from("courses")
+        .insert({ user_id: user.id, name: subjectName })
+        .select("*")
+        .single();
+      if (error) return toast.error(error.message);
+      course = data;
+    }
+    let code = course.share_code;
+    if (!code) {
+      code = Array.from({ length: 6 }, () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 31)]).join("");
+      const { error } = await (supabase as any).from("courses").update({ share_code: code }).eq("id", course.id);
+      if (error) return toast.error(error.message);
+    }
+    qc.invalidateQueries({ queryKey: ["courses"] });
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success(`Share code ${code} copied — friends enter it under "Join course"`);
+    } catch {
+      window.prompt("Share this code with friends:", code);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -306,6 +325,12 @@ export function MaterialsPage() {
         </div>
         {!activeSubject && (
           <div className="flex shrink-0 gap-2">
+            <button
+              onClick={joinCourse}
+              className="rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
+            >
+              Join course
+            </button>
             <button
               onClick={() => setShowCourseModal(true)}
               className="rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
@@ -332,19 +357,14 @@ export function MaterialsPage() {
 
       {showUploadForm && !activeSubject && (
         <div className="card-chunky bg-card p-5 space-y-4">
-          <div className="flex gap-2 border-b border-border pb-2">
-            <TabBtn active={tab === "text"} onClick={() => setTab("text")}>✏️ Text / Paste</TabBtn>
-            <TabBtn active={tab === "file"} onClick={() => setTab("file")}>📎 File Upload</TabBtn>
-          </div>
+          <h2 className="font-display text-lg font-extrabold">Upload material</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {tab === "text" && (
-              <input
-                value={title} onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title"
-                className="md:col-span-3 rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-            )}
+            <input
+              value={title} onChange={(e) => setTitle(e.target.value)}
+              placeholder="Material title (e.g. Week 3 Lecture Notes)"
+              className="md:col-span-3 rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
             <select value={subject} onChange={(e) => setSubject(e.target.value)}
               className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm">
               {courses.length > 0 && (
@@ -363,29 +383,7 @@ export function MaterialsPage() {
             </div>
           </div>
 
-          {tab === "text" ? (
-            <>
-              <textarea
-                value={pasteText} onChange={(e) => setPasteText(e.target.value)}
-                placeholder="Paste notes, textbook excerpts, lecture notes, or any study material..."
-                rows={8}
-                className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
-                  {wordCount} words · ~{readMins} min read · ~25s processing
-                </div>
-                <button
-                  onClick={handlePaste}
-                  disabled={!pasteText.trim() || !title.trim()}
-                  className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  Process material
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
+          <>
               <label
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
@@ -445,7 +443,6 @@ export function MaterialsPage() {
                 </div>
               )}
             </>
-          )}
         </div>
       )}
 
@@ -535,7 +532,14 @@ export function MaterialsPage() {
                   </span>
                 </div>
                 <div className="p-4">
-                  <div className="truncate font-display text-base font-extrabold">{subjectName}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="truncate font-display text-base font-extrabold">{subjectName}</div>
+                    {course && course.user_id !== user?.id && (
+                      <span className="shrink-0 rounded-full bg-sky/15 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sky">
+                        Shared
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-1 flex items-center justify-between text-xs font-bold text-muted-foreground">
                     <span>
                       {items.length} {items.length === 1 ? "material" : "materials"}
@@ -549,12 +553,24 @@ export function MaterialsPage() {
         </div>
       ) : materials && materials.length > 0 && activeSubject ? (
         <>
-          <button
-            onClick={() => setActiveSubject(null)}
-            className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wide text-sky hover:underline"
-          >
-            ← All subjects
-          </button>
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={() => setActiveSubject(null)}
+              className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wide text-sky hover:underline"
+            >
+              ← All subjects
+            </button>
+            {(!courseByName[activeSubject] || courseByName[activeSubject].user_id === user?.id) && (
+              <button
+                onClick={() => shareCourse(activeSubject)}
+                className="rounded-xl border-2 border-border bg-card px-3.5 py-1.5 text-xs font-extrabold text-muted-foreground hover:text-foreground"
+              >
+                {courseByName[activeSubject]?.share_code
+                  ? `Share code: ${courseByName[activeSubject].share_code}`
+                  : "⤴ Share course"}
+              </button>
+            )}
+          </div>
           <ul className="divide-y-2 divide-border card-chunky bg-card">
           {materials.filter((m) => (m.subject || "General") === activeSubject).map((m) => {
             const hasPdf = !!(m as any).pdf_storage_path;
@@ -614,15 +630,6 @@ export function MaterialsPage() {
         !uploading && <p className="text-center text-sm text-muted-foreground py-8">No materials yet.</p>
       )}
     </div>
-  );
-}
-
-function TabBtn({ active, children, onClick }: any) {
-  return (
-    <button onClick={onClick}
-      className={`px-3 py-1.5 text-sm rounded-md ${active ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
-      {children}
-    </button>
   );
 }
 

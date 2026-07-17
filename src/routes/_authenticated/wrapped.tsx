@@ -1,25 +1,37 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { generateWrapped, saveWrappedSnapshot, type WrappedData } from "@/lib/wrapped";
-import { VarkRadar } from "@/components/wrapped/VarkRadar";
-import { ChevronLeft, ChevronRight, X, Download, Share2, Sparkles } from "lucide-react";
+import { X, Download, Share2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/wrapped")({ component: WrappedPage });
 
-function useCountUp(target: number, duration = 1200, active = true) {
+const STORY_MS = 7000;
+
+/** Spotify-style loud duotone palettes, one per story. */
+const THEMES = [
+  { bg: "linear-gradient(160deg,#1a0533 0%,#3d0a6b 55%,#7a1fa2 100%)", accent: "#E9FF6A", ink: "#ffffff" },
+  { bg: "linear-gradient(160deg,#FF3D77 0%,#B4004E 60%,#5c0027 100%)", accent: "#FFE45C", ink: "#ffffff" },
+  { bg: "linear-gradient(160deg,#052e1f 0%,#0a6b45 55%,#13c06f 100%)", accent: "#FDA4FF", ink: "#ffffff" },
+  { bg: "linear-gradient(160deg,#101094 0%,#2d2dd8 55%,#4f6bff 100%)", accent: "#8DFCBF", ink: "#ffffff" },
+  { bg: "linear-gradient(160deg,#4a1500 0%,#a33200 55%,#ff6a00 100%)", accent: "#9BF0FF", ink: "#ffffff" },
+  { bg: "linear-gradient(160deg,#31054d 0%,#8317ad 55%,#d05ce8 100%)", accent: "#C6FF4F", ink: "#ffffff" },
+  { bg: "linear-gradient(160deg,#003b3b 0%,#008080 55%,#00c2b8 100%)", accent: "#FFD34F", ink: "#ffffff" },
+  { bg: "linear-gradient(160deg,#3d0518 0%,#8f0e3c 55%,#e81f63 100%)", accent: "#7CFCD0", ink: "#ffffff" },
+];
+
+function useCountUp(target: number, active: boolean, duration = 1400) {
   const [val, setVal] = useState(0);
   useEffect(() => {
-    if (!active) return;
+    if (!active) { setVal(0); return; }
     let raf = 0;
     const start = performance.now();
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(Math.round(target * eased));
+      setVal(Math.round(target * (1 - Math.pow(1 - p, 3))));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -28,350 +40,383 @@ function useCountUp(target: number, duration = 1200, active = true) {
   return val;
 }
 
+/** Slowly drifting decorative shapes behind each story. */
+function Shapes({ accent }: { accent: string }) {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <motion.div
+        className="absolute -left-24 -top-24 h-72 w-72 rounded-full opacity-25"
+        style={{ backgroundColor: accent }}
+        animate={{ scale: [1, 1.15, 1], rotate: [0, 25, 0] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute -bottom-32 -right-16 h-96 w-96 opacity-20"
+        style={{ backgroundColor: accent, borderRadius: "38% 62% 55% 45% / 45% 40% 60% 55%" }}
+        animate={{ rotate: [0, 360] }}
+        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        className="absolute right-10 top-24 h-16 w-16 rounded-2xl opacity-30"
+        style={{ backgroundColor: accent }}
+        animate={{ rotate: [12, -8, 12], y: [0, 14, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
+
+type Story = {
+  key: string;
+  theme: (typeof THEMES)[number];
+  setup: string;
+  render: (active: boolean, accent: string) => React.ReactNode;
+};
+
+function Big({ children, accent }: { children: React.ReactNode; accent: string }) {
+  return (
+    <motion.div
+      initial={{ scale: 0.3, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.9 }}
+      className="font-display text-[5.5rem] leading-none font-extrabold tracking-tight md:text-[7rem]"
+      style={{ color: accent }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function Caption({ children, delay = 1.6 }: { children: React.ReactNode; delay?: number }) {
+  return (
+    <motion.p
+      initial={{ y: 18, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay, duration: 0.5 }}
+      className="mt-4 max-w-xs text-base font-bold text-white/85"
+    >
+      {children}
+    </motion.p>
+  );
+}
+
 function WrappedPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<WrappedData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
-  const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
+  const savedRef = useRef(false);
 
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return navigate({ to: "/login" });
+      if (!u.user) return;
       const d = await generateWrapped(u.user.id);
       setData(d);
-      setLoading(false);
-      saveWrappedSnapshot(u.user.id, d).catch(() => {});
+      if (!savedRef.current) {
+        savedRef.current = true;
+        saveWrappedSnapshot(u.user.id, d).catch(() => {});
+      }
     })();
-  }, [navigate]);
+  }, []);
 
-  if (loading || !data) {
+  const stories: Story[] = useMemo(() => {
+    if (!data) return [];
+    const t = data.totals;
+    const s: Story[] = [];
+    const firstName = data.fullName.split(/[@\s]/)[0];
+
+    s.push({
+      key: "intro", theme: THEMES[0],
+      setup: "",
+      render: (active, accent) => (
+        <>
+          <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
+            className="font-display text-xl font-extrabold uppercase tracking-[0.3em]" style={{ color: accent }}>
+            Klausum Wrapped
+          </motion.div>
+          <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 16, delay: 0.7 }}
+            className="mt-4 font-display text-5xl font-extrabold text-white md:text-6xl">
+            {firstName}, your semester in numbers.
+          </motion.div>
+          <Caption delay={1.4}>Tap to move forward. Hold to pause. Go on.</Caption>
+        </>
+      ),
+    });
+
+    s.push({
+      key: "hours", theme: THEMES[1],
+      setup: "You put in real time this semester…",
+      render: (active, accent) => (
+        <>
+          <Big accent={accent}>{useCountUp(t.studyHours > 0 ? t.studyHours : t.studyMinutes, active)}{t.studyHours > 0 ? "h" : "m"}</Big>
+          <Caption>of focused studying across {t.sessions} session{t.sessions === 1 ? "" : "s"}.
+            {data.peakHour ? ` Your brain shows up strongest ${data.peakHour.hourLabel}.` : ""}</Caption>
+        </>
+      ),
+    });
+
+    s.push({
+      key: "cards", theme: THEMES[2],
+      setup: "Your flashcards took a beating…",
+      render: (active, accent) => (
+        <>
+          <Big accent={accent}>{useCountUp(t.cardsReviewed, active)}</Big>
+          <Caption>cards reviewed — {t.cardsAcedFirstTry} nailed on the first try.
+            {data.toughestCard ? ` One card fought back ${data.toughestCard.lapses} times.` : ""}</Caption>
+        </>
+      ),
+    });
+
+    s.push({
+      key: "quizzes", theme: THEMES[3],
+      setup: "Then came the quizzes…",
+      render: (active, accent) => (
+        <>
+          <Big accent={accent}>{useCountUp(Math.round(t.quizAccuracy * 100), active)}%</Big>
+          <Caption>average accuracy over {t.quizzesTaken} quiz{t.quizzesTaken === 1 ? "" : "zes"}.
+            {data.fastestQuiz ? ` Fastest: ~${data.fastestQuiz.secondsPerQuestion}s a question on “${data.fastestQuiz.title}”.` : ""}</Caption>
+        </>
+      ),
+    });
+
+    const topSubject = data.topSubject;
+    if (topSubject) {
+      s.push({
+        key: "subject", theme: THEMES[4],
+        setup: "One subject owned your calendar…",
+        render: (_a, accent) => (
+          <>
+            <motion.div initial={{ rotate: -6, scale: 0.4, opacity: 0 }} animate={{ rotate: 0, scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 220, damping: 15, delay: 0.9 }}
+              className="font-display text-6xl font-extrabold md:text-7xl" style={{ color: accent }}>
+              {topSubject.name}
+            </motion.div>
+            <Caption>{Math.round(topSubject.minutes)} minutes deep. That's commitment.</Caption>
+          </>
+        ),
+      });
+    }
+
+    s.push({
+      key: "streak", theme: THEMES[5],
+      setup: "Consistency check…",
+      render: (active, accent) => (
+        <>
+          <Big accent={accent}>{useCountUp(Math.max(t.longestStreak, t.currentStreak), active)} days</Big>
+          <Caption>your longest streak. Currently riding {t.currentStreak}. Streaks are how legends are built.</Caption>
+        </>
+      ),
+    });
+
+    s.push({
+      key: "xp", theme: THEMES[6],
+      setup: "All of it added up…",
+      render: (active, accent) => (
+        <>
+          <Big accent={accent}>{useCountUp(t.xpEarned, active).toLocaleString()} XP</Big>
+          <Caption>
+            earned this semester{data.bestDay ? ` — your biggest day was ${new Date(data.bestDay.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })} with ${data.bestDay.xp} XP` : ""}.
+            {data.rank ? ` That puts you in the top ${data.rank.percentile}% of Klausum.` : ""}
+          </Caption>
+        </>
+      ),
+    });
+
+    s.push({
+      key: "finale", theme: THEMES[7],
+      setup: "",
+      render: (_a, accent) => (
+        <>
+          <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
+            className="font-display text-4xl font-extrabold text-white md:text-5xl">
+            That's your semester, {firstName}.
+          </motion.div>
+          <Caption delay={0.9}>{data.companionName} was with you the whole way. Share it or start the next chapter.</Caption>
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 1.3 }}
+            className="mt-8 flex gap-3">
+            <button
+              onClick={(e) => { e.stopPropagation(); void shareCard(true); }}
+              className="btn-3d inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-display text-sm font-extrabold uppercase tracking-wide text-black"
+              style={{ backgroundColor: accent }}
+            >
+              <Share2 className="h-4 w-4" /> Share
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); void shareCard(false); }}
+              className="inline-flex items-center gap-2 rounded-2xl border-2 border-white/40 px-6 py-3 font-display text-sm font-extrabold uppercase tracking-wide text-white"
+            >
+              <Download className="h-4 w-4" /> Save image
+            </button>
+          </motion.div>
+        </>
+      ),
+    });
+
+    return s;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const next = useCallback(() => {
+    setIdx((i) => Math.min(i + 1, stories.length - 1));
+  }, [stories.length]);
+  const prev = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
+
+  // Auto-advance timer (except on the finale)
+  useEffect(() => {
+    if (!data || paused || idx >= stories.length - 1) return;
+    const id = setTimeout(next, STORY_MS);
+    return () => clearTimeout(id);
+  }, [idx, paused, data, next, stories.length]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === " ") next();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === "Escape") navigate({ to: "/dashboard" });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [next, prev, navigate]);
+
+  async function shareCard(useShareSheet: boolean) {
+    if (!shareRef.current || !data) return;
+    try {
+      const canvas = await html2canvas(shareRef.current, { backgroundColor: null, scale: 2 });
+      const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/png"));
+      if (!blob) throw new Error("Could not render image");
+      const file = new File([blob], "klausum-wrapped.png", { type: "image/png" });
+      if (useShareSheet && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "My Klausum Wrapped" });
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "klausum-wrapped.png";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Wrapped image saved");
+    } catch (e: any) {
+      if (e?.name !== "AbortError") toast.error(e?.message ?? "Could not share");
+    }
+  }
+
+  if (!data) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0f1f] text-white">
-        <Sparkles className="h-12 w-12 animate-pulse text-primary" />
-        <p className="mt-4 font-display text-2xl">Wrapping your year…</p>
-        <p className="mt-1 text-sm text-white/60">Counting every card, every minute, every spark.</p>
+      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: THEMES[0].bg }}>
+        <motion.div
+          animate={{ scale: [1, 1.12, 1] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+          className="font-display text-2xl font-extrabold text-white"
+        >
+          Rolling up your semester…
+        </motion.div>
       </div>
     );
   }
 
-  const slides = buildSlides(data);
-  const total = slides.length;
-  const next = () => { setShowSwipeHint(false); setIdx((i) => Math.min(total - 1, i + 1)); };
-  const prev = () => { setShowSwipeHint(false); setIdx((i) => Math.max(0, i - 1)); };
+  const story = stories[idx];
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-hidden bg-[#0a0f1f] text-white">
-      {/* Progress bars */}
-      <div className="absolute left-3 right-3 top-3 z-20 flex gap-1">
-        {slides.map((_, i) => (
-          <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
-            <div
-              className="h-full transition-all duration-300"
-              style={{
-                width: i <= idx ? "100%" : "0%",
-                background: i < idx ? "rgba(255,255,255,0.9)" : i === idx ? "#ffffff" : "transparent",
-              }}
-            />
+    <div
+      className="fixed inset-0 z-50 select-none overflow-hidden"
+      style={{ background: story.theme.bg }}
+      onPointerDown={() => setPaused(true)}
+      onPointerUp={(e) => {
+        setPaused(false);
+        const x = (e as React.PointerEvent).clientX;
+        if (x < window.innerWidth / 3) prev();
+        else next();
+      }}
+    >
+      <Shapes accent={story.theme.accent} />
+
+      {/* Segmented story progress */}
+      <div className="absolute left-0 right-0 top-0 z-10 flex gap-1.5 p-3">
+        {stories.map((st, i) => (
+          <div key={st.key} className="h-1 flex-1 overflow-hidden rounded-full bg-white/25">
+            {i < idx && <div className="h-full w-full bg-white" />}
+            {i === idx && (
+              <motion.div
+                key={`${idx}-${paused}`}
+                className="h-full bg-white"
+                initial={{ width: "0%" }}
+                animate={{ width: paused || idx === stories.length - 1 ? "0%" : "100%" }}
+                transition={{ duration: STORY_MS / 1000, ease: "linear" }}
+              />
+            )}
           </div>
         ))}
       </div>
 
-      {/* Close */}
       <button
-        onClick={() => navigate({ to: "/dashboard" })}
-        className="absolute right-3 top-7 z-20 rounded-full bg-white/10 p-2 backdrop-blur hover:bg-white/20"
-        aria-label="Close"
+        onClick={(e) => { e.stopPropagation(); navigate({ to: "/dashboard" }); }}
+        onPointerUp={(e) => e.stopPropagation()}
+        className="absolute right-3 top-6 z-20 rounded-full bg-black/25 p-2 text-white hover:bg-black/40"
+        aria-label="Close Wrapped"
       >
         <X className="h-5 w-5" />
       </button>
 
-      {/* Tap zones */}
-      <button className="absolute inset-y-0 left-0 z-10 w-1/3" onClick={prev} aria-label="Previous" />
-      <button className="absolute inset-y-0 right-0 z-10 w-1/3" onClick={next} aria-label="Next" />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={story.key}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="relative z-[5] flex h-full flex-col items-center justify-center px-8 text-center"
+        >
+          {story.setup && (
+            <motion.p
+              initial={{ y: -14, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.45 }}
+              className="mb-6 font-display text-lg font-extrabold uppercase tracking-widest text-white/80"
+            >
+              {story.setup}
+            </motion.p>
+          )}
+          <StoryBody story={story} accent={story.theme.accent} />
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Nav arrows */}
-      <button onClick={prev} className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur hover:bg-black/50"><ChevronLeft className="h-5 w-5" /></button>
-      <button onClick={next} className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur hover:bg-black/50"><ChevronRight className="h-5 w-5" /></button>
-
-      <motion.div
-        className="absolute inset-0 z-[5]"
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.18}
-        onDragEnd={(_, info) => {
-          if (info.offset.x < -60) next();
-          else if (info.offset.x > 60) prev();
-        }}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 flex items-center justify-center p-2 sm:p-6"
-          >
-            {slides[idx]}
-          </motion.div>
-        </AnimatePresence>
-      </motion.div>
-
-      {showSwipeHint && idx === 0 && (
-        <div className="pointer-events-none absolute bottom-8 left-1/2 z-20 -translate-x-1/2 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-[11px] text-white/80 backdrop-blur animate-pulse">
-          <span>←</span><span>Swipe or tap to continue</span><span>→</span>
+      {/* Hidden share card rendered off-screen */}
+      <div className="pointer-events-none fixed -left-[9999px] top-0">
+        <div ref={shareRef} className="flex h-[640px] w-[512px] flex-col justify-between p-10"
+          style={{ background: THEMES[0].bg }}>
+          <div className="font-display text-sm font-extrabold uppercase tracking-[0.3em]" style={{ color: THEMES[0].accent }}>
+            Klausum Wrapped
+          </div>
+          <div>
+            <div className="font-display text-4xl font-extrabold text-white">{data.fullName.split(/[@\s]/)[0]}'s semester</div>
+            <div className="mt-6 space-y-3">
+              {[
+                [`${data.totals.studyHours > 0 ? `${data.totals.studyHours} hours` : `${data.totals.studyMinutes} minutes`}`, "of focused study"],
+                [`${data.totals.cardsReviewed}`, "flashcards reviewed"],
+                [`${Math.round(data.totals.quizAccuracy * 100)}%`, "quiz accuracy"],
+                [`${data.totals.xpEarned.toLocaleString()} XP`, "earned"],
+                ...(data.rank ? [[`Top ${data.rank.percentile}%`, "of all students"]] : []),
+              ].map(([big, small]) => (
+                <div key={small as string} className="flex items-baseline gap-3">
+                  <span className="font-display text-3xl font-extrabold" style={{ color: THEMES[0].accent }}>{big}</span>
+                  <span className="text-lg font-bold text-white/80">{small}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="text-sm font-extrabold uppercase tracking-widest text-white/60">klausum · study smarter</div>
         </div>
-      )}
-    </div>
-  );
-}
-
-
-function SlideShell({ bg, children, shareable, label }: { bg: string; children: React.ReactNode; shareable?: boolean; label?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  async function share() {
-    if (!ref.current) return;
-    try {
-      const canvas = await html2canvas(ref.current, { backgroundColor: null, scale: 2 });
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const file = new File([blob], "klausum-wrapped.png", { type: "image/png" });
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: "My Klausum Wrapped" });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url; a.download = "klausum-wrapped.png"; a.click();
-          URL.revokeObjectURL(url);
-          toast.success("Saved to downloads");
-        }
-      });
-    } catch { toast.error("Couldn't capture slide"); }
-  }
-  return (
-    <div
-      ref={ref}
-      className={`relative flex h-full w-full max-w-md flex-col items-center justify-center overflow-hidden rounded-3xl px-6 py-16 text-center sm:px-8 ${bg}`}
-      style={{ minHeight: "min(844px, calc(100vh - 24px))" }}
-    >
-      <div className="absolute left-6 top-6 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] opacity-70">
-        <Sparkles className="h-3 w-3" /> Klausum Wrapped
       </div>
-      {label && (
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">{label}</p>
-      )}
-      <div className="flex flex-col items-center justify-center gap-2">{children}</div>
-      {shareable && (
-        <button onClick={share} className="absolute bottom-6 right-6 flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium backdrop-blur hover:bg-white/25">
-          <Share2 className="h-3.5 w-3.5" /> Share
-        </button>
-      )}
     </div>
   );
 }
 
-function StatNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
-  const v = useCountUp(value);
-  return <span>{v.toLocaleString()}{suffix}</span>;
+/** Rendered as a child component so hooks inside `render` (count-ups) get a
+ *  fresh mount per story — the AnimatePresence key guarantees it. */
+function StoryBody({ story, accent }: { story: Story; accent: string }) {
+  return <>{story.render(true, accent)}</>;
 }
-
-function PilotOrb({ emoji, big = false }: { emoji: string; big?: boolean }) {
-  const size = big ? "h-24 w-24 text-5xl" : "h-20 w-20 text-4xl";
-  return (
-    <div
-      className={`flex ${size} items-center justify-center rounded-full border-2 border-white/30 bg-white/20 backdrop-blur-sm`}
-      style={{ boxShadow: "0 0 40px rgba(255,255,255,0.2)", animation: "klausumPilotFloat 3s ease-in-out infinite" }}
-    >
-      {emoji}
-    </div>
-  );
-}
-
-function buildSlides(d: WrappedData) {
-  const s: React.ReactNode[] = [];
-  const pilotEmoji = "🦅";
-  const period: "weekly" | "monthly" | "semester" | "yearly" = "semester";
-  const closingLine = { weekly: "See you next Sunday.", monthly: "See you next month.", semester: "See you at the end of semester.", yearly: "See you next year." }[period];
-  const pilotQuote = { weekly: "Another week in the books. Keep the momentum.", monthly: "A whole month of learning. Look at what you built.", semester: "You showed up. You did the work. You got smarter.", yearly: "One full year of learning. You are not the same person you were." }[period];
-  const slideTitleEra = { weekly: "YOUR WEEK", monthly: "YOUR MONTH", semester: "YOUR SEMESTER", yearly: "YOUR YEAR" }[period];
-
-  // 1 — Cover
-  s.push(
-    <SlideShell key="cover" bg="bg-gradient-to-br from-primary via-orange-500 to-fuchsia-600">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">Welcome back, {d.fullName.split(" ")[0] || "Pilot"}</p>
-      <h1 className="mt-3 font-display text-6xl font-black leading-none">Your<br/>{slideTitleEra.split(" ")[1]}<br/>in Learning.</h1>
-      <div className="mt-8"><PilotOrb emoji={pilotEmoji} /></div>
-      <p className="mt-3 text-sm text-white/70">{d.companionName} has your story ready</p>
-      <p className="mt-6 text-xs text-white/60">Tap to begin →</p>
-    </SlideShell>
-  );
-
-  // 2 — Minutes (zero-state aware)
-  if (d.totals.studyMinutes === 0) {
-    s.push(
-      <SlideShell key="minutes" bg="bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-600" shareable label="YOUR JOURNEY BEGINS">
-        <p className="font-display text-4xl font-black leading-tight">Your story<br/>starts now.</p>
-        <p className="mt-5 max-w-xs text-sm text-white/80">Every Klausum journey begins with a single session. This is your first chapter.</p>
-      </SlideShell>
-    );
-  } else {
-    s.push(
-      <SlideShell key="minutes" bg="bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-600" shareable label="YOU STUDIED FOR">
-        <p className="font-display text-7xl font-black leading-none"><StatNumber value={d.totals.studyMinutes} /></p>
-        <p className="mt-2 text-xl font-semibold text-white/90">minutes</p>
-        <p className="mt-5 max-w-xs text-sm text-white/70">
-          That's {d.totals.studyHours} hours of pure focus across {d.totals.sessions} sessions.
-        </p>
-      </SlideShell>
-    );
-  }
-
-  // 3 — Cards reviewed
-  if (d.totals.cardsReviewed === 0) {
-    s.push(
-      <SlideShell key="cards" bg="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700" shareable label="YOUR DECK AWAITS">
-        <p className="font-display text-4xl font-black leading-tight">Ready to remember<br/>everything.</p>
-        <p className="mt-5 max-w-xs text-sm text-white/80">Upload a note, generate cards, and watch your memory get a superpower.</p>
-      </SlideShell>
-    );
-  } else {
-    s.push(
-      <SlideShell key="cards" bg="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700" shareable label="YOU REVIEWED">
-        <p className="font-display text-7xl font-black leading-none"><StatNumber value={d.totals.cardsReviewed} /></p>
-        <p className="mt-2 text-xl font-semibold text-white/90">flashcards</p>
-        <p className="mt-5 max-w-xs text-sm text-white/80">
-          And nailed <span className="font-bold text-white">{d.totals.cardsAcedFirstTry}</span> of them with a confident response.
-        </p>
-      </SlideShell>
-    );
-  }
-
-  // 4 — XP earned
-  if (d.totals.xpEarned === 0) {
-    s.push(
-      <SlideShell key="xp" bg="bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600" shareable label="YOUR XP STORY">
-        <p className="font-display text-5xl font-black">Ready to earn.</p>
-        <p className="mt-5 max-w-xs text-sm text-white/85">Every quest completed, every card reviewed, every gap closed — all earn XP. Start today.</p>
-      </SlideShell>
-    );
-  } else {
-    s.push(
-      <SlideShell key="xp" bg="bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600" shareable label="TOTAL XP EARNED">
-        <p className="font-display text-7xl font-black leading-none"><StatNumber value={d.totals.xpEarned} /></p>
-        <p className="mt-2 text-xl font-semibold text-white/90">XP</p>
-        <p className="mt-5 max-w-xs text-sm text-white/85">Every correct answer, every quest claimed, every flame kept alive.</p>
-      </SlideShell>
-    );
-  }
-
-  // 5 — Top subject
-  if (d.topSubject) {
-    s.push(
-      <SlideShell key="subject" bg="bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-700" shareable label="YOU SPENT THE MOST TIME ON">
-        <p className="font-display text-5xl font-black">{d.topSubject.name}</p>
-        <p className="mt-3 text-xl text-white/90">{d.topSubject.minutes} minutes deep</p>
-        <p className="mt-5 max-w-xs text-sm text-white/80">More than any other topic. You're becoming dangerous in this subject.</p>
-      </SlideShell>
-    );
-  }
-
-  // 6 — Peak hour
-  if (d.peakHour) {
-    s.push(
-      <SlideShell key="hour" bg="bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900" shareable label="YOUR PRIME TIME">
-        <p className="font-display text-5xl font-black">{d.peakHour.hourLabel}</p>
-        <p className="mt-5 max-w-xs text-sm text-white/80">
-          You studied here more than any other time of day. Your brain knows when it's ready.
-        </p>
-      </SlideShell>
-    );
-  }
-
-  // 7 — Toughest card
-  if (d.toughestCard) {
-    s.push(
-      <SlideShell key="tough" bg="bg-gradient-to-br from-red-700 via-rose-700 to-orange-700" shareable label="YOUR NEMESIS CARD">
-        <p className="line-clamp-4 max-w-xs font-display text-2xl font-bold italic">"{d.toughestCard.front}"</p>
-        <p className="mt-4 text-lg">You wrestled with it <span className="font-black">{d.toughestCard.lapses}</span> times.</p>
-        <p className="mt-3 max-w-xs text-sm text-white/80">But you kept showing up. That's how mastery is built.</p>
-      </SlideShell>
-    );
-  }
-
-  // 8 — Fastest quiz
-  if (d.fastestQuiz) {
-    s.push(
-      <SlideShell key="speed" bg="bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800" shareable label="YOUR FASTEST QUIZ">
-        <p className="font-display text-xl font-bold">{d.fastestQuiz.title}</p>
-        <p className="mt-3 font-display text-6xl font-black"><StatNumber value={d.fastestQuiz.secondsPerQuestion} />s</p>
-        <p className="mt-2 text-sm text-white/80">per question</p>
-      </SlideShell>
-    );
-  }
-
-  // 9 — Streak (zero-state aware)
-  if (d.totals.longestStreak === 0) {
-    s.push(
-      <SlideShell key="streak" bg="bg-gradient-to-br from-orange-600 via-red-600 to-rose-700" shareable label="YOUR STREAK STORY">
-        <p className="font-display text-6xl font-black">Day 1</p>
-        <p className="mt-2 text-xl font-semibold text-white/90">starts now</p>
-        <p className="mt-5 max-w-xs text-sm text-white/80">The best streaks begin with a single decision. Make it today.</p>
-      </SlideShell>
-    );
-  } else {
-    s.push(
-      <SlideShell key="streak" bg="bg-gradient-to-br from-orange-600 via-red-600 to-rose-700" shareable label="LONGEST STREAK">
-        <p className="font-display text-7xl font-black leading-none">🔥<StatNumber value={d.totals.longestStreak} /></p>
-        <p className="mt-2 text-xl font-semibold text-white/90">{d.totals.longestStreak === 1 ? "day strong" : "days in a row"}</p>
-        <p className="mt-5 max-w-xs text-sm text-white/80">
-          {d.totals.longestStreak >= 7 ? "Discipline > motivation. You proved it." : "Every single one of those days, you chose to show up."}
-        </p>
-      </SlideShell>
-    );
-  }
-
-  // 10 — VARK radar
-  {
-    const dominant = [...d.varkRadar].sort((a, b) => b.A - a.A)[0]?.subject ?? "Balanced";
-    s.push(
-      <SlideShell key="vark" bg="bg-gradient-to-br from-purple-800 via-violet-800 to-indigo-900" shareable label="HOW YOUR MIND LEARNS">
-        <p className="font-display text-2xl font-bold">Your VARK signature</p>
-        <div className="mt-3 h-[300px] w-[300px] overflow-visible">
-          <VarkRadar data={d.varkRadar} size={300} />
-        </div>
-        <p className="mt-2 text-base font-medium text-white">Your dominant style: {dominant}</p>
-      </SlideShell>
-    );
-  }
-
-  // 11 — Rank
-  if (d.rank) {
-    s.push(
-      <SlideShell key="rank" bg="bg-gradient-to-br from-emerald-700 via-green-700 to-teal-800" shareable label="YOU'RE IN THE TOP">
-        <p className="font-display text-8xl font-black"><StatNumber value={d.rank.percentile} />%</p>
-        <p className="mt-3 text-base text-white/85">of {d.rank.total.toLocaleString()} Klausum learners this week</p>
-      </SlideShell>
-    );
-  }
-
-  // 12 — Outro
-  s.push(
-    <SlideShell key="outro" bg="bg-gradient-to-br from-primary via-amber-500 to-rose-600" shareable>
-      <PilotOrb emoji={pilotEmoji} big />
-      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">{d.companionName} says</p>
-      <h2 className="mt-3 font-display text-3xl font-black leading-tight">{pilotQuote}</h2>
-      <p className="mt-5 text-base font-semibold text-white/90">{closingLine}</p>
-      <button
-        onClick={() => { window.location.href = "/dashboard"; }}
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black hover:bg-white/90"
-      >
-        <Download className="h-4 w-4" /> Back to dashboard
-      </button>
-    </SlideShell>
-  );
-
-  return s;
-}
-

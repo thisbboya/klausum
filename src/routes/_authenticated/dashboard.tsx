@@ -190,25 +190,6 @@ function Dashboard() {
         <ChestCard userId={user?.id} tier="bronze" unlocked={!!data?.chestUnlocked} />
       </div>
 
-      <Link
-        to="/wrapped"
-        className="card-chunky card-chunky-hover group block border-grape/40 bg-grape/8 p-6"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-widest text-grape">
-              <Sparkles className="h-3.5 w-3.5" /> New
-            </p>
-            <h3 className="mt-1 font-display text-2xl font-extrabold">Your Klausum Wrapped is ready</h3>
-            <p className="mt-1 text-sm font-semibold text-muted-foreground">
-              12 cinematic slides of your learning year — share them, save them, own them.
-            </p>
-          </div>
-          <span className="btn-3d shrink-0 rounded-2xl bg-grape px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-grape-foreground [--edge:oklch(0.55_0.17_300)]">
-            Open
-          </span>
-        </div>
-      </Link>
 
 
 

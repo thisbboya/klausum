@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -185,9 +185,17 @@ function ProgressPage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="font-display text-3xl font-bold">Progress</h1>
-        <p className="text-sm text-muted-foreground">Last 90 days of learning activity.</p>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-bold">Progress</h1>
+          <p className="text-sm text-muted-foreground">Last 90 days of learning activity.</p>
+        </div>
+        <Link
+          to="/wrapped"
+          className="btn-3d rounded-2xl bg-grape px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-grape-foreground"
+        >
+          ✨ Your Wrapped
+        </Link>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
