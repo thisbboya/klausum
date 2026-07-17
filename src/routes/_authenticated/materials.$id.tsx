@@ -54,12 +54,13 @@ function MaterialDetail() {
   });
 
   const hasPdf = !!(material as any)?.pdf_storage_path;
+  const hasStoredFile = !!(material as any)?.file_storage_path;
   const hasReadableText = !!((material as any)?.original_content || (material as any)?.ai_summary || (material as any)?.adapted_reading);
 
-  // Default to "read" whenever we can show a reader: PDF first, extracted text fallback otherwise.
+  // Default to "read" whenever we can show a reader: original file first, extracted text otherwise.
   useEffect(() => {
-    if (hasPdf || hasReadableText) setTab("read");
-  }, [hasPdf, hasReadableText]);
+    if (hasPdf || hasStoredFile || hasReadableText) setTab("read");
+  }, [hasPdf, hasStoredFile, hasReadableText]);
 
   const { data: deck } = useQuery({
     queryKey: ["deck-for-material", id],
@@ -73,12 +74,12 @@ function MaterialDetail() {
   const visibleTabs = useMemo(() => {
     if (!material) return TABS;
     return TABS.filter((t) => {
-      if (t.key === "read") return hasPdf || hasReadableText;
+      if (t.key === "read") return hasPdf || hasStoredFile || hasReadableText;
       if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0 || !!material.is_stem;
       if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
       return true;
     });
-  }, [material, hasPdf, hasReadableText]);
+  }, [material, hasPdf, hasStoredFile, hasReadableText]);
 
   async function handleDelete() {
     if (!material) return;
@@ -202,7 +203,9 @@ function MaterialDetail() {
           </div>
 
           {tab === "read" && user && (
-            hasPdf ? <ReadPdfTab material={material} userId={user.id} /> : <TextReaderTab material={material} userId={user.id} />
+            hasPdf ? <ReadPdfTab material={material} userId={user.id} />
+            : isImageFile(material) || isOfficeFile(material) ? <FileReaderTab material={material} userId={user.id} />
+            : <TextReaderTab material={material} userId={user.id} />
           )}
           {tab === "summary" && <SummaryTab material={material} />}
           {tab === "original" && <OriginalTab material={material} />}
@@ -669,6 +672,105 @@ function chunkTextPages(text: string): string[] {
   }
   if (current.trim()) pages.push(current.trim());
   return pages.length ? pages : [clean];
+}
+
+function isImageFile(material: any) {
+  const t = material?.file_type ?? "";
+  const p = material?.file_storage_path ?? "";
+  return t.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(p);
+}
+
+function isOfficeFile(material: any) {
+  if (!material?.file_storage_path) return false;
+  return /\.(docx?|pptx?|xlsx?)$/i.test(material.file_storage_path);
+}
+
+/**
+ * Viewer for images and office documents (Word / PowerPoint / Excel).
+ * Images render natively; office files render through Microsoft's embedded
+ * Office viewer pointed at a signed URL — real slides and pages, like CourieX,
+ * with the AI chat alongside.
+ */
+function FileReaderTab({ material, userId }: { material: any; userId: string }) {
+  const isMobile = useIsMobile();
+  const [signedUrl, setSignedUrl] = useState("");
+  const [signError, setSignError] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"read" | "chat">("read");
+  const image = isImageFile(material);
+
+  useEffect(() => {
+    if (!material.file_storage_path) { setSignError(true); return; }
+    let mounted = true;
+    async function load() {
+      const { data, error } = await supabase.storage
+        .from("materials")
+        .createSignedUrl(material.file_storage_path, 7200);
+      if (!mounted) return;
+      if (error || !data?.signedUrl) setSignError(true);
+      else setSignedUrl(data.signedUrl);
+    }
+    load();
+    const t = setInterval(load, 90 * 60 * 1000);
+    return () => { mounted = false; clearInterval(t); };
+  }, [material.file_storage_path]);
+
+  if (signError) return <TextReaderTab material={material} userId={userId} />;
+  if (!signedUrl) {
+    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-muted-foreground" /></div>;
+  }
+
+  const doc = image ? (
+    <div className="flex h-full items-start justify-center overflow-auto bg-surface-2/60 p-4">
+      <img src={signedUrl} alt={material.title} className="max-w-full rounded-xl border border-border bg-card shadow-sm" />
+    </div>
+  ) : (
+    <iframe
+      title={material.title}
+      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(signedUrl)}`}
+      className="h-full w-full border-0 bg-white"
+    />
+  );
+
+  const chat = (
+    <MaterialAIChat
+      materialId={material.id}
+      materialTitle={material.title}
+      subject={material.subject ?? "General"}
+      level={material.level ?? undefined}
+      currentPage={1}
+      totalPages={1}
+      currentPageText={(material.original_content ?? "").slice(0, 4000)}
+      fullDocumentText={material.original_content ?? ""}
+      pageIndex={{}}
+      selection={null}
+      onClearSelection={() => {}}
+      onJumpToPage={() => {}}
+      userId={userId}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <div className="flex h-[calc(100dvh-5rem)] min-h-[560px] flex-col overflow-hidden card-chunky">
+        <div className="flex shrink-0 border-b border-border bg-card">
+          {(["read", "chat"] as const).map((t) => (
+            <button key={t} onClick={() => setMobileTab(t)}
+              className={`flex-1 py-2.5 text-xs font-semibold ${mobileTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}>
+              {t === "read" ? "View" : "AI Chat"}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 overflow-hidden">{mobileTab === "read" ? doc : chat}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-[calc(100dvh-6rem)] min-h-[640px] overflow-hidden card-chunky">
+      <div className="w-[62%] border-r border-border">{doc}</div>
+      <div className="w-[38%]">{chat}</div>
+    </div>
+  );
 }
 
 function TextReaderTab({ material, userId }: { material: any; userId: string }) {

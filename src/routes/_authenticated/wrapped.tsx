@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { generateWrapped, saveWrappedSnapshot, type WrappedData } from "@/lib/wrapped";
 import { X, Download, Share2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { CompanionSVG, getCompanion } from "@/components/companion-svg";
+import { VarkRadar } from "@/components/wrapped/VarkRadar";
 
 export const Route = createFileRoute("/_authenticated/wrapped")({ component: WrappedPage });
 
@@ -127,11 +129,19 @@ function WrappedPage() {
     const s: Story[] = [];
     const firstName = data.fullName.split(/[@\s]/)[0];
 
+    const pilot = data.companionId ? getCompanion(data.companionId) : null;
+
     s.push({
       key: "intro", theme: THEMES[0],
       setup: "",
       render: (active, accent) => (
         <>
+          {pilot && (
+            <motion.div initial={{ scale: 0, rotate: -15 }} animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 220, damping: 14, delay: 0.5 }} className="mb-4">
+              <CompanionSVG id={pilot.id} size={110} />
+            </motion.div>
+          )}
           <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
             className="font-display text-xl font-extrabold uppercase tracking-[0.3em]" style={{ color: accent }}>
             Klausum Wrapped
@@ -225,11 +235,37 @@ function WrappedPage() {
       ),
     });
 
+    // Learning personality — the VARK radar as a visual slide
+    if (data.varkRadar.some((v) => v.A > 0)) {
+      s.push({
+        key: "vark", theme: THEMES[0],
+        setup: "Your learning personality…",
+        render: (_a, accent) => (
+          <>
+            <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 180, damping: 16, delay: 0.6 }}
+              className="h-64 w-full max-w-sm">
+              <VarkRadar data={data.varkRadar} />
+            </motion.div>
+            <Caption delay={1.2}>
+              Strongest: {[...data.varkRadar].sort((a, b) => b.A - a.A)[0].subject}. Klausum rewrites every material to match.
+            </Caption>
+          </>
+        ),
+      });
+    }
+
     s.push({
       key: "finale", theme: THEMES[7],
       setup: "",
       render: (_a, accent) => (
         <>
+          {pilot && (
+            <motion.div initial={{ y: -20, scale: 0 }} animate={{ y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 13, delay: 0.15 }} className="mb-3">
+              <CompanionSVG id={pilot.id} size={96} />
+            </motion.div>
+          )}
           <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
             className="font-display text-4xl font-extrabold text-white md:text-5xl">
             That's your semester, {firstName}.
@@ -361,13 +397,9 @@ function WrappedPage() {
         <X className="h-5 w-5" />
       </button>
 
-      <AnimatePresence mode="wait">
-        <motion.div
+      {/* Hard cut between stories (like Spotify); each element animates itself in */}
+        <div
           key={story.key}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
           className="relative z-[5] flex h-full flex-col items-center justify-center px-8 text-center"
         >
           {story.setup && (
@@ -381,15 +413,17 @@ function WrappedPage() {
             </motion.p>
           )}
           <StoryBody story={story} accent={story.theme.accent} />
-        </motion.div>
-      </AnimatePresence>
+        </div>
 
       {/* Hidden share card rendered off-screen */}
       <div className="pointer-events-none fixed -left-[9999px] top-0">
         <div ref={shareRef} className="flex h-[640px] w-[512px] flex-col justify-between p-10"
           style={{ background: THEMES[0].bg }}>
-          <div className="font-display text-sm font-extrabold uppercase tracking-[0.3em]" style={{ color: THEMES[0].accent }}>
-            Klausum Wrapped
+          <div className="flex items-center justify-between">
+            <div className="font-display text-sm font-extrabold uppercase tracking-[0.3em]" style={{ color: THEMES[0].accent }}>
+              Klausum Wrapped
+            </div>
+            {data.companionId && <CompanionSVG id={data.companionId} size={72} animate={false} />}
           </div>
           <div>
             <div className="font-display text-4xl font-extrabold text-white">{data.fullName.split(/[@\s]/)[0]}'s semester</div>

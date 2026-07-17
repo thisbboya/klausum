@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type WrappedData = {
   fullName: string;
   companionName: string;
+  companionId: number | null;
   semesterStart: string | null;
   generatedAt: string;
   totals: {
@@ -130,6 +131,7 @@ export async function generateWrapped(userId: string): Promise<WrappedData> {
   return {
     fullName: profile?.full_name ?? "Student",
     companionName: profile?.companion_name ?? "KOJO",
+    companionId: profile?.companion_id ?? null,
     semesterStart: profile?.semester_start_date ?? null,
     generatedAt: new Date().toISOString(),
     totals: {

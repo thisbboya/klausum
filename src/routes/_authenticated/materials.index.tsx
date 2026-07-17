@@ -11,6 +11,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";
 import { createNewCard } from "@/lib/fsrs";
 import { CompanionSVG, getCompanion } from "@/components/companion-svg";
+import { AiProgress } from "@/components/ai-progress";
 
 export const Route = createFileRoute("/_authenticated/materials/")({
   component: MaterialsPage,
@@ -56,6 +57,7 @@ export function MaterialsPage() {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState<string | null>(null);
 
   // Custom courses (folders with icon + color); tolerate a missing table
   const { data: courses = [] } = useQuery({
@@ -104,6 +106,7 @@ export function MaterialsPage() {
     fileName?: string;
     fileType?: string;
     pdfStoragePath?: string;
+    fileStoragePath?: string;
   }) {
     if (!user) return;
     setUploading(true);
@@ -127,8 +130,9 @@ export function MaterialsPage() {
           file_name: opts.fileName,
           file_type: opts.fileType,
           pdf_storage_path: opts.pdfStoragePath ?? null,
+          file_storage_path: opts.fileStoragePath ?? null,
           processing_status: "processing",
-        })
+        } as any)
         .select()
         .single();
       if (insertErr) throw insertErr;
@@ -258,22 +262,26 @@ export function MaterialsPage() {
     } else {
       const fileBase64 = await fileToBase64(file);
       const resolvedMime = file.type || officeMime[ext] || "application/octet-stream";
-      // For PDFs, stash the raw file in storage so the in-app reader can render it.
-      let pdfStoragePath: string | undefined;
-      if (isPdf && user) {
-        const path = `${user.id}/${crypto.randomUUID()}.pdf`;
+      // Stash EVERY original in storage so the viewer can render it
+      // (PDF natively, images inline, office docs via embedded viewer).
+      setUploadingFile(file.name);
+      let fileStoragePath: string | undefined;
+      if (user) {
+        const path = `${user.id}/${crypto.randomUUID()}${ext}`;
         const { error: upErr } = await supabase.storage
           .from("materials")
-          .upload(path, file, { contentType: "application/pdf", upsert: false, cacheControl: "3600" });
-        if (upErr) console.warn("Raw PDF upload failed (non-fatal):", upErr.message);
-        else pdfStoragePath = path;
+          .upload(path, file, { contentType: resolvedMime, upsert: false, cacheControl: "3600" });
+        if (upErr) console.warn("Raw file upload failed (non-fatal):", upErr.message);
+        else fileStoragePath = path;
       }
+      setUploadingFile(null);
       await runProcess({
         title: t, subject, fieldCategory: field, isStem: STEM_FIELDS.has(field),
         fileBase64, mimeType: resolvedMime,
         rawContent: `[binary file: ${file.name}]`,
         fileName: file.name, fileType: isPdf ? "pdf" : (officeMime[ext] ? ext.slice(1) : file.type),
-        pdfStoragePath,
+        pdfStoragePath: isPdf ? fileStoragePath : undefined,
+        fileStoragePath,
       });
     }
   }
@@ -355,9 +363,33 @@ export function MaterialsPage() {
         />
       )}
 
-      {showUploadForm && !activeSubject && (
-        <div className="card-chunky bg-card p-5 space-y-4">
-          <h2 className="font-display text-lg font-extrabold">Upload material</h2>
+      {showUploadForm && !activeSubject && !uploading && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowUploadForm(false)}
+        >
+        <div
+          className="card-chunky max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto bg-card p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl font-extrabold">Upload material</h2>
+            <button
+              onClick={() => setShowUploadForm(false)}
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          {uploadingFile && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm font-extrabold">
+                <span>Uploading {uploadingFile}…</span>
+              </div>
+              <AiProgress messages={[`Sending ${uploadingFile} to your vault…`, "Keeping the original safe for the viewer…"]} />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <input
@@ -443,6 +475,7 @@ export function MaterialsPage() {
                 </div>
               )}
             </>
+        </div>
         </div>
       )}
 
