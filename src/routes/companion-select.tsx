@@ -64,7 +64,10 @@ function CompanionSelect() {
                 )}
                 <CompanionSVG id={c.id} size={70} />
                 <div className="font-display font-bold text-sm tracking-wide">{c.name}</div>
-                <span className="text-[10px] font-semibold uppercase rounded-full bg-primary/15 text-primary px-2 py-0.5">
+                <span
+                  className="text-[10px] font-extrabold uppercase rounded-full px-2 py-0.5"
+                  style={{ color: c.color, backgroundColor: `color-mix(in srgb, ${c.color} 16%, transparent)` }}
+                >
                   {c.trait}
                 </span>
               </button>

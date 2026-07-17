@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List } from "lucide-react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List, ListChecks, Layers, MessagesSquare } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -128,16 +128,6 @@ function MaterialDetail() {
         </div>
         <div className="flex flex-wrap gap-2 items-center">
           <FocusTimer materialId={material.id} />
-          <Link to="/tutor" className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:bg-accent/10">Tutor</Link>
-          <Link
-            to="/quizzes"
-            search={{ from: material.id } as any}
-            className="rounded-lg bg-success/15 text-success border border-success/30 px-3 py-2 text-xs font-semibold hover:bg-success/25 active:scale-95 transition"
-            title="Generate a quiz from this material"
-          >
-            Quiz this
-          </Link>
-          {deck && <Link to="/review" className="btn-3d rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Review {deck.total_cards}</Link>}
           <button onClick={handleDownload} className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:bg-accent/10 inline-flex items-center gap-1.5" title="Download original">
             <Download className="h-3.5 w-3.5" /> Download
           </button>
@@ -146,6 +136,50 @@ function MaterialDetail() {
           </button>
         </div>
       </header>
+
+      {/* Material Studio — CourieX-style "choose what to create" hub */}
+      <section>
+        <div className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-success">Studio</div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Link
+            to="/quizzes"
+            search={{ from: material.id } as any}
+            className="card-chunky card-chunky-hover bg-card p-4"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15">
+              <ListChecks className="h-5 w-5 text-success" />
+            </span>
+            <div className="mt-2.5 font-display text-sm font-extrabold">Quiz</div>
+            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">Exam-style questions from this material.</div>
+          </Link>
+          <Link
+            to="/review"
+            className="card-chunky card-chunky-hover bg-card p-4"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/15">
+              <Layers className="h-5 w-5 text-warning" />
+            </span>
+            <div className="mt-2.5 font-display text-sm font-extrabold">Flashcards</div>
+            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+              {deck ? `${deck.total_cards} cards ready to review.` : "Deck is being prepared."}
+            </div>
+          </Link>
+          <Link to="/tutor" className="card-chunky card-chunky-hover bg-card p-4">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky/15">
+              <MessagesSquare className="h-5 w-5 text-sky" />
+            </span>
+            <div className="mt-2.5 font-display text-sm font-extrabold">Ask AI</div>
+            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">Chat about it — or use the AI Chat tab below.</div>
+          </Link>
+          <Link to="/mindmaps" className="card-chunky card-chunky-hover bg-card p-4">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-grape/15">
+              <Network className="h-5 w-5 text-grape" />
+            </span>
+            <div className="mt-2.5 font-display text-sm font-extrabold">Mind map</div>
+            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">See its concepts as a visual graph.</div>
+          </Link>
+        </div>
+      </section>
 
       <YouTubeLinks text={[material.ai_summary, material.adapted_reading].filter(Boolean).join("\n")} />
 

@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { snapAndSolve, solveFollowup, type SolveResult } from "@/lib/solve.functions";
 import { getAccessToken } from "@/lib/auth-helper";
+import { AiProgress } from "@/components/ai-progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -145,12 +146,13 @@ function SolvePage() {
           </div>
 
           {loading && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 text-center space-y-2">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
-              <div className="text-sm font-semibold text-primary">
-                {loading === "read" ? "Reading your problem…" : "Solving…"}
-              </div>
-            </div>
+            <AiProgress
+              messages={
+                loading === "read"
+                  ? ["Reading your photo…", "Picking out the question…", "Checking symbols and formulas…"]
+                  : ["Working the problem step by step…", "Verifying each step holds up…", "Almost there — writing it out clearly…"]
+              }
+            />
           )}
 
           {result && !loading && (

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { ListChecks, Sparkles, Loader2, Play, RotateCcw } from "lucide-react";
+import { AiProgress } from "@/components/ai-progress";
 import { generateQuiz } from "@/lib/study.functions";
 
 type QuizSearch = { from?: string };
@@ -379,6 +380,18 @@ export function QuizzesPage() {
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {busy ? "Generating…" : "Generate quiz"}
         </button>
+
+        {busy && (
+          <AiProgress
+            messages={[
+              "Reading your topic and pulling key ideas…",
+              "Writing questions across Bloom levels…",
+              "Crafting believable wrong answers…",
+              "Double-checking every correct answer…",
+              "Almost there — shuffling and polishing…",
+            ]}
+          />
+        )}
       </section>
 
       <section>

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen, Brain, MessagesSquare, Plus, CalendarClock,
-  Frown, Meh, Smile, Laugh, Flame, Sparkles, X,
+  Frown, Meh, Smile, Laugh, Flame, Sparkles, X, Play, ChevronRight,
 } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
@@ -249,6 +249,30 @@ function Dashboard() {
         />
         <ExamCountdown exams={data?.exams ?? []} />
       </section>
+
+      {data?.materials && data.materials.length > 0 && (
+        <section>
+          <h2 className="font-display text-lg font-extrabold mb-3">Jump back in</h2>
+          <Link
+            to="/materials/$id"
+            params={{ id: data.materials[0].id }}
+            className="card-chunky card-chunky-hover flex items-center gap-4 bg-card p-4"
+          >
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-success/15">
+              <Play className="h-6 w-6 fill-success text-success" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                Last material
+              </div>
+              <div className="truncate font-display text-base font-extrabold">
+                {data.materials[0].title}
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+          </Link>
+        </section>
+      )}
 
       <section>
         <div className="flex items-center justify-between mb-3">

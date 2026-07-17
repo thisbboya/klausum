@@ -10,6 +10,7 @@ import { processMaterial } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";
 import { createNewCard } from "@/lib/fsrs";
+import { CompanionSVG, getCompanion } from "@/components/companion-svg";
 
 export const Route = createFileRoute("/_authenticated/materials/")({
   component: MaterialsPage,
@@ -54,6 +55,31 @@ export function MaterialsPage() {
   const [field, setField] = useState("Sciences");
   const [pasteText, setPasteText] = useState("");
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [showCourseModal, setShowCourseModal] = useState(false);
+
+  // Custom courses (folders with icon + color); tolerate a missing table
+  const { data: courses = [] } = useQuery({
+    queryKey: ["courses", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("courses").select("*").order("created_at");
+      if (error) return [];
+      return data as { id: string; name: string; description: string | null; icon: string; color: string }[];
+    },
+  });
+  const courseByName = Object.fromEntries(courses.map((c) => [c.name, c]));
+
+  // Same key as the layout's profile query — served from cache, no extra request
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("user_profiles").select("*").eq("id", user!.id).maybeSingle();
+      return data;
+    },
+  });
 
   const { data: materials } = useQuery({
     queryKey: ["materials", user?.id],
@@ -279,14 +305,30 @@ export function MaterialsPage() {
           <p className="text-sm text-muted-foreground mt-1">Upload anything — AI rewrites it for your style.</p>
         </div>
         {!activeSubject && (
-          <button
-            onClick={() => setShowUploadForm(!showUploadForm)}
-            className="btn-3d shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            {showUploadForm ? "Cancel" : "+ Upload Material"}
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => setShowCourseModal(true)}
+              className="rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
+            >
+              + New course
+            </button>
+            <button
+              onClick={() => setShowUploadForm(!showUploadForm)}
+              className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              {showUploadForm ? "Cancel" : "+ Upload Material"}
+            </button>
+          </div>
         )}
       </header>
+
+      {showCourseModal && (
+        <CourseModal
+          userId={user?.id}
+          onClose={() => setShowCourseModal(false)}
+          onCreated={() => { setShowCourseModal(false); qc.invalidateQueries({ queryKey: ["courses"] }); }}
+        />
+      )}
 
       {showUploadForm && !activeSubject && (
         <div className="card-chunky bg-card p-5 space-y-4">
@@ -305,6 +347,11 @@ export function MaterialsPage() {
             )}
             <select value={subject} onChange={(e) => setSubject(e.target.value)}
               className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm">
+              {courses.length > 0 && (
+                <optgroup label="Your courses">
+                  {courses.map((c) => <option key={c.id}>{c.name}</option>)}
+                </optgroup>
+              )}
               {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
             </select>
             <select value={field} onChange={(e) => setField(e.target.value)}
@@ -338,32 +385,97 @@ export function MaterialsPage() {
               </div>
             </>
           ) : (
-            <label className="block rounded-xl border-2 border-dashed border-border p-8 text-center cursor-pointer hover:border-primary/40 hover:bg-accent/5 transition">
-              <input
-                type="file" className="hidden"
-                accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFile(f);
-                  e.target.value = "";
+            <>
+              <label
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) setPendingFile(f);
                 }}
-              />
-              <Upload className="h-7 w-7 mx-auto text-muted-foreground" />
-              <p className="mt-3 text-sm font-medium">Drop or click to upload</p>
-              <p className="text-xs text-muted-foreground">PDF, PowerPoint, Word, Excel, TXT, MD, or images. Max 20MB.</p>
-            </label>
+                className={`block cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition ${
+                  pendingFile
+                    ? "border-success bg-success/8"
+                    : dragOver
+                      ? "border-sky bg-sky/10"
+                      : "border-sky/40 bg-sky/5 hover:border-sky hover:bg-sky/10"
+                }`}
+              >
+                <input
+                  type="file" className="hidden"
+                  accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setPendingFile(f);
+                    e.target.value = "";
+                  }}
+                />
+                {pendingFile ? (
+                  <>
+                    <FileText className="h-8 w-8 mx-auto text-success" />
+                    <p className="mt-3 text-sm font-extrabold">{pendingFile.name}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      {(pendingFile.size / 1024).toFixed(2)} KB — ready to process
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-7 w-7 mx-auto text-sky" />
+                    <p className="mt-3 text-sm font-bold text-sky">Drop your file here or click to browse</p>
+                    <p className="text-xs font-semibold text-muted-foreground">PDF, PowerPoint, Word, Excel, TXT, MD, or images · Max 20MB</p>
+                  </>
+                )}
+              </label>
+              {pendingFile && (
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setPendingFile(null)}
+                    className="rounded-xl border-2 border-border px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { const f = pendingFile; setPendingFile(null); handleFile(f); }}
+                    className="btn-3d rounded-xl bg-primary px-5 py-2 text-sm font-extrabold text-primary-foreground"
+                  >
+                    Upload
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
 
-      {uploading && (
+      {uploading && (() => {
+        const c = getCompanion(profile?.companion_id);
+        const pilotName = profile?.companion_name ?? c.name;
+        // Determinate, never-stalling: each step advances the bar; capped at 94%
+        // so the final jump to done feels like a reward (goal-gradient effect).
+        const pct = Math.min(94, Math.round(((stepIdx + 1) / STEPS.length) * 94));
+        const phase =
+          stepIdx < 3 ? `${pilotName} is reading every word you gave it…`
+          : stepIdx < 7 ? `Rewriting it for the way YOU learn…`
+          : `Almost there — final polish on your flashcards…`;
+        return (
         <div className="rounded-xl border border-primary/40 bg-primary/5 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <div>
-              <div className="font-display font-semibold">Processing with AI…</div>
-              <div className="text-xs text-muted-foreground">Ye di adwuma! Working hard for you. Do not close this page.</div>
+          <div className="flex items-center gap-4 mb-3">
+            <div className="shrink-0">
+              <CompanionSVG id={c.id} size={64} />
             </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-display font-extrabold">{pilotName} is on it</div>
+              <div className="text-xs font-semibold text-muted-foreground">{phase}</div>
+            </div>
+            <div className="font-display text-2xl font-extrabold text-primary tabular-nums">{pct}%</div>
+          </div>
+          <div className="mb-4 h-3 overflow-hidden rounded-full bg-surface-3">
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+              style={{ width: `${pct}%` }}
+            />
           </div>
           <ul className="space-y-1.5 text-sm">
             {STEPS.map((s, i) => (
@@ -380,18 +492,24 @@ export function MaterialsPage() {
             ))}
           </ul>
         </div>
-      )}
+        );
+      })()}
 
       {materials && materials.length > 0 && !activeSubject ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {Object.entries(
-            materials.reduce<Record<string, typeof materials>>((acc, m) => {
-              const key = m.subject || "General";
-              (acc[key] ??= [] as any).push(m);
-              return acc;
-            }, {}),
+            materials.reduce<Record<string, typeof materials>>(
+              (acc, m) => {
+                const key = m.subject || "General";
+                (acc[key] ??= [] as any).push(m);
+                return acc;
+              },
+              // Custom courses show as folders even before their first upload
+              Object.fromEntries(courses.map((c) => [c.name, [] as any])),
+            ),
           ).map(([subjectName, items]) => {
-            const color = COURSE_COLORS[
+            const course = courseByName[subjectName];
+            const color = course?.color ?? COURSE_COLORS[
               subjectName.split("").reduce((a, ch) => a + ch.charCodeAt(0), 0) % COURSE_COLORS.length
             ];
             const ready = items.filter((m) => m.processing_status === "ready").length;
@@ -409,7 +527,11 @@ export function MaterialsPage() {
                     className="flex h-12 w-12 items-center justify-center rounded-2xl"
                     style={{ backgroundColor: `color-mix(in srgb, ${color} 22%, transparent)` }}
                   >
-                    <FileText className="h-6 w-6" style={{ color }} />
+                    {course?.icon ? (
+                      <span className="text-2xl leading-none">{course.icon}</span>
+                    ) : (
+                      <FileText className="h-6 w-6" style={{ color }} />
+                    )}
                   </span>
                 </div>
                 <div className="p-4">
@@ -511,4 +633,90 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+const COURSE_ICONS = ["📚", "🧪", "🧮", "💻", "🌍", "⚡", "🏛️", "🩺", "⚖️", "📈", "🎨", "🔬"];
+const COURSE_SWATCHES = ["#1CB0F6", "#A570FF", "#FFC800", "#FF4B4B", "#58CC02", "#F97316", "#0D9488", "#8B5CF6"];
+
+function CourseModal({ userId, onClose, onCreated }: { userId?: string; onClose: () => void; onCreated: () => void }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [icon, setIcon] = useState(COURSE_ICONS[0]);
+  const [color, setColor] = useState(COURSE_SWATCHES[0]);
+  const [saving, setSaving] = useState(false);
+
+  async function create() {
+    if (!userId || !name.trim()) return;
+    setSaving(true);
+    const { error } = await (supabase as any).from("courses").insert({
+      user_id: userId, name: name.trim(), description: description.trim() || null, icon, color,
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Course "${name.trim()}" created`);
+    onCreated();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="card-chunky w-full max-w-md bg-card p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-display text-xl font-extrabold">Create a course</h2>
+        <div className="mt-4 space-y-3">
+          <div>
+            <label className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Course name</label>
+            <input
+              value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. EE 172 Circuits"
+              className="mt-1 w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Description (optional)</label>
+            <textarea
+              value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What's this course about?" rows={2}
+              className="mt-1 w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Icon</label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {COURSE_ICONS.map((i) => (
+                <button
+                  key={i} onClick={() => setIcon(i)}
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 text-xl transition ${
+                    icon === i ? "border-primary bg-primary/10" : "border-border bg-background hover:border-primary/40"
+                  }`}
+                >
+                  {i}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Pick a color</label>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {COURSE_SWATCHES.map((s) => (
+                <button
+                  key={s} onClick={() => setColor(s)} aria-label={`Color ${s}`}
+                  className={`h-9 w-9 rounded-full transition ${color === s ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""}`}
+                  style={{ backgroundColor: s }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-xl border-2 border-border px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground">
+            Cancel
+          </button>
+          <button
+            onClick={create} disabled={!name.trim() || saving}
+            className="btn-3d rounded-xl px-5 py-2 text-sm font-extrabold text-white disabled:opacity-40"
+            style={{ backgroundColor: color }}
+          >
+            {saving ? "Creating…" : "Create course"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

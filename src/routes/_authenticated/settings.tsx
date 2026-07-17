@@ -213,9 +213,17 @@ function CompanionCard({ profile }: { profile: any }) {
     <div className="card-chunky/60 bg-card/60 p-4 flex items-center gap-4">
       <CompanionSVG id={c.id} size={56} />
       <div className="flex-1 min-w-0">
-        <div className="text-xs uppercase text-muted-foreground">Your companion</div>
-        <div className="font-bold">{profile?.companion_name ?? c.name}</div>
-        <div className="text-xs text-muted-foreground">{c.trait}</div>
+        <div className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">Your pilot</div>
+        <div className="font-display font-extrabold">{profile?.companion_name ?? c.name}</div>
+        <span
+          className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"
+          style={{
+            color: c.color,
+            backgroundColor: `color-mix(in srgb, ${c.color} 16%, transparent)`,
+          }}
+        >
+          {c.trait}
+        </span>
       </div>
       <Link to="/companion-select" className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary inline-flex items-center gap-1">
         <Sparkles className="h-3 w-3" /> Change
