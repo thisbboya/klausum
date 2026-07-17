@@ -13,7 +13,7 @@ const slides = [
     eyebrow: "Streaks that stick",
     title: "Show up daily. Watch yourself become unstoppable.",
     body: "Daily quests, hearts, and league climbs turn studying into a habit you actually crave.",
-    accent: "from-emerald-400/30 to-primary/0",
+    accent: "from-success/30 to-primary/0",
   },
   {
     eyebrow: "Wrapped",

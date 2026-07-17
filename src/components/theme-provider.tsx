@@ -15,16 +15,16 @@ function applyTheme(t: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
 
   // Hydrate from localStorage on mount
   useEffect(() => {
     try {
-      const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "dark";
+      const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "light";
       setThemeState(stored);
       applyTheme(stored);
     } catch {
-      applyTheme("dark");
+      applyTheme("light");
     }
   }, []);
 

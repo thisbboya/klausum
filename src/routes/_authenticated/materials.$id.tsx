@@ -30,11 +30,11 @@ const TABS = [
   { key: "visual", label: "👁️ Visual", color: "text-[color:var(--color-visual)]" },
   { key: "auditory", label: "🎧 Auditory", color: "text-[color:var(--color-auditory)]" },
   { key: "reading", label: "📖 Reading", color: "text-[color:var(--color-reading)]" },
-  { key: "kinesthetic", label: "⚡ Kinesthetic", color: "text-[color:var(--color-kinesthetic)]" },
+  { key: "kinesthetic", label: "Kinesthetic", color: "text-[color:var(--color-kinesthetic)]" },
   { key: "cornell", label: "📓 Cornell", color: "text-foreground" },
   { key: "graph", label: "🕸️ Concept Graph", color: "text-foreground" },
   { key: "formulas", label: "🧮 Formulas", color: "text-foreground" },
-  { key: "questions", label: "🎯 Bloom Q&A", color: "text-foreground" },
+  { key: "questions", label: "Bloom Q&A", color: "text-foreground" },
 ] as const;
 
 function MaterialDetail() {
@@ -128,17 +128,17 @@ function MaterialDetail() {
         </div>
         <div className="flex flex-wrap gap-2 items-center">
           <FocusTimer materialId={material.id} />
-          <Link to="/tutor" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10">🧠 Tutor</Link>
+          <Link to="/tutor" className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:bg-accent/10">Tutor</Link>
           <Link
             to="/quizzes"
             search={{ from: material.id } as any}
-            className="rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-2 text-xs font-semibold hover:bg-emerald-500/25 active:scale-95 transition"
+            className="rounded-lg bg-success/15 text-success border border-success/30 px-3 py-2 text-xs font-semibold hover:bg-success/25 active:scale-95 transition"
             title="Generate a quiz from this material"
           >
-            🎯 Quiz this
+            Quiz this
           </Link>
-          {deck && <Link to="/review" className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">⚡ Review {deck.total_cards}</Link>}
-          <button onClick={handleDownload} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent/10 inline-flex items-center gap-1.5" title="Download original">
+          {deck && <Link to="/review" className="btn-3d rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Review {deck.total_cards}</Link>}
+          <button onClick={handleDownload} className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:bg-accent/10 inline-flex items-center gap-1.5" title="Download original">
             <Download className="h-3.5 w-3.5" /> Download
           </button>
           <button onClick={handleDelete} className="rounded-lg border border-destructive/40 text-destructive px-3 py-2 text-xs hover:bg-destructive/10 inline-flex items-center gap-1.5" title="Delete material">
@@ -150,7 +150,7 @@ function MaterialDetail() {
       <YouTubeLinks text={[material.ai_summary, material.adapted_reading].filter(Boolean).join("\n")} />
 
       {!isReady ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
+        <div className="card-chunky bg-card p-8 text-center">
           <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
           <p className="mt-3 text-sm">Processing with AI… auto-refreshing.</p>
         </div>
@@ -193,9 +193,9 @@ function YouTubeLinks({ text }: { text: string }) {
   }, [text]);
   if (links.length === 0) return null;
   return (
-    <div className="rounded-xl border border-border bg-card/50 p-3">
+    <div className="card-chunky bg-card/50 p-3">
       <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-        <Youtube className="h-3.5 w-3.5 text-red-500" /> Related videos
+        <Youtube className="h-3.5 w-3.5 text-destructive" /> Related videos
       </h3>
       <ul className="space-y-1">
         {links.map((url) => (
@@ -261,7 +261,7 @@ function SummaryTab({ material }: { material: any }) {
       {real ? (
         <div className="grid gap-2 md:grid-cols-2">
           {filtered.map((c: any, i: number) => (
-            <div key={i} className="rounded-lg border border-border bg-card p-4">
+            <div key={i} className="rounded-xl border-2 border-border bg-card p-4">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <h3 className="font-display font-semibold text-sm">{c.concept ?? c.term}</h3>
                 {c.bloom_level && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted">L{c.bloom_level}</span>}
@@ -272,7 +272,7 @@ function SummaryTab({ material }: { material: any }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-card/60 p-6 text-center space-y-3">
+        <div className="card-chunky bg-card/60 p-6 text-center space-y-3">
           <span className="text-3xl">🔍</span>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             Key concepts haven't been extracted yet, or extraction failed.
@@ -280,7 +280,7 @@ function SummaryTab({ material }: { material: any }) {
           <button
             onClick={regenerate}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
           >
             {busy ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Extracting…</>) : "↺ Extract Key Concepts"}
           </button>
@@ -303,7 +303,7 @@ function OriginalTab({ material }: { material: any }) {
           className="rounded-md border border-border px-2 py-1 hover:bg-accent/10"
         >Copy all</button>
       </div>
-      <div className="rounded-xl border border-border bg-card p-5 md:p-6 max-h-[70vh] overflow-auto">
+      <div className="card-chunky bg-card p-5 md:p-6 max-h-[70vh] overflow-auto">
         <article className="prose prose-invert prose-sm md:prose-base max-w-none whitespace-pre-wrap">
           {content}
         </article>
@@ -320,7 +320,7 @@ function preprocessCallouts(text: string): string {
     .replace(/\[DIAGRAM:\s*([^\]]+)\]/g, '\n\n> 📊 **Diagram:** $1\n\n')
     .replace(/\[SAY THIS ALOUD:\s*([^\]]+)\]/g, '\n\n> 🎧 **Say aloud:** $1\n\n')
     .replace(/\[VERBAL SUMMARY:\s*([^\]]+)\]/g, '\n\n> 🗣️ **Verbal summary:** $1\n\n')
-    .replace(/\[TRY THIS:\s*([^\]]+)\]/g, '\n\n> ⚡ **Try this:** $1\n\n')
+    .replace(/\[TRY THIS:\s*([^\]]+)\]/g, '\n\n> **Try this:** $1\n\n')
     .replace(/\[REAL WORLD:\s*([^\]]+)\]/g, '\n\n> 🌍 **Real world:** $1\n\n')
     .replace(/\[WRITE THIS DOWN:\s*([^\]]+)\]/g, '\n\n> ✏️ **Write down:** $1\n\n')
     .replace(/\[FORMULA:\s*([^\]]+)\]/g, '\n\n$$$1$$\n\n');
@@ -343,11 +343,11 @@ function CornellTab({ material }: { material: any }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="card-chunky bg-card p-4">
           <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-2"><Brain className="h-4 w-4 text-primary" /> Cues</h3>
           <pre className="text-xs whitespace-pre-wrap font-sans text-muted-foreground">{material.cornell_cue}</pre>
         </div>
-        <div className="md:col-span-2 rounded-xl border border-border bg-card p-4">
+        <div className="md:col-span-2 card-chunky bg-card p-4">
           <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /> Notes</h3>
           <article className="prose prose-invert prose-sm max-w-none">
             <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
@@ -400,7 +400,7 @@ function FormulasTab({ material }: { material: any }) {
 
   if (usable.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card/60 p-6 text-center space-y-3">
+      <div className="card-chunky bg-card/60 p-6 text-center space-y-3">
         <span className="text-3xl">🧮</span>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           No formulas extracted yet. Try regenerating if this material contains equations.
@@ -408,7 +408,7 @@ function FormulasTab({ material }: { material: any }) {
         <button
           onClick={regenerate}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
         >
           {busy ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Extracting…</>) : "↺ Extract Formulas"}
         </button>
@@ -429,7 +429,7 @@ function FormulasTab({ material }: { material: any }) {
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {usable.map((f, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-4">
+          <div key={i} className="card-chunky bg-card p-4">
             <div className="flex items-start justify-between gap-2 mb-2">
               <h4 className="font-display font-semibold text-sm">{f.name ?? f.title ?? "Formula"}</h4>
               <button
@@ -499,7 +499,7 @@ function BloomTab({ material }: { material: any }) {
 
   if (!real) {
     return (
-      <div className="rounded-xl border border-border bg-card/60 p-6 text-center space-y-3">
+      <div className="card-chunky bg-card/60 p-6 text-center space-y-3">
         <span className="text-3xl">🎓</span>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           Bloom-level questions haven't been generated yet.
@@ -507,7 +507,7 @@ function BloomTab({ material }: { material: any }) {
         <button
           onClick={regenerate}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
         >
           {busy ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</>) : "↺ Generate Bloom Questions"}
         </button>
@@ -535,7 +535,7 @@ function BloomTab({ material }: { material: any }) {
         );
         if (items.length === 0) return null;
         return (
-          <div key={lvl} className="rounded-xl border border-border bg-card p-4">
+          <div key={lvl} className="card-chunky bg-card p-4">
             <h3 className="font-display font-semibold text-sm mb-3">
               <span className="px-2 py-0.5 rounded text-xs mr-2" style={{ background: `var(--bloom-${lvl[1]})`, color: "oklch(0.2 0.04 260)" }}>{lvl}</span>
               {labels[lvl]}
@@ -604,7 +604,7 @@ function ConceptGraphTab({ graph, concepts }: { graph: any[]; concepts: any[] })
       <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
         <Network className="h-3.5 w-3.5" /> {graph.length} relationships between concepts
       </p>
-      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+      <div className="card-chunky bg-card divide-y divide-border">
         {graph.map((e: any, i: number) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3 text-sm">
             <span className="font-medium truncate flex-1">{nameOf(e.source_id ?? e.source)}</span>
@@ -709,7 +709,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
 
   if (isMobile) {
     return (
-      <div className="flex h-[calc(100vh-7rem)] min-h-[520px] flex-col overflow-hidden rounded-xl border border-border">
+      <div className="flex h-[calc(100vh-7rem)] min-h-[520px] flex-col overflow-hidden card-chunky">
         <div className="flex shrink-0 border-b border-border bg-card">
           {(["read", "chat"] as const).map((t) => (
             <button key={t} onClick={() => setMobileTab(t)} className={`flex-1 py-2.5 text-xs font-semibold ${mobileTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}>
@@ -723,7 +723,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] min-h-[600px] overflow-hidden rounded-xl border border-border">
+    <div className="flex h-[calc(100vh-8rem)] min-h-[600px] overflow-hidden card-chunky">
       <div className="w-[60%] border-r border-border">{reader}</div>
       <div className="w-[40%]">{chat}</div>
     </div>
@@ -921,7 +921,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col h-[calc(100dvh-5rem)] min-h-[560px] rounded-xl border border-border overflow-hidden">
+      <div className="flex flex-col h-[calc(100dvh-5rem)] min-h-[560px] card-chunky overflow-hidden">
         <div className="flex bg-card border-b border-border shrink-0">
           {(["read", "chat"] as const).map((t) => (
             <button
@@ -962,7 +962,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-6rem)] min-h-[640px] rounded-xl border border-border overflow-hidden">
+    <div className="flex h-[calc(100dvh-6rem)] min-h-[640px] card-chunky overflow-hidden">
       <div className="w-[62%] border-r border-border flex flex-col">
         {TocPanel}
         <div className="flex-1 overflow-hidden">

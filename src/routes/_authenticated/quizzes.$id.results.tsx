@@ -71,7 +71,7 @@ function Results() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="grid gap-6 md:grid-cols-2 items-center rounded-xl border border-border bg-card p-6"
+        className="grid gap-6 md:grid-cols-2 items-center card-chunky bg-card p-6"
       >
         <div className="relative h-56">
           <ResponsiveContainer width="100%" height="100%">
@@ -133,7 +133,7 @@ function Results() {
               {makingDeck ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Layers className="h-3.5 w-3.5" />}
               {deckMade ? "Deck created" : "Flashcards from wrong answers"}
             </button>
-            <Link to="/tutor" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary/40">
+            <Link to="/tutor" className="inline-flex items-center gap-1.5 rounded-xl border-2 border-border px-3 py-1.5 text-xs font-semibold hover:border-primary/40">
               <MessagesSquare className="h-3.5 w-3.5" /> Ask the tutor
             </Link>
           </div>
@@ -143,7 +143,7 @@ function Results() {
       {bloomData.length > 0 && (
         <section>
           <h2 className="font-display text-base font-semibold mb-3">Bloom level breakdown</h2>
-          <div className="rounded-xl border border-border bg-card p-4 h-64">
+          <div className="card-chunky bg-card p-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bloomData}>
                 <XAxis dataKey="level" stroke="oklch(0.6 0.02 260)" tick={{ fontSize: 12 }} />
@@ -163,7 +163,7 @@ function Results() {
             const got = userAnswers[i];
             const right = got === q.correct;
             return (
-              <li key={i} className={`rounded-xl border p-4 ${right ? "border-emerald-500/30 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+              <li key={i} className={`rounded-xl border p-4 ${right ? "border-success/30 bg-success/5" : "border-destructive/40 bg-destructive/5"}`}>
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm font-medium leading-relaxed">{i + 1}. {q.question}</p>
                   <span className="shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">L{q.bloom_level}</span>
@@ -173,7 +173,7 @@ function Results() {
                     const isCorrect = l === q.correct;
                     const isPicked = l === got;
                     return (
-                      <div key={l} className={`flex gap-2 px-2 py-1 rounded ${isCorrect ? "text-emerald-400" : isPicked ? "text-destructive" : "text-muted-foreground"}`}>
+                      <div key={l} className={`flex gap-2 px-2 py-1 rounded ${isCorrect ? "text-success" : isPicked ? "text-destructive" : "text-muted-foreground"}`}>
                         <span className="font-mono">{l}.</span>
                         <span>{q.options[l]}</span>
                         {isCorrect && <span className="ml-auto">✓ correct</span>}

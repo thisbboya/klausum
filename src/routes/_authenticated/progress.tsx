@@ -58,9 +58,9 @@ function ProgressPage() {
   // FSRS card health bins (by stability days)
   const healthBins = [
     { label: "New", min: -1, max: 0.001, color: "bg-muted text-muted-foreground" },
-    { label: "Learning", min: 0.001, max: 7, color: "bg-amber-500/20 text-amber-400" },
+    { label: "Learning", min: 0.001, max: 7, color: "bg-primary/20 text-primary" },
     { label: "Young", min: 7, max: 21, color: "bg-sky-500/20 text-sky-400" },
-    { label: "Mature", min: 21, max: 90, color: "bg-emerald-500/20 text-emerald-400" },
+    { label: "Mature", min: 21, max: 90, color: "bg-success/20 text-success" },
     { label: "Mastered", min: 90, max: Infinity, color: "bg-primary/25 text-primary" },
   ];
   const healthData = healthBins.map((b) => ({
@@ -237,14 +237,14 @@ function ProgressPage() {
         {!insights ? (
           <div className="text-center py-6">
             <p className="text-sm text-muted-foreground mb-3">Generate a personalised reflection on your last 7 days.</p>
-            <button onClick={runInsight} disabled={insightLoading} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+            <button onClick={runInsight} disabled={insightLoading} className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
               <Sparkles className="h-4 w-4" /> {insightLoading ? "Analysing…" : "Generate insight"}
             </button>
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-3">
             {insights.map((i, idx) => {
-              const tone = i.type === "strength" ? "border-emerald-500/40 bg-emerald-500/5" : i.type === "warning" ? "border-amber-500/40 bg-amber-500/5" : "border-sky-500/40 bg-sky-500/5";
+              const tone = i.type === "strength" ? "border-success/40 bg-success/5" : i.type === "warning" ? "border-primary/40 bg-primary/5" : "border-sky-500/40 bg-sky-500/5";
               const label = i.type === "strength" ? "Strength" : i.type === "warning" ? "Watch out" : "Action";
               return (
                 <div key={idx} className={`rounded-lg border p-3 ${tone}`}>
@@ -306,8 +306,8 @@ function ProgressPage() {
 
       <Card title="Material coverage">
         <div className="grid grid-cols-3 gap-3">
-          <CoverageBlock label="Mastered" value={coverage.mastered} color="bg-emerald-500/15 text-emerald-400 border-emerald-500/30" />
-          <CoverageBlock label="In progress" value={coverage.inProgress} color="bg-amber-500/15 text-amber-400 border-amber-500/30" />
+          <CoverageBlock label="Mastered" value={coverage.mastered} color="bg-success/15 text-success border-success/30" />
+          <CoverageBlock label="In progress" value={coverage.inProgress} color="bg-primary/15 text-primary border-primary/30" />
           <CoverageBlock label="Not started" value={coverage.notStarted} color="bg-muted/40 text-muted-foreground border-border" />
         </div>
       </Card>
@@ -316,7 +316,7 @@ function ProgressPage() {
       <Card title="Flashcard health">
         <div className="mb-4 grid grid-cols-3 gap-3 text-center">
           <div><div className="text-2xl font-bold">{totalCards}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Total cards</div></div>
-          <div><div className="text-2xl font-bold text-amber-400">{dueToday}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Due today</div></div>
+          <div><div className="text-2xl font-bold text-primary">{dueToday}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Due today</div></div>
           <div><div className="text-2xl font-bold text-rose-400">{leeches}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Leeches (≥4 lapses)</div></div>
         </div>
         <div className="space-y-2">
@@ -401,7 +401,7 @@ function CoverageBlock({ label, value, color }: { label: string; value: number; 
 
 function Stat({ icon: Icon, label, value, hint }: { icon: any; label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <div className="card-chunky/60 bg-card/60 p-4">
       <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground"><Icon className="h-3.5 w-3.5" /> {label}</div>
       <div className="mt-1 text-xl font-bold tracking-tight truncate">{value}</div>
       {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
@@ -411,7 +411,7 @@ function Stat({ icon: Icon, label, value, hint }: { icon: any; label: string; va
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <section className="card-chunky/60 bg-card/60 p-4">
       <h2 className="mb-3 text-sm font-semibold">{title}</h2>
       {children}
     </section>

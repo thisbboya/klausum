@@ -53,7 +53,7 @@ function PublicProfilePage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-10 space-y-6">
-        <section className="rounded-2xl border border-border bg-card p-6 flex items-start gap-5">
+        <section className="card-chunky bg-card p-6 flex items-start gap-5">
           <div className="shrink-0">
             {data.avatar_url ? (
               <img src={data.avatar_url} alt={data.full_name ?? ""} className="h-20 w-20 rounded-full object-cover" />
@@ -87,7 +87,7 @@ function PublicProfilePage() {
           <Stat icon={Sparkles} label="Cohort #" value={data.cohort_units ?? 0} />
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-6 flex items-center gap-4">
+        <section className="card-chunky bg-card p-6 flex items-center gap-4">
           <CompanionSVG id={companion.id} size={72} animate />
           <div>
             <div className="text-xs text-muted-foreground">Study companion</div>
@@ -107,7 +107,7 @@ function PublicProfilePage() {
 
 function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: any }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="card-chunky bg-card p-4">
       <Icon className="h-4 w-4 text-primary mb-2" />
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="font-display text-xl font-bold mt-0.5">{value}</div>

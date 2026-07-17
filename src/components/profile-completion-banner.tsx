@@ -15,7 +15,7 @@ export function ProfileCompletionBanner({ level }: { level?: string | null }) {
       </div>
       <Link
         to="/settings"
-        className="shrink-0 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+        className="shrink-0 btn-3d rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
       >
         SET DETAILS →
       </Link>

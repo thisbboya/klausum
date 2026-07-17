@@ -76,13 +76,13 @@ function ExamsPage() {
           <h1 className="font-display text-3xl font-bold">Exam countdowns</h1>
           <p className="text-sm text-muted-foreground mt-1">Track your readiness for what's coming.</p>
         </div>
-        <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+        <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
           <Plus className="h-4 w-4" /> New exam
         </button>
       </div>
 
       {open && (
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="card-chunky bg-card p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input placeholder="Exam name" value={form.exam_name} onChange={(e) => setForm({ ...form, exam_name: e.target.value })} className="input" />
             <input placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="input" />
@@ -91,8 +91,8 @@ function ExamsPage() {
           </div>
           <textarea placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input min-h-[60px]" />
           <div className="flex gap-2">
-            <button onClick={add} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-            <button onClick={() => setOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm">Cancel</button>
+            <button onClick={add} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Save</button>
+            <button onClick={() => setOpen(false)} className="rounded-xl border-2 border-border px-4 py-2 text-sm">Cancel</button>
           </div>
           <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
         </div>
@@ -108,7 +108,7 @@ function ExamsPage() {
             const days = Math.ceil((new Date(e.exam_date).getTime() - Date.now()) / 86400000);
             const past = days < 0;
             return (
-              <li key={e.id} className="rounded-xl border border-border bg-card p-4">
+              <li key={e.id} className="card-chunky bg-card p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-display text-lg font-semibold truncate">{e.exam_name}</div>

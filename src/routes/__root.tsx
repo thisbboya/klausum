@@ -10,6 +10,7 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TactileLayer } from "@/components/tactile";
 
 import appCss from "../styles.css?url";
 
@@ -25,7 +26,7 @@ function NotFoundComponent() {
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90"
+            className="inline-flex items-center justify-center btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90"
           >
             Go home
           </Link>
@@ -49,7 +50,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center justify-center btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             Try again
           </button>
@@ -83,14 +84,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "theme-color", content: "#0F172A" },
       { property: "og:title", content: "Klausum — Your private vault for everything you study" },
-      { property: "og:description", content: "NkyinkyimIQ is an adaptive learning platform that personalizes education for all levels." },
+      {
+        property: "og:description",
+        content:
+          "Adaptive AI study companion: VARK-personalised content, FSRS-5 spaced repetition flashcards, and a Socratic AI tutor.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "Klausum — Your private vault for everything you study" },
-      { name: "description", content: "NkyinkyimIQ is an adaptive learning platform that personalizes education for all levels." },
-      { name: "twitter:description", content: "NkyinkyimIQ is an adaptive learning platform that personalizes education for all levels." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dc4c8d49-3ab3-4f03-a128-443903348372/id-preview-9c3a464b--564925e0-659b-4c64-882a-b458e2633702.lovable.app-1778631231838.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dc4c8d49-3ab3-4f03-a128-443903348372/id-preview-9c3a464b--564925e0-659b-4c64-882a-b458e2633702.lovable.app-1778631231838.png" },
-      { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:description",
+        content:
+          "Adaptive AI study companion: VARK-personalised content, FSRS-5 spaced repetition flashcards, and a Socratic AI tutor.",
+      },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -102,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap",
       },
     ],
   }),
@@ -119,7 +125,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('klausum-theme')||'dark';var r=document.documentElement;if(t==='dark'){r.classList.add('dark');}else{r.classList.remove('dark');}r.style.colorScheme=t;}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('klausum-theme')||'light';var r=document.documentElement;if(t==='dark'){r.classList.add('dark');}else{r.classList.remove('dark');}r.style.colorScheme=t;}catch(e){}})();`,
           }}
         />
       </head>
@@ -139,6 +145,7 @@ function RootComponent() {
         <Outlet />
         <Toaster richColors position="top-right" />
         <InstallPrompt />
+        <TactileLayer />
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -77,7 +77,7 @@ function CompanionSelect() {
           <button
             disabled={!selected || saving}
             onClick={save}
-            className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+            className="w-full btn-3d rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
           >
             {saving ? "Saving…" : selected ? `Continue with ${COMPANIONS.find((c) => c.id === selected)?.name} →` : "Pick a companion"}
           </button>

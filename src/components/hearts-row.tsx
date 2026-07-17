@@ -20,18 +20,18 @@ export function HeartsRow({
   if (hearts >= HEARTS_MAX) return null;
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1.5 text-xs">
+    <div className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-card px-3 py-1.5 text-xs font-bold">
       <div className="flex items-center gap-0.5">
         {Array.from({ length: HEARTS_MAX }).map((_, i) => (
           <Heart
             key={i}
             className={`h-3.5 w-3.5 ${
-              i < hearts ? "fill-red-500 text-red-500" : "text-muted-foreground/30"
+              i < hearts ? "fill-destructive text-destructive" : "text-muted-foreground/30"
             }`}
           />
         ))}
       </div>
-      <span className="text-muted-foreground">· Refills in {formatRefillCountdown(ms)}</span>
+      <span className="text-muted-foreground">Refills in {formatRefillCountdown(ms)}</span>
     </div>
   );
 }

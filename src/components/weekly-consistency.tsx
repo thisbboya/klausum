@@ -51,10 +51,10 @@ export function WeeklyConsistency({
   })();
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display text-sm font-semibold">Weekly Consistency</h3>
-        <span className="text-xs text-muted-foreground">{completed}/7 days completed</span>
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Weekly Consistency</h3>
+        <span className="text-xs font-bold text-muted-foreground">{completed}/7 days</span>
       </div>
 
       <div className="grid grid-cols-7 gap-2">
@@ -63,11 +63,11 @@ export function WeeklyConsistency({
           const isToday = i === todayIdx;
           const isPast = i < todayIdx;
 
-          let circleClass = "border border-border bg-transparent text-muted-foreground";
-          if (completed && !isToday) circleClass = "bg-emerald-500 text-white border-emerald-500";
+          let circleClass = "border-2 border-border bg-transparent text-muted-foreground";
+          if (completed && !isToday) circleClass = "bg-success text-success-foreground border-success";
           if (isToday && completed) circleClass = "bg-primary text-primary-foreground border-primary gold-pulse";
           else if (isToday) circleClass = "bg-primary/20 text-primary border-primary gold-pulse";
-          else if (!completed && isPast) circleClass = "border border-border bg-muted/40 text-muted-foreground/60";
+          else if (!completed && isPast) circleClass = "border-2 border-border bg-muted/40 text-muted-foreground/60";
 
           return (
             <div key={i} className="flex flex-col items-center gap-1.5">
@@ -82,19 +82,19 @@ export function WeeklyConsistency({
         })}
       </div>
 
-      <div className="mt-4 h-1 rounded-full bg-muted overflow-hidden">
+      <div className="mt-4 h-2.5 rounded-full bg-surface-3 overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400 transition-all duration-700"
+          className="h-full rounded-full bg-primary transition-all duration-700"
           style={{ width: `${(completed / 7) * 100}%` }}
         />
       </div>
 
       <div className="mt-3 flex items-end justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
             Current Streak
           </div>
-          <div className="font-display text-xl font-semibold text-foreground streak-bounce">
+          <div className="font-display text-xl font-extrabold text-foreground streak-bounce">
             {streak ?? 0} {(streak ?? 0) === 1 ? "Day" : "Days"}
           </div>
         </div>

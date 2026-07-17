@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Brain, MessagesSquare, Plus, CalendarClock } from "lucide-react";
+import {
+  BookOpen, Brain, MessagesSquare, Plus, CalendarClock,
+  Frown, Meh, Smile, Laugh, Flame, Sparkles, X,
+} from "lucide-react";
 import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -97,10 +100,50 @@ function Dashboard() {
   });
 
   const profile = data?.profile;
-  const firstName = profile?.full_name?.split(" ")[0] || "there";
+  const rawName = profile?.full_name || "";
+  const firstName = (rawName.includes("@") ? rawName.split("@")[0] : rawName.split(" ")[0]) || "there";
+
+  // First-run coach mark: brand-new account, nothing uploaded yet
+  const [tourDismissed, setTourDismissed] = useState(() => {
+    try { return localStorage.getItem("klausum:startTourDone") === "1"; } catch { return true; }
+  });
+  const showTour =
+    !tourDismissed && data && data.materials.length === 0 && data.totalCards === 0;
+  function dismissTour() {
+    setTourDismissed(true);
+    try { localStorage.setItem("klausum:startTourDone", "1"); } catch {}
+  }
 
   return (
     <div className="space-y-6 pb-12">
+      {showTour && (
+        <div className="fixed inset-x-0 bottom-0 z-50 p-3 md:left-60">
+          <div className="card-chunky mx-auto flex max-w-2xl flex-col gap-3 border-sky/50 bg-sky p-4 text-sky-foreground shadow-[0_12px_32px_-12px_rgba(0,0,0,0.35)] sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <p className="font-display text-sm font-extrabold uppercase tracking-wide">Start here</p>
+              <p className="mt-0.5 text-sm font-semibold opacity-90">
+                Upload your first material — Klausum will turn it into flashcards, notes, and quizzes.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                to="/materials"
+                onClick={dismissTour}
+                className="btn-3d rounded-xl bg-background px-4 py-2 text-sm font-extrabold uppercase tracking-wide text-sky [--edge:rgba(0,0,0,0.2)]"
+              >
+                Take me there
+              </Link>
+              <button
+                onClick={dismissTour}
+                aria-label="Dismiss"
+                className="rounded-xl border-2 border-sky-foreground/30 p-2 transition hover:bg-sky-foreground/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <CompanionHero
         firstName={firstName}
         companionId={profile?.companion_id}
@@ -149,18 +192,20 @@ function Dashboard() {
 
       <Link
         to="/wrapped"
-        className="group relative block overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 via-fuchsia-500/10 to-indigo-500/20 p-6 transition hover:border-primary/60"
+        className="card-chunky card-chunky-hover group block border-grape/40 bg-grape/8 p-6"
       >
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">✨ New</p>
-            <h3 className="mt-1 font-display text-2xl font-bold">Your Klausum Wrapped is ready</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-widest text-grape">
+              <Sparkles className="h-3.5 w-3.5" /> New
+            </p>
+            <h3 className="mt-1 font-display text-2xl font-extrabold">Your Klausum Wrapped is ready</h3>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
               12 cinematic slides of your learning year — share them, save them, own them.
             </p>
           </div>
-          <span className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground group-hover:opacity-90">
-            Open →
+          <span className="btn-3d shrink-0 rounded-2xl bg-grape px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-grape-foreground [--edge:oklch(0.55_0.17_300)]">
+            Open
           </span>
         </div>
       </Link>
@@ -207,33 +252,33 @@ function Dashboard() {
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-lg font-semibold">Recent materials</h2>
-          <Link to="/materials" className="text-xs text-primary hover:underline">
+          <h2 className="font-display text-lg font-extrabold">Recent materials</h2>
+          <Link to="/materials" className="text-xs font-extrabold text-sky hover:underline">
             View all
           </Link>
         </div>
         {(!data?.materials || data.materials.length === 0) ? (
-          <div className="rounded-xl border border-dashed border-border p-10 text-center">
-            <p className="text-sm text-muted-foreground">No materials yet.</p>
+          <div className="card-chunky border-dashed p-10 text-center">
+            <p className="text-sm font-semibold text-muted-foreground">No materials yet.</p>
             <Link
               to="/materials"
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              className="btn-3d btn-3d-success mt-4 inline-flex items-center gap-2 rounded-2xl bg-success px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
             >
               <Plus className="h-4 w-4" /> Upload your first
             </Link>
           </div>
         ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+          <ul className="card-chunky divide-y-2 divide-border overflow-hidden bg-card">
             {data.materials.map((m) => (
               <li key={m.id}>
                 <Link
                   to="/materials/$id"
                   params={{ id: m.id }}
-                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent/10 transition"
+                  className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-2"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{m.title}</div>
-                    <div className="text-xs text-muted-foreground">{m.subject}</div>
+                    <div className="truncate text-sm font-extrabold">{m.title}</div>
+                    <div className="text-xs font-semibold text-muted-foreground">{m.subject}</div>
                   </div>
                   <StatusBadge status={m.processing_status} />
                 </Link>
@@ -265,8 +310,8 @@ function Stat({ icon: Icon, label, value, accent, sub, to }: any) {
       {sub ? <div className="mt-1 text-xs text-muted-foreground">{sub}</div> : null}
     </>
   );
-  const cls = `block rounded-2xl border p-5 transition ${
-    accent ? "border-primary/40 bg-primary/5 hover:bg-primary/10" : "border-border bg-card hover:border-primary/40"
+  const cls = `card-chunky card-chunky-hover block p-5 ${
+    accent ? "border-primary/50 bg-primary/8" : "bg-card"
   }`;
   return to ? (
     <Link to={to} className={cls}>
@@ -282,13 +327,15 @@ function ActionCard({ to, icon: Icon, title, desc, highlight }: any) {
   return (
     <Link
       to={to}
-      className={`block rounded-xl border p-5 transition hover:-translate-y-0.5 ${
-        highlight ? "border-primary/60 bg-primary/10 shadow-[var(--shadow-glow)]" : "border-border bg-card hover:border-primary/40"
+      className={`card-chunky card-chunky-hover block p-5 ${
+        highlight ? "border-success/60 bg-success/8" : "bg-card"
       }`}
     >
-      <Icon className={`h-5 w-5 ${highlight ? "text-primary" : "text-muted-foreground"}`} />
-      <h3 className="mt-3 font-display text-base font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${highlight ? "bg-success/15" : "bg-surface-2"}`}>
+        <Icon className={`h-5 w-5 ${highlight ? "text-success" : "text-muted-foreground"}`} />
+      </div>
+      <h3 className="mt-3 font-display text-base font-extrabold">{title}</h3>
+      <p className="mt-1 text-sm font-semibold text-muted-foreground">{desc}</p>
     </Link>
   );
 }
@@ -296,7 +343,7 @@ function ActionCard({ to, icon: Icon, title, desc, highlight }: any) {
 function StatusBadge({ status }: { status: string | null }) {
   const map: Record<string, string> = {
     pending: "bg-muted text-muted-foreground",
-    processing: "bg-amber-500/15 text-amber-400",
+    processing: "bg-primary/15 text-primary",
     ready: "bg-primary/15 text-primary",
     error: "bg-destructive/15 text-destructive",
   };
@@ -312,7 +359,11 @@ function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: s
   const [saving, setSaving] = useState(false);
 
   const moods = [
-    { v: 1, e: "😞" }, { v: 2, e: "😐" }, { v: 3, e: "🙂" }, { v: 4, e: "😄" }, { v: 5, e: "🔥" },
+    { v: 1, icon: Frown, c: "text-destructive" },
+    { v: 2, icon: Meh, c: "text-muted-foreground" },
+    { v: 3, icon: Smile, c: "text-sky" },
+    { v: 4, icon: Laugh, c: "text-success" },
+    { v: 5, icon: Flame, c: "text-primary" },
   ];
   const energies = ["low", "medium", "high"];
 
@@ -330,11 +381,11 @@ function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: s
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="card-chunky bg-card p-5">
+      <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
         <CalendarClock className="h-3.5 w-3.5" /> Today's check-in
       </div>
-      <h3 className="mt-1 font-display text-base font-semibold">
+      <h3 className="mt-1 font-display text-base font-extrabold">
         {existing ? "How you felt today" : "How are you feeling?"}
       </h3>
       <div className="mt-3 flex gap-2">
@@ -342,11 +393,11 @@ function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: s
           <button
             key={m.v}
             onClick={() => { setMood(m.v); if (energy) save(m.v, energy); }}
-            className={`flex-1 rounded-lg border py-2 text-xl transition ${
-              mood === m.v ? "border-primary bg-primary/10" : "border-border bg-background hover:border-primary/40"
+            className={`flex flex-1 items-center justify-center rounded-xl border-2 py-2.5 transition ${
+              mood === m.v ? "border-primary bg-primary/10" : "border-border bg-background hover:border-primary/50"
             }`}
           >
-            {m.e}
+            <m.icon className={`h-5 w-5 ${m.c}`} />
           </button>
         ))}
       </div>
@@ -356,8 +407,8 @@ function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: s
             key={en}
             disabled={saving}
             onClick={() => { setEnergy(en); if (mood) save(mood, en); }}
-            className={`rounded-lg border py-2 text-xs font-medium capitalize transition ${
-              energy === en ? "border-primary bg-primary/10 text-primary" : "border-border bg-background hover:border-primary/40"
+            className={`rounded-xl border-2 py-2 text-xs font-extrabold capitalize transition ${
+              energy === en ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50"
             }`}
           >
             {en} energy
@@ -365,7 +416,7 @@ function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: s
         ))}
       </div>
       {existing && (
-        <p className="mt-3 text-xs text-muted-foreground">Tap to update today's mood or energy.</p>
+        <p className="mt-3 text-xs font-semibold text-muted-foreground">Tap to update today's mood or energy.</p>
       )}
     </div>
   );
@@ -373,15 +424,15 @@ function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: s
 
 function ExamCountdown({ exams }: { exams: any[] }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="card-chunky bg-card p-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
           <CalendarClock className="h-3.5 w-3.5" /> Upcoming exams
         </div>
-        <Link to="/exams" className="text-xs text-primary hover:underline">Manage</Link>
+        <Link to="/exams" className="text-xs font-extrabold text-sky hover:underline">Manage</Link>
       </div>
       {exams.length === 0 ? (
-        <div className="mt-3 text-sm text-muted-foreground">
+        <div className="mt-3 text-sm font-semibold text-muted-foreground">
           No exams scheduled. Add one in Settings to track readiness.
         </div>
       ) : (
@@ -389,14 +440,14 @@ function ExamCountdown({ exams }: { exams: any[] }) {
           {exams.map((e) => {
             const days = Math.max(0, Math.ceil((new Date(e.exam_date).getTime() - Date.now()) / 86400000));
             return (
-              <li key={e.id} className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+              <li key={e.id} className="flex items-center justify-between rounded-xl border-2 border-border bg-background px-3 py-2">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{e.exam_name}</div>
-                  <div className="text-xs text-muted-foreground">{e.subject || "—"}</div>
+                  <div className="truncate text-sm font-extrabold">{e.exam_name}</div>
+                  <div className="text-xs font-semibold text-muted-foreground">{e.subject || "—"}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-display text-lg font-semibold text-primary">{days}d</div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">to go</div>
+                  <div className="font-display text-lg font-extrabold text-primary">{days}d</div>
+                  <div className="text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">to go</div>
                 </div>
               </li>
             );

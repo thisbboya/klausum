@@ -4,11 +4,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { Check } from "lucide-react";
 import { KlausumMark } from "@/components/klausum-mark";
 import { COMPANIONS, CompanionSVG } from "@/components/companion-svg";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
-
 
 type Q = { q: string; options: { label: string; style: "visual" | "auditory" | "reading" | "kinesthetic" }[] };
 
@@ -41,30 +41,12 @@ const QUESTIONS: Q[] = [
     ],
   },
   {
-    q: "Which type of class would you choose?",
-    options: [
-      { label: "One with lots of slides and visuals", style: "visual" },
-      { label: "One that's discussion-heavy", style: "auditory" },
-      { label: "One based on textbooks and essays", style: "reading" },
-      { label: "One with labs and field work", style: "kinesthetic" },
-    ],
-  },
-  {
     q: "When stuck on a math problem, you:",
     options: [
       { label: "Draw it out", style: "visual" },
       { label: "Talk through it out loud", style: "auditory" },
       { label: "Re-read the textbook", style: "reading" },
       { label: "Try plugging in numbers", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "You're given directions to a new place. You prefer:",
-    options: [
-      { label: "A map", style: "visual" },
-      { label: "Spoken directions", style: "auditory" },
-      { label: "Written step-by-step instructions", style: "reading" },
-      { label: "Walking through it once", style: "kinesthetic" },
     ],
   },
   {
@@ -77,15 +59,6 @@ const QUESTIONS: Q[] = [
     ],
   },
   {
-    q: "If a teacher uses only one teaching method, you wish they'd:",
-    options: [
-      { label: "Show more visuals on the board", style: "visual" },
-      { label: "Talk through more examples", style: "auditory" },
-      { label: "Provide written handouts", style: "reading" },
-      { label: "Run more lab/group activities", style: "kinesthetic" },
-    ],
-  },
-  {
     q: "You best remember information when you:",
     options: [
       { label: "Visualise a picture of it", style: "visual" },
@@ -95,84 +68,12 @@ const QUESTIONS: Q[] = [
     ],
   },
   {
-    q: "Which describes your ideal study session?",
-    options: [
-      { label: "Sketching diagrams and color-coding", style: "visual" },
-      { label: "Listening to a podcast on the topic", style: "auditory" },
-      { label: "Quietly reading and annotating", style: "reading" },
-      { label: "Building or simulating something", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "When solving a hard problem, you'd rather:",
-    options: [
-      { label: "Draw the situation out", style: "visual" },
-      { label: "Talk yourself through it", style: "auditory" },
-      { label: "Write down everything you know", style: "reading" },
-      { label: "Try several approaches physically", style: "kinesthetic" },
-    ],
-  },
-  {
     q: "Pick the kind of online lesson that grabs you:",
     options: [
       { label: "Animated explainer with infographics", style: "visual" },
       { label: "Audio lecture or interview", style: "auditory" },
       { label: "Long-form article with examples", style: "reading" },
       { label: "Interactive simulation or coding sandbox", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "You learn a new app fastest by:",
-    options: [
-      { label: "Watching the UI tour", style: "visual" },
-      { label: "Hearing a friend describe it", style: "auditory" },
-      { label: "Reading the documentation", style: "reading" },
-      { label: "Tapping every button to see what happens", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "Your favourite kind of textbook page has:",
-    options: [
-      { label: "Plenty of diagrams and figures", style: "visual" },
-      { label: "Quoted dialogue or case interviews", style: "auditory" },
-      { label: "Dense, well-structured prose", style: "reading" },
-      { label: "Worked exercises you copy step by step", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "Group project — you naturally take on:",
-    options: [
-      { label: "Designing the slides / visuals", style: "visual" },
-      { label: "Presenting and explaining", style: "auditory" },
-      { label: "Writing the report", style: "reading" },
-      { label: "Building the prototype", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "Music while studying:",
-    options: [
-      { label: "Helps if there are visuals on screen", style: "visual" },
-      { label: "Yes, lyrics and all", style: "auditory" },
-      { label: "Distracting — silence please", style: "reading" },
-      { label: "Background fine if I'm doing", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "When recalling a past event, you remember:",
-    options: [
-      { label: "What it looked like", style: "visual" },
-      { label: "What was said", style: "auditory" },
-      { label: "Notes or messages from then", style: "reading" },
-      { label: "What you were doing", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "A new word sticks when you:",
-    options: [
-      { label: "See it written with imagery", style: "visual" },
-      { label: "Hear it pronounced", style: "auditory" },
-      { label: "Read its definition twice", style: "reading" },
-      { label: "Use it in a sentence yourself", style: "kinesthetic" },
     ],
   },
   {
@@ -186,6 +87,23 @@ const QUESTIONS: Q[] = [
   },
 ];
 
+const GOALS = [
+  "Ace my exams",
+  "Understand difficult topics",
+  "Stay consistent with studying",
+  "Improve my grades",
+  "Prepare for a big test",
+];
+
+const FREQUENCIES = ["Every day", "3-4 times a week", "Weekends only", "Occasionally"];
+
+const BUILD_STEPS = [
+  "Setting up your profile",
+  "Calibrating lessons to your learning style",
+  "Preparing your study tools",
+  "Almost ready!",
+];
+
 function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -196,6 +114,8 @@ function Onboarding() {
   const [name, setName] = useState("");
   const [country, setCountry] = useState("Ghana");
   const [level, setLevel] = useState("SHS");
+  const [goals, setGoals] = useState<string[]>([]);
+  const [frequency, setFrequency] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -203,18 +123,21 @@ function Onboarding() {
   }, [user, loading, navigate]);
 
   if (loading || !user) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+    return <div className="flex min-h-[100dvh] items-center justify-center text-sm font-semibold text-muted-foreground">Loading…</div>;
   }
 
-  const totalSteps = QUESTIONS.length + 2; // intro/pilot + questions + profile
+  // steps: 0 pilot · 1..8 VARK · 9 profile · 10 goals · 11 frequency · 12 building
+  const totalSteps = QUESTIONS.length + 5;
+  const pilot = COMPANIONS.find((c) => c.id === pilotId) ?? null;
 
   async function complete() {
     setSubmitting(true);
     const top = (Object.entries(scores).sort((a, b) => b[1] - a[1]) as [keyof typeof scores, number][]);
-    const primary = top[0][0];
-    const secondary = top[1][0];
+    const chosen = pilot ?? COMPANIONS[0];
 
-    const chosen = COMPANIONS.find((c) => c.id === pilotId) ?? COMPANIONS[0];
+    try {
+      localStorage.setItem("klausum:goals", JSON.stringify({ goals, frequency }));
+    } catch {}
 
     const { error } = await supabase
       .from("user_profiles")
@@ -227,40 +150,44 @@ function Onboarding() {
         auditory_score: scores.auditory,
         reading_score: scores.reading,
         kinesthetic_score: scores.kinesthetic,
-        primary_style: primary,
-        secondary_style: secondary,
+        primary_style: top[0][0],
+        secondary_style: top[1][0],
         vark_completed: true,
         onboarding_completed: true,
         companion_id: chosen.id,
         companion_name: chosen.name,
       } as any);
     setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success(`Welcome aboard, ${chosen.name} is ready! 🎉`);
-    navigate({ to: "/dashboard" });
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    return true;
   }
 
+  const tint = pilot
+    ? { background: `linear-gradient(color-mix(in srgb, ${pilot.color} 7%, transparent), color-mix(in srgb, ${pilot.color} 7%, transparent))` }
+    : undefined;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="px-6 py-4 flex items-center gap-2 text-primary">
+    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col transition-colors" style={tint}>
+      <header className="px-6 py-4 flex items-center gap-2">
         <KlausumMark size={24} />
-        <span className="font-display font-semibold">Klausum</span>
+        <span className="font-display font-extrabold text-primary">klausum</span>
       </header>
 
       <div className="mx-auto w-full max-w-xl px-4 pb-16 flex-1 flex flex-col justify-center">
         <div className="mb-6">
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="h-2.5 rounded-full bg-surface-3 overflow-hidden">
             <div
-              className="h-full bg-primary transition-all"
+              className="h-full rounded-full bg-success transition-all duration-500"
               style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
             />
           </div>
-          <div className="mt-2 text-xs text-muted-foreground">Step {step + 1} of {totalSteps}</div>
         </div>
 
         <motion.div
-          key={step}
+          key={`${step}-${pilotConfirmed}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -268,10 +195,9 @@ function Onboarding() {
           {step === 0 && !pilotConfirmed && (
             <div>
               <div className="text-center">
-                <h1 className="font-display text-3xl font-bold">Akwaaba — welcome.</h1>
-                <p className="mt-2 text-muted-foreground">
-                  First, pick your <span className="text-primary font-semibold">Pilot</span>.
-                  Your companion will guide every session — celebrate wins, nudge streaks, and keep you company.
+                <h1 className="font-display text-3xl font-extrabold">Choose your pilot</h1>
+                <p className="mt-2 font-semibold text-muted-foreground">
+                  Your companion guides every session — celebrates wins, nudges streaks, keeps you company.
                 </p>
               </div>
 
@@ -282,23 +208,22 @@ function Onboarding() {
                     <button
                       key={c.id}
                       onClick={() => setPilotId(c.id)}
-                      className={`group rounded-2xl border-2 p-3 transition text-center ${
-                        selected
-                          ? "border-primary bg-primary/10 shadow-[var(--shadow-glow)] scale-[1.02]"
-                          : "border-border bg-card hover:border-primary/40 hover:-translate-y-0.5"
+                      className={`card-chunky group p-3 text-center transition ${
+                        selected ? "bg-card scale-[1.02]" : "bg-card hover:-translate-y-0.5"
                       }`}
+                      style={selected ? { borderColor: c.color } : undefined}
                     >
                       <div className="flex justify-center">
                         <CompanionSVG id={c.id} size={64} animate={selected} />
                       </div>
-                      <div className="mt-2 font-display text-sm font-bold tracking-wide">{c.name}</div>
+                      <div className="mt-2 font-display text-sm font-extrabold tracking-wide">{c.name}</div>
                       <div
-                        className="inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-widest text-white"
+                        className="inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-widest text-white"
                         style={{ backgroundColor: c.color }}
                       >
                         {c.trait}
                       </div>
-                      <div className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2">
+                      <div className="mt-1.5 text-[10px] font-semibold text-muted-foreground line-clamp-2">
                         {c.description}
                       </div>
                     </button>
@@ -309,11 +234,11 @@ function Onboarding() {
               <button
                 disabled={pilotId === null}
                 onClick={() => setPilotConfirmed(true)}
-                className="mt-6 w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-6 w-full btn-3d btn-3d-success rounded-2xl bg-success py-3 text-sm font-extrabold uppercase tracking-wide text-success-foreground disabled:cursor-not-allowed"
               >
-                {pilotId === null ? "Pick a pilot to continue" : "Lock in my pilot →"}
+                {pilotId === null ? "Pick a pilot to continue" : "Continue"}
               </button>
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              <p className="mt-2 text-center text-[11px] font-semibold text-muted-foreground">
                 You can change your pilot later in Settings.
               </p>
             </div>
@@ -322,29 +247,30 @@ function Onboarding() {
           {step === 0 && pilotConfirmed && (
             <div className="text-center">
               <div className="flex justify-center">
-                <CompanionSVG id={pilotId ?? 1} size={120} />
+                <div className="pilot-float">
+                  <CompanionSVG id={pilotId ?? 1} size={120} />
+                </div>
               </div>
-              <h1 className="mt-4 font-display text-3xl font-bold">
-                {COMPANIONS.find((c) => c.id === pilotId)?.name} is ready! 🎉
+              <h1 className="mt-4 font-display text-3xl font-extrabold">
+                {pilot?.name} is ready!
               </h1>
-              <p className="mt-3 text-muted-foreground">
-                Now {QUESTIONS.length} quick questions to discover how you learn best, so we can tailor every lesson to your mind.
+              <p className="mt-3 font-semibold text-muted-foreground">
+                Now {QUESTIONS.length} quick questions to discover how you learn best.
               </p>
               <button
                 onClick={() => setStep(1)}
-                className="mt-8 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                className="mt-8 btn-3d btn-3d-success rounded-2xl bg-success px-8 py-3 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
               >
-                Begin VARK quiz →
+                Let's go
               </button>
             </div>
           )}
-
 
           {step > 0 && step <= QUESTIONS.length && (() => {
             const q = QUESTIONS[step - 1];
             return (
               <div>
-                <h2 className="font-display text-xl font-semibold leading-snug">{q.q}</h2>
+                <h2 className="font-display text-xl font-extrabold leading-snug">{q.q}</h2>
                 <div className="mt-5 space-y-2">
                   {q.options.map((opt) => (
                     <button
@@ -353,7 +279,7 @@ function Onboarding() {
                         setScores((s) => ({ ...s, [opt.style]: s[opt.style] + 1 }));
                         setStep(step + 1);
                       }}
-                      className="w-full rounded-lg border border-border bg-card px-4 py-3 text-left text-sm hover:border-primary hover:bg-primary/5 transition"
+                      className="w-full rounded-2xl border-2 border-border bg-card px-4 py-3 text-left text-sm font-bold transition hover:border-success hover:bg-success/8"
                     >
                       {opt.label}
                     </button>
@@ -365,29 +291,29 @@ function Onboarding() {
 
           {step === QUESTIONS.length + 1 && (
             <div>
-              <h2 className="font-display text-2xl font-semibold">Almost done.</h2>
-              <p className="mt-1 text-sm text-muted-foreground">A little about you so we can pick the right curriculum.</p>
+              <h2 className="font-display text-2xl font-extrabold">Almost done.</h2>
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">A little about you so we can pick the right curriculum.</p>
               <div className="mt-6 space-y-3">
                 <Field label="Your name">
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Ama Owusu"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-xl border-2 border-border bg-surface-2 px-3 py-2.5 text-sm font-semibold outline-none focus:border-sky focus:bg-background"
                   />
                 </Field>
                 <Field label="Country">
                   <input
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-xl border-2 border-border bg-surface-2 px-3 py-2.5 text-sm font-semibold outline-none focus:border-sky focus:bg-background"
                   />
                 </Field>
                 <Field label="Education level">
                   <select
                     value={level}
                     onChange={(e) => setLevel(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-xl border-2 border-border bg-surface-2 px-3 py-2.5 text-sm font-semibold outline-none focus:border-sky focus:bg-background"
                   >
                     <option>JHS</option>
                     <option>SHS</option>
@@ -398,13 +324,89 @@ function Onboarding() {
                 </Field>
               </div>
               <button
-                onClick={complete}
-                disabled={submitting}
-                className="mt-6 w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                onClick={() => setStep(step + 1)}
+                className="mt-6 w-full btn-3d btn-3d-success rounded-2xl bg-success py-3 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
               >
-                {submitting ? "Setting up…" : "Finish & enter Klausum"}
+                Continue
               </button>
             </div>
+          )}
+
+          {step === QUESTIONS.length + 2 && (
+            <div>
+              <h2 className="font-display text-2xl font-extrabold">What's your main goal?</h2>
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">Pick up to 3 ({goals.length}/3)</p>
+              <div className="mt-6 space-y-2">
+                {GOALS.map((g) => {
+                  const on = goals.includes(g);
+                  return (
+                    <button
+                      key={g}
+                      onClick={() =>
+                        setGoals((prev) =>
+                          on ? prev.filter((x) => x !== g) : prev.length < 3 ? [...prev, g] : prev,
+                        )
+                      }
+                      className={`w-full rounded-2xl border-2 px-4 py-3 text-center text-sm font-extrabold transition ${
+                        on
+                          ? "border-success bg-success/10 text-success"
+                          : "border-border bg-card hover:border-success/50"
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                disabled={goals.length === 0}
+                onClick={() => setStep(step + 1)}
+                className="mt-6 w-full btn-3d btn-3d-success rounded-2xl bg-success py-3 text-sm font-extrabold uppercase tracking-wide text-success-foreground disabled:cursor-not-allowed"
+              >
+                Continue
+              </button>
+            </div>
+          )}
+
+          {step === QUESTIONS.length + 3 && (
+            <div>
+              <h2 className="font-display text-2xl font-extrabold">How often do you want to study?</h2>
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                We'll tune your streak goals and reminders to match.
+              </p>
+              <div className="mt-6 space-y-2">
+                {FREQUENCIES.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => {
+                      setFrequency(f);
+                      setStep(step + 1);
+                    }}
+                    className={`w-full rounded-2xl border-2 px-4 py-3 text-center text-sm font-extrabold transition ${
+                      frequency === f
+                        ? "border-success bg-success/10 text-success"
+                        : "border-border bg-card hover:border-success/50"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === QUESTIONS.length + 4 && (
+            <BuildingScreen
+              pilotId={pilotId ?? 1}
+              submitting={submitting}
+              onDone={async () => {
+                const ok = await complete();
+                if (ok) {
+                  toast.success(`Welcome aboard, ${(pilot ?? COMPANIONS[0]).name} is ready!`);
+                  navigate({ to: "/dashboard" });
+                }
+              }}
+            />
           )}
         </motion.div>
       </div>
@@ -412,10 +414,65 @@ function Onboarding() {
   );
 }
 
+function BuildingScreen({
+  pilotId,
+  submitting,
+  onDone,
+}: {
+  pilotId: number;
+  submitting: boolean;
+  onDone: () => void;
+}) {
+  const [done, setDone] = useState(0);
+
+  useEffect(() => {
+    const timers = BUILD_STEPS.map((_, i) =>
+      setTimeout(() => setDone(i + 1), (i + 1) * 650),
+    );
+    const finish = setTimeout(onDone, BUILD_STEPS.length * 650 + 500);
+    return () => {
+      timers.forEach(clearTimeout);
+      clearTimeout(finish);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="text-center">
+      <div className="flex justify-center">
+        <div className="pilot-float">
+          <CompanionSVG id={pilotId} size={96} />
+        </div>
+      </div>
+      <h2 className="mt-4 font-display text-2xl font-extrabold">Building your experience…</h2>
+      <p className="mt-1 text-sm font-semibold text-muted-foreground">Personalizing Klausum just for you</p>
+      <ul className="mx-auto mt-8 max-w-xs space-y-4 text-left">
+        {BUILD_STEPS.map((s, i) => (
+          <li key={s} className="flex items-center gap-3">
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors duration-300 ${
+                done > i ? "bg-success text-success-foreground" : "bg-surface-3 text-transparent"
+              }`}
+            >
+              <Check className="h-4 w-4" />
+            </span>
+            <span className={`text-sm font-extrabold transition-opacity ${done > i ? "opacity-100" : "opacity-50"}`}>
+              {s}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {submitting && (
+        <p className="mt-6 text-xs font-bold text-muted-foreground">Saving your profile…</p>
+      )}
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{label}</span>
       {children}
     </label>
   );

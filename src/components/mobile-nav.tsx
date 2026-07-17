@@ -1,48 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Shield, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { KlausumMark } from "@/components/klausum-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StudentBadge } from "@/components/student-badge";
-import {
-  LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
-  ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic,
-  GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark,
-  Scissors, Focus, Gem,
-} from "lucide-react";
-
-
-type NavLink = { to: string; label: string; icon: any };
-
-const LINKS: NavLink[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/materials", label: "Materials", icon: BookOpen },
-  { to: "/solve", label: "Snap & Solve", icon: Camera },
-  { to: "/question-bank", label: "Question Bank", icon: Bookmark },
-  { to: "/notes", label: "Notes", icon: NotebookPen },
-  { to: "/mindmaps", label: "Mind Maps", icon: Network },
-  { to: "/quizzes", label: "Quizzes", icon: ListChecks },
-  { to: "/review", label: "Review", icon: Brain },
-  { to: "/gaps", label: "Gaps", icon: Target },
-  { to: "/progress", label: "Progress", icon: TrendingUp },
-  { to: "/formulas", label: "Formulas", icon: Sigma },
-  { to: "/schedule", label: "Schedule", icon: CalendarClock },
-  { to: "/timetable", label: "Timetable", icon: CalendarClock },
-  { to: "/codelab", label: "Code Lab", icon: Code2 },
-  { to: "/rooms", label: "Rooms", icon: Users },
-  { to: "/community", label: "Community", icon: Trophy },
-  { to: "/voice", label: "Voice", icon: Mic },
-  { to: "/videos", label: "Videos", icon: Youtube },
-  { to: "/exams", label: "Exams", icon: GraduationCap },
-  { to: "/tutor", label: "AI Tutor", icon: MessagesSquare },
-  { to: "/research", label: "Research", icon: FlaskConical },
-  { to: "/clip", label: "Web Clipper", icon: Scissors },
-  { to: "/focus", label: "Focus Mode", icon: Focus },
-  { to: "/shop", label: "Gem Shop", icon: Gem },
-  { to: "/settings", label: "Settings", icon: Settings },
-
-];
+import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK } from "@/lib/nav";
 
 export function MobileNav({
   onSignOut,
@@ -57,14 +20,40 @@ export function MobileNav({
 }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const containsActive = MORE_LINKS.some(
+    (l) => location.pathname === l.to || location.pathname.startsWith(l.to + "/"),
+  );
+  const [moreOpen, setMoreOpen] = useState(containsActive);
 
-  const all = isAdmin ? [...LINKS, { to: "/admin", label: "Admin", icon: Shield }] : LINKS;
+  const primary = [...PRIMARY_LINKS];
+  const secondary = isAdmin
+    ? [...MORE_LINKS, SETTINGS_LINK, { to: "/admin", label: "Admin", icon: Shield }]
+    : [...MORE_LINKS, SETTINGS_LINK];
+
+  const renderLink = ({ to, label, icon: Icon }: { to: string; label: string; icon: any }) => {
+    const active = location.pathname === to || location.pathname.startsWith(to + "/");
+    return (
+      <Link
+        key={to}
+        to={to as any}
+        onClick={() => setOpen(false)}
+        className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2 text-sm font-bold transition ${
+          active
+            ? "border-sky/40 bg-sky/12 text-sky"
+            : "border-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+        }`}
+      >
+        <Icon className="h-4 w-4" />
+        {label}
+      </Link>
+    );
+  };
 
   return (
-    <div className="md:hidden flex items-center justify-between border-b border-border/60 px-4 py-3 bg-card/40">
-      <Link to="/dashboard" className="flex items-center gap-2 text-primary">
+    <div className="md:hidden flex items-center justify-between border-b-2 border-border px-4 py-3 bg-background">
+      <Link to="/dashboard" className="flex items-center gap-2">
         <KlausumMark size={22} />
-        <span className="font-display text-sm font-semibold">Klausum</span>
+        <span className="font-display text-base font-extrabold text-primary">klausum</span>
       </Link>
       <div className="flex items-center gap-2">
         <StudentBadge level={level} />
@@ -73,39 +62,35 @@ export function MobileNav({
           <SheetTrigger asChild>
             <button
               aria-label="Open menu"
-              className="inline-flex items-center justify-center rounded-md border border-border/60 bg-background/40 p-1.5 text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center justify-center rounded-xl border-2 border-border bg-background p-1.5 text-muted-foreground hover:text-foreground"
             >
               <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>
           <SheetContent side="right" className="w-72 p-0 flex flex-col">
-            <SheetHeader className="px-4 py-4 border-b border-border/60">
-              <SheetTitle className="flex items-center gap-2 text-primary">
+            <SheetHeader className="px-4 py-4 border-b-2 border-border">
+              <SheetTitle className="flex items-center gap-2">
                 <KlausumMark size={22} />
-                <span className="font-display text-base font-semibold">Klausum</span>
+                <span className="font-display text-base font-extrabold text-primary">klausum</span>
               </SheetTitle>
             </SheetHeader>
             <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-              {all.map(({ to, label, icon: Icon }) => {
-                const active = location.pathname === to || location.pathname.startsWith(to + "/");
-                return (
-                  <Link
-                    key={to}
-                    to={to as any}
-                    onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
-                      active
-                        ? "bg-primary/15 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-accent/10 hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                );
-              })}
+              {primary.map(renderLink)}
+              <button
+                onClick={() => setMoreOpen((o) => !o)}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+              >
+                More tools
+                <ChevronDown className={`h-4 w-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+              </button>
+              {moreOpen && (
+                <div className="ml-3 space-y-0.5 border-l-2 border-border pl-2">
+                  {secondary.map(renderLink)}
+                </div>
+              )}
+              {!moreOpen && renderLink(SETTINGS_LINK)}
             </nav>
-            <div className="border-t border-border/60 px-4 py-3 text-xs text-muted-foreground space-y-2">
+            <div className="border-t-2 border-border px-4 py-3 text-xs font-bold text-muted-foreground space-y-2">
               <div className="truncate">{userLabel}</div>
               <button
                 onClick={() => {

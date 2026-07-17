@@ -11,16 +11,16 @@ function greeting() {
 }
 
 const BUBBLE_MESSAGES = (streak: number, due: number) => [
-  "Good " + greeting() + "! Ready to crush it today? 💪",
-  "Let's review those flashcards first! 🔥",
-  due > 0 ? `${due} card${due === 1 ? "" : "s"} waiting. Let's go! 🎯` : "Your memory is fresh. Build on it! ⚡",
-  "Your memory health is climbing. Time to review! ⚡",
-  "Ayekoo! You're on a roll — keep going! 🏆",
-  "Small sessions daily beat long sessions weekly. Let's go!",
-  "One quiz away from closing a knowledge gap. 🔬",
+  "Good " + greeting() + "! Ready to crush it today?",
+  "Let's review those flashcards first!",
+  due > 0 ? `${due} card${due === 1 ? "" : "s"} waiting. Let's go!` : "Your memory is fresh. Build on it!",
+  "Your memory health is climbing. Time to review!",
+  "Ayekoo! You're on a roll — keep going!",
+  "Small sessions daily beat long sessions weekly.",
+  "One quiz away from closing a knowledge gap.",
   streak > 0
-    ? `Day ${streak} streak — let's make it ${streak + 1}! 📚`
-    : "Start your streak today! ✨",
+    ? `Day ${streak} streak — let's make it ${streak + 1}!`
+    : "Start your streak today!",
 ];
 
 /**
@@ -88,7 +88,13 @@ export function CompanionHero({
   const isWeek = streakDays >= 7 && !isMonth && !isCentury;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl p-5 md:p-6 bg-gradient-to-br from-sky-50 via-blue-100 to-cyan-100 text-slate-900 shadow-md">
+    <div
+      className="card-chunky relative overflow-hidden p-5 md:p-6"
+      style={{
+        backgroundColor: `color-mix(in srgb, ${c.color} 10%, transparent)`,
+        borderColor: `color-mix(in srgb, ${c.color} 30%, transparent)`,
+      }}
+    >
       {/* Subtle topology lines (decorative) */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-40"
@@ -103,58 +109,56 @@ export function CompanionHero({
       <div className="relative flex items-center gap-4">
         {/* Left: greeting */}
         <div className="flex-1 min-w-0">
-          <h1 className="font-display text-3xl md:text-4xl font-bold leading-tight text-slate-900">
+          <h1 className="break-words font-display text-3xl md:text-4xl font-extrabold leading-tight text-foreground">
             Hey {firstName || "there"}!
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
             Good {greeting()} — your pilot's warmed up!
           </p>
 
           {/* Streak pill */}
-          <div className="mt-4 inline-flex items-center gap-3 rounded-2xl bg-white px-4 py-2 shadow-sm border border-white/80">
+          <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border-2 border-border bg-card px-4 py-2">
             {isCentury ? (
-              <Crown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_6px_rgba(244,163,0,0.6)]" />
+              <Crown className="h-5 w-5 fill-primary text-primary" />
             ) : (
               <Flame
                 className={`h-5 w-5 ${
-                  isMonth
-                    ? "text-orange-500 animate-pulse"
-                    : isWeek
-                    ? "text-orange-500 animate-pulse"
-                    : "text-orange-400"
+                  isMonth || isWeek
+                    ? "fill-primary text-primary animate-pulse"
+                    : "text-primary"
                 }`}
               />
             )}
             <div>
-              <div className="text-[9px] uppercase tracking-widest text-slate-500 leading-none">
+              <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground leading-none">
                 Streak
               </div>
               {streakDays === 0 ? (
-                <div className="font-display text-sm font-semibold text-slate-900">
-                  Start today ✨
+                <div className="font-display text-sm font-extrabold text-foreground">
+                  Start today
                 </div>
               ) : streakDays === 1 ? (
-                <div className="font-display text-sm font-semibold text-slate-900">
-                  Day 1 — great start! 🌱
+                <div className="font-display text-sm font-extrabold text-foreground">
+                  Day 1 — great start!
                 </div>
               ) : (
-                <div className="font-display text-2xl font-bold text-slate-900 leading-none streak-bounce">
+                <div className="font-display text-2xl font-extrabold text-foreground leading-none streak-bounce">
                   {shownStreak}
-                  <span className="text-xs font-medium text-slate-500 ml-1">days</span>
+                  <span className="text-xs font-bold text-muted-foreground ml-1">days</span>
                 </div>
               )}
             </div>
 
             {(freezes ?? 0) > 0 && (
               <div
-                className="ml-2 flex items-center gap-0.5 border-l border-slate-200 pl-3"
+                className="ml-2 flex items-center gap-0.5 border-l-2 border-border pl-3"
                 title="Streak Freezes — auto-protect a missed day"
               >
                 {Array.from({ length: 2 }).map((_, i) => (
                   <Snowflake
                     key={i}
                     className={`h-3.5 w-3.5 ${
-                      i < (freezes ?? 0) ? "text-sky-500" : "text-slate-300"
+                      i < (freezes ?? 0) ? "text-sky" : "text-border"
                     }`}
                   />
                 ))}
@@ -165,7 +169,7 @@ export function CompanionHero({
 
         {/* Right: speech bubble + pilot */}
         <div className="flex flex-col items-end shrink-0 gap-2">
-          <div className="relative max-w-[160px] rounded-2xl rounded-br-sm bg-white px-3 py-2 text-xs text-slate-700 shadow-sm border border-white/80 min-h-[44px] flex items-center">
+          <div className="relative max-w-[160px] rounded-2xl rounded-br-sm border-2 border-border bg-card px-3 py-2 text-xs font-bold text-foreground min-h-[44px] flex items-center">
             <AnimatePresence mode="wait">
               <motion.span
                 key={idx}
@@ -181,7 +185,7 @@ export function CompanionHero({
           <div className="pilot-float">
             <CompanionSVG id={c.id} size={72} animate={false} />
           </div>
-          <span className="text-[10px] font-bold tracking-widest text-slate-700">{name}</span>
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">{name}</span>
         </div>
       </div>
     </div>

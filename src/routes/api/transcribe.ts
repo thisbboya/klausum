@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { getUserIdFromToken } from "@/lib/server-auth";
 
 // POST audio (multipart/form-data, field "audio") -> { text }
-// Uses Gemini directly (GEMINI_API_KEY) if available, else Lovable AI Gateway.
+// Uses Gemini directly (GEMINI_API_KEY).
 export const Route = createFileRoute("/api/transcribe")({
   server: {
     handlers: {

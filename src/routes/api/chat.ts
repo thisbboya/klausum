@@ -1,7 +1,7 @@
 import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "@/lib/ai-gateway";
+import { resolveModel, DEFAULT_MODEL } from "@/lib/ai-gateway";
 import { getUserIdFromToken } from "@/lib/server-auth";
 
 type ChatBody = {
@@ -30,11 +30,14 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const key = process.env.LOVABLE_API_KEY;
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
-
-        const provider = createLovableAiGatewayProvider(key);
-        const model = provider(DEFAULT_MODEL);
+        let model;
+        try {
+          model = resolveModel(DEFAULT_MODEL);
+        } catch (e) {
+          return new Response(e instanceof Error ? e.message : "No AI provider configured", {
+            status: 500,
+          });
+        }
 
         const sys = body.mode === "socratic" ? SOCRATIC : STANDARD;
         const ctx = body.materialContext

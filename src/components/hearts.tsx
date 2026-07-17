@@ -15,7 +15,7 @@ export function Hearts({ count, max = 3 }: { count: number; max?: number }) {
               transition={{ duration: 0.25 }}
             >
               <Heart
-                className={`h-4 w-4 ${alive ? "fill-red-500 text-red-500" : "text-muted-foreground/30"}`}
+                className={`h-4 w-4 ${alive ? "fill-destructive text-destructive" : "text-muted-foreground/30"}`}
               />
             </motion.span>
           </AnimatePresence>

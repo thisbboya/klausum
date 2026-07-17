@@ -23,11 +23,11 @@ export const Route = createFileRoute("/_authenticated/review")({
   component: ReviewPage,
 });
 
-const RATINGS: { rating: Rating; label: string; emoji: string; cls: string }[] = [
-  { rating: 1, label: "Again", emoji: "🔁", cls: "bg-red-500/15 text-red-400 hover:bg-red-500/25 border-red-500/30" },
-  { rating: 2, label: "Hard", emoji: "😬", cls: "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 border-amber-500/30" },
-  { rating: 3, label: "Good", emoji: "✅", cls: "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border-emerald-500/30" },
-  { rating: 4, label: "Easy", emoji: "⚡", cls: "bg-primary/15 text-primary hover:bg-primary/25 border-primary/30" },
+const RATINGS: { rating: Rating; label: string; cls: string }[] = [
+  { rating: 1, label: "Again", cls: "bg-destructive/12 text-destructive hover:bg-destructive/20 border-destructive/40" },
+  { rating: 2, label: "Hard", cls: "bg-primary/12 text-primary hover:bg-primary/20 border-primary/40" },
+  { rating: 3, label: "Good", cls: "bg-success/12 text-success hover:bg-success/20 border-success/40" },
+  { rating: 4, label: "Easy", cls: "bg-sky/12 text-sky hover:bg-sky/20 border-sky/40" },
 ];
 
 const BLOOM_LABEL: Record<number, string> = {
@@ -161,7 +161,7 @@ function ReviewPage() {
       setFirstTryRight((n) => (showBack ? n : n + 1));
       if (newStreak === 5 || newStreak === 10) {
         Sounds.streak();
-        toast.success(newStreak === 10 ? "🔥🔥 On FIRE! +10 bonus XP!" : "Hot streak! 🔥 +5 bonus XP!");
+        toast.success(newStreak === 10 ? "On FIRE! +10 bonus XP!" : "Hot streak! +5 bonus XP!");
         await awardXp({ userId: user.id, amount: newStreak === 10 ? 10 : 5, action: "hot_streak", description: `${newStreak} in a row` });
       }
     }
@@ -233,26 +233,26 @@ function ReviewPage() {
   if (cards.length === 0) {
     const pct = reviewedToday > 0 ? Math.round((firstTryRight / reviewedToday) * 100) : 0;
     const motivation =
-      pct >= 90 ? "Incredible session. You're unstoppable! 💪"
+      pct >= 90 ? "Incredible session. You're unstoppable!"
       : pct >= 70 ? "Strong work. Consistency beats intensity every time."
-      : pct >= 50 ? "Good effort. Tomorrow will be even better. 🌱"
+      : pct >= 50 ? "Good effort. Tomorrow will be even better."
       : reviewedToday > 0 ? "These cards are tough — that's why FSRS keeps showing them. You've got this!"
       : "No cards due. Generate flashcards from a material.";
 
     return (
       <div className="text-center py-16 card-entrance">
         <CheckCircle2 className="h-14 w-14 mx-auto text-primary" />
-        <h2 className="mt-4 font-display text-3xl font-bold">Ayekoo! 🏆</h2>
+        <h2 className="mt-4 font-display text-3xl font-bold">Ayekoo!</h2>
         {reviewedToday > 0 && (
           <div className="mt-6 mx-auto max-w-md grid grid-cols-2 gap-3 text-left">
             <Stat label="Cards reviewed" value={reviewedToday.toString()} />
             <Stat label="First-try right" value={`${pct}%`} />
-            <Stat label="Hot streak" value={`${bestStreak} 🔥`} />
-            <Stat label="XP earned" value={`+${totalXp} ⚡`} accent />
+            <Stat label="Hot streak" value={`${bestStreak}`} />
+            <Stat label="XP earned" value={`+${totalXp}`} accent />
           </div>
         )}
         <p className="mt-6 text-sm text-muted-foreground max-w-md mx-auto">{motivation}</p>
-        <Link to="/materials" className="mt-6 inline-block rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
+        <Link to="/materials" className="mt-6 inline-block btn-3d rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
           Back to materials
         </Link>
       </div>
@@ -272,12 +272,12 @@ function ReviewPage() {
         <p className="mt-2 text-sm text-muted-foreground">Take a short break. They refill in:</p>
         <div className="mt-4 font-mono text-3xl text-primary">{m}:{s.toString().padStart(2, "0")}</div>
         <div className="mt-6 flex flex-col gap-2 max-w-xs mx-auto">
-          <Link to="/quizzes" className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
+          <Link to="/quizzes" className="btn-3d rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
             Take a quiz to refill ❤️
           </Link>
           <button
             onClick={() => { setHearts(3); setPausedUntil(null); }}
-            className="rounded-lg border border-border px-5 py-2.5 text-sm font-medium hover:bg-accent/10"
+            className="rounded-xl border-2 border-border px-5 py-2.5 text-sm font-medium hover:bg-accent/10"
           >
             Skip break
           </button>
@@ -300,7 +300,7 @@ function ReviewPage() {
         <div className="flex items-center gap-3">
           <Hearts count={hearts} />
           {hotStreak >= 2 && (
-            <div className="flex items-center gap-1 text-xs font-semibold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full streak-bounce" key={hotStreak}>
+            <div className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full streak-bounce" key={hotStreak}>
               <Flame className="h-3 w-3" /> {hotStreak} in a row
             </div>
           )}
@@ -325,7 +325,7 @@ function ReviewPage() {
           key={current?.id + (showBack ? "-back" : "-front")}
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.2 }}
-          className="min-h-[280px] rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]"
+          className="min-h-[280px] card-chunky bg-card p-8 shadow-[var(--shadow-card)]"
         >
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
             <span className="px-2 py-0.5 rounded-full" style={{ background: `var(--bloom-${current?.bloom_level ?? 1})`, color: "oklch(0.2 0.04 260)" }}>
@@ -360,40 +360,40 @@ function ReviewPage() {
             <>
               <textarea value={explanation} onChange={(e) => setExplanation(e.target.value)}
                 rows={4} placeholder="Explain this concept as if teaching a 12-year-old..."
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               />
               <button onClick={submitFeynman} disabled={evaluating || !explanation.trim()}
-                className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                className="w-full btn-3d rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {evaluating ? "Evaluating…" : "Submit explanation"}
               </button>
             </>
           ) : (
-            <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <div className="card-chunky bg-card p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-display font-semibold">Score: {feedback.score}</span>
                 <span className="text-xs text-muted-foreground">+15 XP</span>
               </div>
               {feedback.got_right?.length > 0 && (
                 <div>
-                  <div className="text-xs font-medium text-emerald-400 mb-1">✅ Got right</div>
+                  <div className="text-xs font-medium text-success mb-1">✅ Got right</div>
                   <ul className="text-sm space-y-0.5 ml-4 list-disc text-muted-foreground">
                     {feedback.got_right.map((g: string, i: number) => <li key={i}>{g}</li>)}
                   </ul>
                 </div>
               )}
               <div>
-                <div className="text-xs font-medium text-amber-400 mb-1">⚠️ Critical gap</div>
+                <div className="text-xs font-extrabold text-primary mb-1">Critical gap</div>
                 <p className="text-sm text-muted-foreground">{feedback.critical_gap}</p>
               </div>
               <div>
-                <div className="text-xs font-medium text-primary mb-1">❓ Follow-up</div>
+                <div className="text-xs font-extrabold text-sky mb-1">Follow-up</div>
                 <p className="text-sm">{feedback.follow_up_question}</p>
               </div>
               <div className="grid grid-cols-4 gap-2 pt-2">
                 {RATINGS.map((r) => (
                   <button key={r.rating} onClick={() => handleRate(r.rating)}
-                    className={`rounded-lg border px-2 py-2 text-xs ${r.cls}`}>
-                    {r.emoji} {r.label}
+                    className={`rounded-xl border-2 px-2 py-2 text-xs font-extrabold ${r.cls}`}>
+                    {r.label}
                   </button>
                 ))}
               </div>
@@ -402,17 +402,17 @@ function ReviewPage() {
         </div>
       ) : !showBack ? (
         <button onClick={() => { Sounds.flip(); setShowBack(true); }}
-          className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
+          className="w-full btn-3d rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
           Show answer
         </button>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {RATINGS.map((r, i) => (
             <button key={r.rating} onClick={() => handleRate(r.rating)}
-              className={`rounded-lg border px-3 py-3 text-sm transition ${r.cls}`}>
-              <div className="font-semibold">{r.emoji} {r.label}</div>
-              <div className="text-[10px] opacity-70 mt-0.5">
-                → {projections?.[i].days === 0 ? "now" : `${projections?.[i].days}d`}
+              className={`rounded-xl border-2 px-3 py-3 text-sm transition ${r.cls}`}>
+              <div className="font-extrabold">{r.label}</div>
+              <div className="text-[10px] font-bold opacity-70 mt-0.5">
+                {projections?.[i].days === 0 ? "now" : `${projections?.[i].days}d`}
               </div>
             </button>
           ))}

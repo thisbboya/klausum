@@ -56,7 +56,7 @@ export function FocusTimer({ materialId }: { materialId?: string }) {
   const ss = String(seconds % 60).padStart(2, "0");
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 text-xs">
+    <div className="inline-flex items-center gap-2 rounded-xl border-2 border-border bg-card px-2 py-1.5 text-xs">
       <Timer className="h-3.5 w-3.5 text-primary" />
       <span className="font-mono tabular-nums">{mm}:{ss}</span>
       <button onClick={toggle} className="rounded p-1 hover:bg-accent/20" title={running ? "Pause & save" : "Start"}>

@@ -155,7 +155,7 @@ export function QuizzesPage() {
         <p className="text-sm text-muted-foreground mt-1">Generate Bloom-tagged MCQs from any material or topic.</p>
       </header>
 
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <section className="card-chunky bg-card p-5 space-y-4">
         <h2 className="font-display text-base font-semibold">New quiz</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="From a material (optional)">
@@ -202,7 +202,7 @@ export function QuizzesPage() {
         </div>
 
         {showAdvanced && (
-          <div className="rounded-lg border border-border/60 bg-background/50 p-4 space-y-3">
+          <div className="rounded-xl border-2 border-border/60 bg-background/50 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-semibold">Bloom level distribution</div>
@@ -234,7 +234,7 @@ export function QuizzesPage() {
         <button
           onClick={generate}
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-2 btn-3d rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {busy ? "Generating…" : "Generate quiz"}
@@ -250,7 +250,7 @@ export function QuizzesPage() {
         ) : (
           <ul className="grid gap-3 md:grid-cols-2">
             {(quizzes ?? []).map((q) => (
-              <li key={q.id} className="rounded-xl border border-border bg-card p-4 flex items-center justify-between gap-3">
+              <li key={q.id} className="card-chunky bg-card p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-display font-semibold truncate">{q.title}</div>
                   <div className="text-xs text-muted-foreground">

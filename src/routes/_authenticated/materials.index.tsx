@@ -24,6 +24,9 @@ const SUBJECTS = [
 const FIELDS = ["Sciences","Engineering","Humanities","Medicine","Law","Business","Other"];
 const STEM_FIELDS = new Set(["Sciences","Engineering","Medicine"]);
 
+// Course-card tints, hashed from the subject name (CourieX-style folders)
+const COURSE_COLORS = ["#1CB0F6", "#58CC02", "#FFC800", "#A570FF", "#FF4B4B", "#F97316", "#0D9488", "#8B5CF6"];
+
 const STEPS = [
   "Content received",
   "Extracting key concepts & graph",
@@ -43,12 +46,14 @@ export function MaterialsPage() {
   const navigate = useNavigate();
   const processFn = useServerFn(processMaterial);
   const [uploading, setUploading] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const [tab, setTab] = useState<"text" | "file">("text");
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("General");
   const [field, setField] = useState("Sciences");
   const [pasteText, setPasteText] = useState("");
+  const [activeSubject, setActiveSubject] = useState<string | null>(null);
 
   const { data: materials } = useQuery({
     queryKey: ["materials", user?.id],
@@ -200,6 +205,9 @@ export function MaterialsPage() {
     } finally {
       setUploading(false);
       setStepIdx(0);
+      setTitle("");
+      setPasteText("");
+      setTab("text");
     }
   }
 
@@ -265,13 +273,23 @@ export function MaterialsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-2xl font-bold">Materials</h1>
-        <p className="text-sm text-muted-foreground mt-1">Upload anything — AI rewrites it for your style.</p>
+      <header className="flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Materials</h1>
+          <p className="text-sm text-muted-foreground mt-1">Upload anything — AI rewrites it for your style.</p>
+        </div>
+        {!activeSubject && (
+          <button
+            onClick={() => setShowUploadForm(!showUploadForm)}
+            className="btn-3d shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            {showUploadForm ? "Cancel" : "+ Upload Material"}
+          </button>
+        )}
       </header>
 
-      {!uploading && (
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      {showUploadForm && !activeSubject && (
+        <div className="card-chunky bg-card p-5 space-y-4">
           <div className="flex gap-2 border-b border-border pb-2">
             <TabBtn active={tab === "text"} onClick={() => setTab("text")}>✏️ Text / Paste</TabBtn>
             <TabBtn active={tab === "file"} onClick={() => setTab("file")}>📎 File Upload</TabBtn>
@@ -282,19 +300,19 @@ export function MaterialsPage() {
               <input
                 value={title} onChange={(e) => setTitle(e.target.value)}
                 placeholder="Title"
-                className="md:col-span-3 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                className="md:col-span-3 rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               />
             )}
             <select value={subject} onChange={(e) => setSubject(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm">
               {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
             </select>
             <select value={field} onChange={(e) => setField(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm">
               {FIELDS.map((f) => <option key={f}>{f}</option>)}
             </select>
             <div className="text-xs text-muted-foreground self-center">
-              {STEM_FIELDS.has(field) ? "⚗️ STEM — formulas extracted" : "📚 General"}
+              {STEM_FIELDS.has(field) ? "STEM — formulas extracted" : "General"}
             </div>
           </div>
 
@@ -304,7 +322,7 @@ export function MaterialsPage() {
                 value={pasteText} onChange={(e) => setPasteText(e.target.value)}
                 placeholder="Paste notes, textbook excerpts, lecture notes, or any study material..."
                 rows={8}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               />
               <div className="flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
@@ -313,7 +331,7 @@ export function MaterialsPage() {
                 <button
                   onClick={handlePaste}
                   disabled={!pasteText.trim() || !title.trim()}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   Process material
                 </button>
@@ -364,9 +382,59 @@ export function MaterialsPage() {
         </div>
       )}
 
-      {materials && materials.length > 0 ? (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-          {materials.map((m) => {
+      {materials && materials.length > 0 && !activeSubject ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Object.entries(
+            materials.reduce<Record<string, typeof materials>>((acc, m) => {
+              const key = m.subject || "General";
+              (acc[key] ??= [] as any).push(m);
+              return acc;
+            }, {}),
+          ).map(([subjectName, items]) => {
+            const color = COURSE_COLORS[
+              subjectName.split("").reduce((a, ch) => a + ch.charCodeAt(0), 0) % COURSE_COLORS.length
+            ];
+            const ready = items.filter((m) => m.processing_status === "ready").length;
+            return (
+              <button
+                key={subjectName}
+                onClick={() => setActiveSubject(subjectName)}
+                className="card-chunky card-chunky-hover overflow-hidden bg-card text-left"
+              >
+                <div
+                  className="flex h-20 items-center justify-center"
+                  style={{ backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)` }}
+                >
+                  <span
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: `color-mix(in srgb, ${color} 22%, transparent)` }}
+                  >
+                    <FileText className="h-6 w-6" style={{ color }} />
+                  </span>
+                </div>
+                <div className="p-4">
+                  <div className="truncate font-display text-base font-extrabold">{subjectName}</div>
+                  <div className="mt-1 flex items-center justify-between text-xs font-bold text-muted-foreground">
+                    <span>
+                      {items.length} {items.length === 1 ? "material" : "materials"}
+                    </span>
+                    <span className="text-success">{ready} ready</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : materials && materials.length > 0 && activeSubject ? (
+        <>
+          <button
+            onClick={() => setActiveSubject(null)}
+            className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wide text-sky hover:underline"
+          >
+            ← All subjects
+          </button>
+          <ul className="divide-y-2 divide-border card-chunky bg-card">
+          {materials.filter((m) => (m.subject || "General") === activeSubject).map((m) => {
             const hasPdf = !!(m as any).pdf_storage_path;
             const isReady = m.processing_status === "ready";
             const isFailed = m.processing_status === "failed";
@@ -385,7 +453,7 @@ export function MaterialsPage() {
                       <span>{new Date(m.created_at!).toLocaleDateString()}</span>
                       {hasPdf && <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold">PDF</span>}
                       <span className={`px-1.5 py-0.5 rounded text-[10px] capitalize ${
-                        isReady ? "bg-emerald-500/15 text-emerald-400" :
+                        isReady ? "bg-success/15 text-success" :
                         isFailed ? "bg-destructive/15 text-destructive" :
                         "bg-muted text-muted-foreground"
                       }`}>{m.processing_status}</span>
@@ -395,9 +463,9 @@ export function MaterialsPage() {
                 {isReady && (
                   <Link
                     to="/materials/$id" params={{ id: m.id }}
-                    className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 active:scale-95 transition"
+                    className="shrink-0 inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 active:scale-95 transition"
                   >
-                    {hasPdf ? "📖 Read" : "Open"}
+                    {hasPdf ? "Read" : "Open"}
                   </Link>
                 )}
                 <button
@@ -418,7 +486,8 @@ export function MaterialsPage() {
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </>
       ) : (
         !uploading && <p className="text-center text-sm text-muted-foreground py-8">No materials yet.</p>
       )}

@@ -87,13 +87,13 @@ function FormulasPage() {
           <p className="text-sm text-muted-foreground">Your reference sheet for every subject.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={exportPdf} disabled={exporting} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-semibold disabled:opacity-50">
+          <button onClick={exportPdf} disabled={exporting} className="inline-flex items-center gap-1 rounded-xl border-2 border-border px-3 py-2 text-sm font-semibold disabled:opacity-50">
             <Download className="h-4 w-4" /> {exporting ? "Exporting…" : "Export PDF"}
           </button>
           <button onClick={() => setAiOpen(true)} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
             <Sparkles className="h-4 w-4" /> AI Reference Sheet
           </button>
-          <button onClick={() => setAdding(!adding)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+          <button onClick={() => setAdding(!adding)} className="inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
             <Plus className="h-4 w-4" /> Add formula
           </button>
         </div>
@@ -107,7 +107,7 @@ function FormulasPage() {
       />
 
       {adding && (
-        <div className="space-y-3 rounded-xl border border-border/60 bg-card/60 p-4">
+        <div className="space-y-3 card-chunky/60 bg-card/60 p-4">
           <div className="grid md:grid-cols-2 gap-3">
             <input className="input" placeholder="Name (e.g. Quadratic formula)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <input className="input" placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
@@ -115,13 +115,13 @@ function FormulasPage() {
           <textarea className="input min-h-24 font-mono text-xs" placeholder={"LaTeX, e.g. x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"} value={form.latex} onChange={(e) => setForm({ ...form, latex: e.target.value })} />
           <input className="input" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           {form.latex && (
-            <div className="rounded-lg border border-border/40 bg-background/40 p-3 overflow-x-auto">
+            <div className="rounded-xl border-2 border-border/40 bg-background/40 p-3 overflow-x-auto">
               <SafeMath latex={form.latex} />
             </div>
           )}
           <div className="flex gap-2">
-            <button onClick={add} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Save</button>
-            <button onClick={() => setAdding(false)} className="rounded-lg border border-border px-3 py-1.5 text-xs">Cancel</button>
+            <button onClick={add} className="btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Save</button>
+            <button onClick={() => setAdding(false)} className="rounded-xl border-2 border-border px-3 py-1.5 text-xs">Cancel</button>
           </div>
         </div>
       )}
@@ -143,17 +143,17 @@ function FormulasPage() {
       ) : (
         <ul className="grid md:grid-cols-2 gap-3">
           {filtered.map((f: any) => (
-            <li key={f.id} className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-2">
+            <li key={f.id} className="card-chunky/60 bg-card/60 p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{f.name}</div>
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{f.subject}</div>
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <button onClick={() => toggleFav(f)} className="p-1 text-muted-foreground hover:text-amber-400">
-                    <Star className={`h-4 w-4 ${f.is_favorite ? "fill-amber-400 text-amber-400" : ""}`} />
+                  <button onClick={() => toggleFav(f)} className="p-1 text-muted-foreground hover:text-primary">
+                    <Star className={`h-4 w-4 ${f.is_favorite ? "fill-primary text-primary" : ""}`} />
                   </button>
-                  <button onClick={() => del(f.id)} className="p-1 text-muted-foreground hover:text-red-400">
+                  <button onClick={() => del(f.id)} className="p-1 text-muted-foreground hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -176,7 +176,7 @@ function SafeMath({ latex }: { latex: string }) {
   try {
     return <BlockMath math={latex} />;
   } catch {
-    return <code className="text-xs text-red-400">Invalid LaTeX</code>;
+    return <code className="text-xs text-destructive">Invalid LaTeX</code>;
   }
 }
 

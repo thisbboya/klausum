@@ -17,7 +17,7 @@ export function FloatingCompanion({
   return (
     <div className="fixed bottom-4 right-4 z-40 hidden sm:block">
       {open && (
-        <div className="mb-2 w-64 rounded-xl border border-border bg-card p-3 shadow-lg animate-in fade-in slide-in-from-bottom-2">
+        <div className="mb-2 w-64 card-chunky bg-card p-3 shadow-lg animate-in fade-in slide-in-from-bottom-2">
           <div className="flex items-start justify-between gap-2">
             <div className="text-sm font-semibold">{name}</div>
             <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
@@ -30,7 +30,7 @@ export function FloatingCompanion({
           <Link
             to="/companion-select"
             onClick={() => setOpen(false)}
-            className="mt-2 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground"
+            className="mt-2 inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground"
           >
             <Sparkles className="h-3 w-3" /> Change companion
           </Link>
@@ -39,7 +39,12 @@ export function FloatingCompanion({
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={`Talk to ${name}`}
-        className="rounded-full bg-card border border-border p-2 shadow-md hover:shadow-lg transition"
+        className="rounded-full border-2 p-2 transition hover:-translate-y-0.5"
+        style={{
+          borderColor: `color-mix(in srgb, ${c.color} 45%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${c.color} 12%, var(--card))`,
+          boxShadow: `0 4px 0 0 color-mix(in srgb, ${c.color} 35%, transparent)`,
+        }}
       >
         <CompanionSVG id={c.id} size={48} />
       </button>

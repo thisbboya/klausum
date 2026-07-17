@@ -20,24 +20,24 @@ export function DailyQuests({ userId }: { userId?: string }) {
     const result = await claimQuest(q);
     if (!result) return;
     sounds.questComplete?.();
-    toast.success(`+${result.xp} XP · +${result.gems} 💎`);
+    toast.success(`+${result.xp} XP · +${result.gems} gems`);
     setQuests((prev) => prev.map((x) => (x.id === q.id ? { ...x, claimed: true } : x)));
   }
 
   if (loading) {
-    return <div className="h-40 rounded-xl border border-border bg-card animate-pulse" />;
+    return <div className="card-chunky h-40 bg-card animate-pulse" />;
   }
 
   const completedCount = quests.filter((q) => q.claimed).length;
   const allClaimed = completedCount === quests.length && quests.length > 0;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="card-chunky bg-card p-5">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
           <Target className="h-3.5 w-3.5" /> Daily quests
         </div>
-        <span className="text-xs font-medium text-primary">
+        <span className="text-xs font-extrabold text-primary">
           {completedCount}/{quests.length}
         </span>
       </div>
@@ -45,38 +45,38 @@ export function DailyQuests({ userId }: { userId?: string }) {
         {quests.map((q) => {
           const pct = Math.round((q.progress / q.target) * 100);
           return (
-            <li key={q.id} className="rounded-lg border border-border bg-background p-3">
+            <li key={q.id} className="rounded-xl border-2 border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-sm font-medium">{q.title}</div>
+                <div className="text-sm font-extrabold">{q.title}</div>
                 {q.claimed ? (
-                  <span className="flex items-center gap-1 text-xs text-emerald-500">
+                  <span className="flex items-center gap-1 text-xs font-extrabold text-success">
                     <Check className="h-3 w-3" /> claimed
                   </span>
                 ) : q.completed ? (
                   <button
                     onClick={() => handleClaim(q)}
-                    className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                    className="btn-3d btn-3d-success rounded-xl bg-success px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-success-foreground"
                   >
                     Claim
                   </button>
                 ) : (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs font-bold text-muted-foreground">
                     {q.progress}/{q.target}
                   </span>
                 )}
               </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-2.5 rounded-full bg-surface-3 overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-primary to-amber-400 transition-all"
+                  className={`h-full transition-all ${q.completed || q.claimed ? "bg-success" : "bg-primary"}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+              <div className="mt-2 flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-amber-400" /> +{q.reward_xp} XP
+                  <Sparkles className="h-3 w-3 text-primary" /> +{q.reward_xp} XP
                 </span>
                 <span className="flex items-center gap-1">
-                  <Gem className="h-3 w-3 text-cyan-400" /> +{q.reward_gems}
+                  <Gem className="h-3 w-3 text-sky" /> +{q.reward_gems}
                 </span>
               </div>
             </li>
@@ -84,8 +84,8 @@ export function DailyQuests({ userId }: { userId?: string }) {
         })}
       </ul>
       {allClaimed && (
-        <p className="mt-3 text-center text-xs text-emerald-500 font-medium">
-          ✨ All quests claimed — see you tomorrow!
+        <p className="mt-3 text-center text-xs font-extrabold text-success">
+          All quests claimed — see you tomorrow!
         </p>
       )}
     </div>

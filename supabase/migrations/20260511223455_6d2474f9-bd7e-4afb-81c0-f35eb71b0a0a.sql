@@ -31,7 +31,8 @@ CREATE POLICY "Admins manage roles upd" ON public.user_roles
 CREATE POLICY "Admins manage roles del" ON public.user_roles
   FOR DELETE USING (public.has_role(auth.uid(),'admin'));
 
--- Seed initial admin
+-- Seed initial admin (skipped if the user doesn't exist in this project)
 INSERT INTO public.user_roles (user_id, role)
-VALUES ('cf5bf89f-2dd8-4583-b215-3638214be2c6','admin')
+SELECT id, 'admin' FROM auth.users
+WHERE id = 'cf5bf89f-2dd8-4583-b215-3638214be2c6'
 ON CONFLICT DO NOTHING;

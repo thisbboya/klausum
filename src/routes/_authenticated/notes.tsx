@@ -67,7 +67,7 @@ function NotesList() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Cue, notes, summary — the proven 3-zone study layout.</p>
         </div>
-        <button onClick={createNote} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
+        <button onClick={createNote} className="inline-flex items-center gap-2 btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
           <Plus className="h-4 w-4" /> New note
         </button>
       </header>
@@ -76,14 +76,14 @@ function NotesList() {
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         placeholder="Filter by title or subject…"
-        className="w-full max-w-sm rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        className="w-full max-w-sm rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
       />
 
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-12 text-center">
           <NotebookPen className="mx-auto h-10 w-10 text-muted-foreground/40" />
           <p className="mt-3 text-sm text-muted-foreground">No Cornell notes yet.</p>
-          <button onClick={createNote} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+          <button onClick={createNote} className="mt-4 inline-flex items-center gap-2 btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
             <Plus className="h-4 w-4" /> Create your first note
           </button>
         </div>
@@ -94,7 +94,7 @@ function NotesList() {
               <Link
                 to="/notes"
                 search={{ id: n.id }}
-                className="block rounded-xl border border-border bg-card p-4 hover:border-primary/40 transition"
+                className="block card-chunky bg-card p-4 hover:border-primary/40 transition"
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-display font-semibold truncate">{n.title}</h3>
@@ -261,13 +261,13 @@ function NoteEditor({ id }: { id: string }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Note title"
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-lg font-display font-semibold outline-none focus:border-primary"
+          className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-lg font-display font-semibold outline-none focus:border-primary"
         />
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           placeholder="Subject"
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </div>
 
@@ -278,7 +278,7 @@ function NoteEditor({ id }: { id: string }) {
         <ToolBtn onClick={exportPdf} busy={exporting} icon={Download}>Export PDF</ToolBtn>
       </div>
 
-      <div className="grid gap-0 rounded-xl border border-border overflow-hidden bg-card">
+      <div className="grid gap-0 card-chunky overflow-hidden bg-card">
         <div className="grid md:grid-cols-[260px_1fr]">
           <ColumnPane
             label="Cue Column"
@@ -363,7 +363,7 @@ function ToolBtn({ onClick, busy, icon: Icon, children }: any) {
     <button
       onClick={onClick}
       disabled={busy}
-      className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:border-primary/40 disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3 py-2 text-xs font-medium hover:border-primary/40 disabled:opacity-50"
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5 text-primary" />}
       {children}

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Flag, ChevronRight, Loader2, Timer, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sounds } from "@/lib/sounds";
+import { submitDuelScore } from "@/lib/duels";
 
 type Q = {
   question: string;
@@ -18,16 +19,19 @@ type Q = {
   bloom_level: number;
 };
 
-type Search = { timer?: number };
+type Search = { timer?: number; challenge?: string };
 
 export const Route = createFileRoute("/_authenticated/quizzes/$id/take")({
-  validateSearch: (s: Record<string, unknown>): Search => ({ timer: typeof s.timer === "number" ? s.timer : 0 }),
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    timer: typeof s.timer === "number" ? s.timer : 0,
+    challenge: typeof s.challenge === "string" ? s.challenge : undefined,
+  }),
   component: TakeQuiz,
 });
 
 function TakeQuiz() {
   const { id } = Route.useParams();
-  const { timer: timerSec } = Route.useSearch();
+  const { timer: timerSec, challenge: challengeId } = Route.useSearch();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Q[]>([]);
@@ -226,13 +230,41 @@ function TakeQuiz() {
     if (total >= 5 && score === total) {
       try {
         await supabase.rpc("open_chest", { _tier: "perfect_quiz" });
-        toast.success("💎 Perfect quiz! +25 XP, +10 gems");
+        toast.success("Perfect quiz! +25 XP, +10 gems");
       } catch {}
     }
 
     // Refill review hearts if user scored >= 70%
     if (total > 0 && score / total >= 0.7) {
       try { localStorage.setItem("klausum:heartsRefilledAt", String(Date.now())); } catch {}
+    }
+
+    // Duel scoring — write back to the challenge instead of the normal results screen
+    if (challengeId) {
+      try {
+        const duel = await submitDuelScore(challengeId, score, total);
+        setSubmitting(false);
+        if (duel.status === "expired") {
+          toast.error("This challenge expired before your score could count.");
+        } else if (duel.status === "completed") {
+          const iWon = duel.winner_id === user.id;
+          if (iWon) {
+            await awardXp({ userId: user.id, amount: 20, action: "duel_won", description: `Won duel on ${title}` });
+            toast.success("You won the duel!");
+          } else if (duel.winner_id === null) {
+            toast("It's a tie!");
+          } else {
+            toast("Duel finished — better luck next time.");
+          }
+        } else {
+          toast.success("Score submitted — waiting on your opponent.");
+        }
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to submit duel score");
+        setSubmitting(false);
+      }
+      navigate({ to: "/community" });
+      return;
     }
 
     setSubmitting(false);
@@ -265,7 +297,7 @@ function TakeQuiz() {
           <div className="h-full bg-primary xp-bar-fill" style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
         {flags.size > 0 && (
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-amber-400">
+          <div className="mt-2 flex items-center gap-2 text-[11px] text-primary">
             <Flag className="h-3 w-3" /> {flags.size} flagged
             {!reviewMode && idx === total - 1 && (
               <button onClick={() => { setReviewMode(true); setIdx(Array.from(flags)[0]); }} className="ml-1 underline">
@@ -283,13 +315,13 @@ function TakeQuiz() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.25 }}
-          className={`rounded-xl border border-border bg-card p-6 md:p-8 ${isChecked && !isCorrect ? "answer-wrong" : ""}`}
+          className={`card-chunky bg-card p-6 md:p-8 ${isChecked && !isCorrect ? "answer-wrong" : ""}`}
         >
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-xl md:text-2xl font-semibold leading-relaxed">{q.question}</h2>
             <button
               onClick={toggleFlag}
-              className={`shrink-0 rounded-full p-2 ${flags.has(idx) ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-accent/10"}`}
+              className={`shrink-0 rounded-full p-2 ${flags.has(idx) ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent/10"}`}
               aria-label="Flag for review"
             >
               <Flag className="h-4 w-4" />
@@ -301,8 +333,8 @@ function TakeQuiz() {
               const isRightAns = letter === q.correct;
               let cls = "border-border bg-background hover:border-primary/40";
               if (isChecked) {
-                if (isRightAns) cls = "border-emerald-500 bg-emerald-500/15 text-emerald-400 answer-correct";
-                else if (sel) cls = "border-red-500 bg-red-500/15 text-red-400";
+                if (isRightAns) cls = "border-success bg-success/15 text-success answer-correct";
+                else if (sel) cls = "border-destructive bg-destructive/15 text-destructive";
                 else cls = "border-border bg-background opacity-60";
               } else if (sel) {
                 cls = "border-primary bg-primary/10 text-foreground";
@@ -334,7 +366,7 @@ function TakeQuiz() {
       {combo >= 2 && !isChecked && (
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30 px-3 py-1 text-xs font-bold">
-            🔥 {combo}× streak{combo >= 5 ? " — 2× XP!" : combo >= 3 ? " — 1.5× XP" : ""}
+            {combo}× streak{combo >= 5 ? " — 2× XP!" : combo >= 3 ? " — 1.5× XP" : ""}
           </span>
         </div>
       )}
@@ -347,21 +379,21 @@ function TakeQuiz() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className={`rounded-xl border p-4 ${isCorrect ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"}`}
+            className={`rounded-xl border p-4 ${isCorrect ? "border-success/40 bg-success/10" : "border-destructive/40 bg-destructive/10"}`}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <div className={`font-display text-sm font-bold ${isCorrect ? "text-emerald-400" : "text-red-400"}`}>
-                  {isCorrect ? "✅ Correct!" : "❌ Incorrect"}
+                <div className={`font-display text-sm font-bold ${isCorrect ? "text-success" : "text-destructive"}`}>
+                  {isCorrect ? "Correct!" : "Incorrect"}
                 </div>
                 {!isCorrect && (
-                  <div className="text-xs text-muted-foreground mt-1">Answer: <span className="text-emerald-400 font-semibold">{q.correct}</span></div>
+                  <div className="text-xs text-muted-foreground mt-1">Answer: <span className="text-success font-semibold">{q.correct}</span></div>
                 )}
                 {q.explanation && (
                   <p className="text-xs text-muted-foreground mt-1.5">{q.explanation}</p>
                 )}
               </div>
-              {isCorrect && <span className="shrink-0 text-primary font-bold text-sm">+ XP ⚡</span>}
+              {isCorrect && <span className="shrink-0 text-primary font-bold text-sm">+ XP</span>}
             </div>
           </motion.div>
         )}
@@ -372,14 +404,14 @@ function TakeQuiz() {
         <button
           onClick={() => setIdx(Math.max(0, idx - 1))}
           disabled={idx === 0}
-          className="rounded-lg border border-border px-4 py-2 text-sm disabled:opacity-30"
+          className="rounded-xl border-2 border-border px-4 py-2 text-sm disabled:opacity-30"
         >
           ← Back
         </button>
         {idx < total - 1 ? (
           <button
             onClick={() => setIdx(idx + 1)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             Next <ChevronRight className="h-4 w-4" />
           </button>
@@ -387,7 +419,7 @@ function TakeQuiz() {
           <button
             onClick={finish}
             disabled={!allAnswered || submitting}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {allAnswered ? "Finish quiz" : `Answer all (${answered}/${total})`}

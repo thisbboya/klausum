@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CompanionSelectRouteImport } from './routes/companion-select'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -25,43 +24,28 @@ import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as ApiRunCodeRouteImport } from './routes/api/run-code'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedWrappedRouteImport } from './routes/_authenticated/wrapped'
-import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
-import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated/timetable'
 import { Route as AuthenticatedSolveRouteImport } from './routes/_authenticated/solve'
 import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
-import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/rooms'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
-import { Route as AuthenticatedResearchRouteImport } from './routes/_authenticated/research'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
-import { Route as AuthenticatedQuestionBankRouteImport } from './routes/_authenticated/question-bank'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMindmapsRouteImport } from './routes/_authenticated/mindmaps'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
-import { Route as AuthenticatedLibraryChatRouteImport } from './routes/_authenticated/library-chat'
 import { Route as AuthenticatedGapsRouteImport } from './routes/_authenticated/gaps'
 import { Route as AuthenticatedFormulasRouteImport } from './routes/_authenticated/formulas'
 import { Route as AuthenticatedFocusRouteImport } from './routes/_authenticated/focus'
 import { Route as AuthenticatedExamsRouteImport } from './routes/_authenticated/exams'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
-import { Route as AuthenticatedCodelabRouteImport } from './routes/_authenticated/codelab'
-import { Route as AuthenticatedClipRouteImport } from './routes/_authenticated/clip'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
-import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as AuthenticatedResearchIndexRouteImport } from './routes/_authenticated/research.index'
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes.index'
 import { Route as AuthenticatedMaterialsIndexRouteImport } from './routes/_authenticated/materials.index'
-import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
-import { Route as AuthenticatedResearchProjectIdRouteImport } from './routes/_authenticated/research.$projectId'
 import { Route as AuthenticatedMaterialsIdRouteImport } from './routes/_authenticated/materials.$id'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
-import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedQuizzesIdTakeRouteImport } from './routes/_authenticated/quizzes.$id.take'
 import { Route as AuthenticatedQuizzesIdResultsRouteImport } from './routes/_authenticated/quizzes.$id.results'
 
@@ -73,11 +57,6 @@ const SignupRoute = SignupRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -144,11 +123,6 @@ const AuthenticatedWrappedRoute = AuthenticatedWrappedRouteImport.update({
   path: '/wrapped',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedVoiceRoute = AuthenticatedVoiceRouteImport.update({
-  id: '/voice',
-  path: '/voice',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
   id: '/videos',
   path: '/videos',
@@ -157,11 +131,6 @@ const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
 const AuthenticatedTutorRoute = AuthenticatedTutorRouteImport.update({
   id: '/tutor',
   path: '/tutor',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedTimetableRoute = AuthenticatedTimetableRouteImport.update({
-  id: '/timetable',
-  path: '/timetable',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSolveRoute = AuthenticatedSolveRouteImport.update({
@@ -184,19 +153,9 @@ const AuthenticatedScheduleRoute = AuthenticatedScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedRoomsRoute = AuthenticatedRoomsRouteImport.update({
-  id: '/rooms',
-  path: '/rooms',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedReviewRoute = AuthenticatedReviewRouteImport.update({
   id: '/review',
   path: '/review',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedResearchRoute = AuthenticatedResearchRouteImport.update({
-  id: '/research',
-  path: '/research',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedQuizzesRoute = AuthenticatedQuizzesRouteImport.update({
@@ -204,12 +163,6 @@ const AuthenticatedQuizzesRoute = AuthenticatedQuizzesRouteImport.update({
   path: '/quizzes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedQuestionBankRoute =
-  AuthenticatedQuestionBankRouteImport.update({
-    id: '/question-bank',
-    path: '/question-bank',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
@@ -230,12 +183,6 @@ const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
   path: '/materials',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedLibraryChatRoute =
-  AuthenticatedLibraryChatRouteImport.update({
-    id: '/library-chat',
-    path: '/library-chat',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedGapsRoute = AuthenticatedGapsRouteImport.update({
   id: '/gaps',
   path: '/gaps',
@@ -266,39 +213,11 @@ const AuthenticatedCommunityRoute = AuthenticatedCommunityRouteImport.update({
   path: '/community',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedCodelabRoute = AuthenticatedCodelabRouteImport.update({
-  id: '/codelab',
-  path: '/codelab',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedClipRoute = AuthenticatedClipRouteImport.update({
-  id: '/clip',
-  path: '/clip',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AuthenticatedResearchIndexRoute =
-  AuthenticatedResearchIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedResearchRoute,
-  } as any)
 const AuthenticatedQuizzesIndexRoute =
   AuthenticatedQuizzesIndexRouteImport.update({
     id: '/',
@@ -311,34 +230,12 @@ const AuthenticatedMaterialsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedMaterialsRoute,
   } as any)
-const AuthenticatedRoomsIdRoute = AuthenticatedRoomsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedRoomsRoute,
-} as any)
-const AuthenticatedResearchProjectIdRoute =
-  AuthenticatedResearchProjectIdRouteImport.update({
-    id: '/$projectId',
-    path: '/$projectId',
-    getParentRoute: () => AuthenticatedResearchRoute,
-  } as any)
 const AuthenticatedMaterialsIdRoute =
   AuthenticatedMaterialsIdRouteImport.update({
     id: '/$id',
     path: '/$id',
     getParentRoute: () => AuthenticatedMaterialsRoute,
   } as any)
-const Char91DotmcpChar93InvokeToolToolRoute =
-  Char91DotmcpChar93InvokeToolToolRouteImport.update({
-    id: '/.mcp/invoke-tool/$tool',
-    path: '/.mcp/invoke-tool/$tool',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedQuizzesIdTakeRoute =
   AuthenticatedQuizzesIdTakeRouteImport.update({
     id: '/$id/take',
@@ -356,38 +253,27 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/companion-select': typeof CompanionSelectRoute
   '/login': typeof LoginRoute
-  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
-  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
-  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/clip': typeof AuthenticatedClipRoute
-  '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
   '/focus': typeof AuthenticatedFocusRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
-  '/library-chat': typeof AuthenticatedLibraryChatRoute
   '/materials': typeof AuthenticatedMaterialsRouteWithChildren
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
-  '/question-bank': typeof AuthenticatedQuestionBankRoute
   '/quizzes': typeof AuthenticatedQuizzesRouteWithChildren
-  '/research': typeof AuthenticatedResearchRouteWithChildren
   '/review': typeof AuthenticatedReviewRoute
-  '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shop': typeof AuthenticatedShopRoute
   '/solve': typeof AuthenticatedSolveRoute
-  '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
-  '/voice': typeof AuthenticatedVoiceRoute
   '/wrapped': typeof AuthenticatedWrappedRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
@@ -397,14 +283,9 @@ export interface FileRoutesByFullPath {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
-  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
-  '/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
-  '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes/': typeof AuthenticatedQuizzesIndexRoute
-  '/research/': typeof AuthenticatedResearchIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -412,35 +293,25 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/companion-select': typeof CompanionSelectRoute
   '/login': typeof LoginRoute
-  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
-  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
-  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/clip': typeof AuthenticatedClipRoute
-  '/codelab': typeof AuthenticatedCodelabRoute
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
   '/focus': typeof AuthenticatedFocusRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/gaps': typeof AuthenticatedGapsRoute
-  '/library-chat': typeof AuthenticatedLibraryChatRoute
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
-  '/question-bank': typeof AuthenticatedQuestionBankRoute
   '/review': typeof AuthenticatedReviewRoute
-  '/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shop': typeof AuthenticatedShopRoute
   '/solve': typeof AuthenticatedSolveRoute
-  '/timetable': typeof AuthenticatedTimetableRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/videos': typeof AuthenticatedVideosRoute
-  '/voice': typeof AuthenticatedVoiceRoute
   '/wrapped': typeof AuthenticatedWrappedRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
@@ -450,14 +321,9 @@ export interface FileRoutesByTo {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
-  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
-  '/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
-  '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/materials': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes': typeof AuthenticatedQuizzesIndexRoute
-  '/research': typeof AuthenticatedResearchIndexRoute
   '/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -467,38 +333,27 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/companion-select': typeof CompanionSelectRoute
   '/login': typeof LoginRoute
-  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
-  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
-  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/clip': typeof AuthenticatedClipRoute
-  '/_authenticated/codelab': typeof AuthenticatedCodelabRoute
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/exams': typeof AuthenticatedExamsRoute
   '/_authenticated/focus': typeof AuthenticatedFocusRoute
   '/_authenticated/formulas': typeof AuthenticatedFormulasRoute
   '/_authenticated/gaps': typeof AuthenticatedGapsRoute
-  '/_authenticated/library-chat': typeof AuthenticatedLibraryChatRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRouteWithChildren
   '/_authenticated/mindmaps': typeof AuthenticatedMindmapsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
-  '/_authenticated/question-bank': typeof AuthenticatedQuestionBankRoute
   '/_authenticated/quizzes': typeof AuthenticatedQuizzesRouteWithChildren
-  '/_authenticated/research': typeof AuthenticatedResearchRouteWithChildren
   '/_authenticated/review': typeof AuthenticatedReviewRoute
-  '/_authenticated/rooms': typeof AuthenticatedRoomsRouteWithChildren
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shop': typeof AuthenticatedShopRoute
   '/_authenticated/solve': typeof AuthenticatedSolveRoute
-  '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
-  '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/_authenticated/wrapped': typeof AuthenticatedWrappedRoute
   '/api/chat': typeof ApiChatRoute
   '/api/run-code': typeof ApiRunCodeRoute
@@ -508,14 +363,9 @@ export interface FileRoutesById {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
-  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
-  '/_authenticated/research/$projectId': typeof AuthenticatedResearchProjectIdRoute
-  '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/_authenticated/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/_authenticated/quizzes/': typeof AuthenticatedQuizzesIndexRoute
-  '/_authenticated/research/': typeof AuthenticatedResearchIndexRoute
   '/_authenticated/quizzes/$id/results': typeof AuthenticatedQuizzesIdResultsRoute
   '/_authenticated/quizzes/$id/take': typeof AuthenticatedQuizzesIdTakeRoute
 }
@@ -525,38 +375,27 @@ export interface FileRouteTypes {
     | '/'
     | '/companion-select'
     | '/login'
-    | '/mcp'
     | '/onboarding'
     | '/signup'
-    | '/.mcp/list-tools'
-    | '/.well-known/oauth-protected-resource'
     | '/admin'
-    | '/clip'
-    | '/codelab'
     | '/community'
     | '/dashboard'
     | '/exams'
     | '/focus'
     | '/formulas'
     | '/gaps'
-    | '/library-chat'
     | '/materials'
     | '/mindmaps'
     | '/notes'
     | '/progress'
-    | '/question-bank'
     | '/quizzes'
-    | '/research'
     | '/review'
-    | '/rooms'
     | '/schedule'
     | '/settings'
     | '/shop'
     | '/solve'
-    | '/timetable'
     | '/tutor'
     | '/videos'
-    | '/voice'
     | '/wrapped'
     | '/api/chat'
     | '/api/run-code'
@@ -566,14 +405,9 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
-    | '/.lovable/oauth/consent'
-    | '/.mcp/invoke-tool/$tool'
     | '/materials/$id'
-    | '/research/$projectId'
-    | '/rooms/$id'
     | '/materials/'
     | '/quizzes/'
-    | '/research/'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   fileRoutesByTo: FileRoutesByTo
@@ -581,35 +415,25 @@ export interface FileRouteTypes {
     | '/'
     | '/companion-select'
     | '/login'
-    | '/mcp'
     | '/onboarding'
     | '/signup'
-    | '/.mcp/list-tools'
-    | '/.well-known/oauth-protected-resource'
     | '/admin'
-    | '/clip'
-    | '/codelab'
     | '/community'
     | '/dashboard'
     | '/exams'
     | '/focus'
     | '/formulas'
     | '/gaps'
-    | '/library-chat'
     | '/mindmaps'
     | '/notes'
     | '/progress'
-    | '/question-bank'
     | '/review'
-    | '/rooms'
     | '/schedule'
     | '/settings'
     | '/shop'
     | '/solve'
-    | '/timetable'
     | '/tutor'
     | '/videos'
-    | '/voice'
     | '/wrapped'
     | '/api/chat'
     | '/api/run-code'
@@ -619,14 +443,9 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
-    | '/.lovable/oauth/consent'
-    | '/.mcp/invoke-tool/$tool'
     | '/materials/$id'
-    | '/research/$projectId'
-    | '/rooms/$id'
     | '/materials'
     | '/quizzes'
-    | '/research'
     | '/quizzes/$id/results'
     | '/quizzes/$id/take'
   id:
@@ -635,38 +454,27 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/companion-select'
     | '/login'
-    | '/mcp'
     | '/onboarding'
     | '/signup'
-    | '/.mcp/list-tools'
-    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
-    | '/_authenticated/clip'
-    | '/_authenticated/codelab'
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/exams'
     | '/_authenticated/focus'
     | '/_authenticated/formulas'
     | '/_authenticated/gaps'
-    | '/_authenticated/library-chat'
     | '/_authenticated/materials'
     | '/_authenticated/mindmaps'
     | '/_authenticated/notes'
     | '/_authenticated/progress'
-    | '/_authenticated/question-bank'
     | '/_authenticated/quizzes'
-    | '/_authenticated/research'
     | '/_authenticated/review'
-    | '/_authenticated/rooms'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
     | '/_authenticated/shop'
     | '/_authenticated/solve'
-    | '/_authenticated/timetable'
     | '/_authenticated/tutor'
     | '/_authenticated/videos'
-    | '/_authenticated/voice'
     | '/_authenticated/wrapped'
     | '/api/chat'
     | '/api/run-code'
@@ -676,14 +484,9 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
-    | '/.lovable/oauth/consent'
-    | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/materials/$id'
-    | '/_authenticated/research/$projectId'
-    | '/_authenticated/rooms/$id'
     | '/_authenticated/materials/'
     | '/_authenticated/quizzes/'
-    | '/_authenticated/research/'
     | '/_authenticated/quizzes/$id/results'
     | '/_authenticated/quizzes/$id/take'
   fileRoutesById: FileRoutesById
@@ -693,11 +496,8 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   CompanionSelectRoute: typeof CompanionSelectRoute
   LoginRoute: typeof LoginRoute
-  McpRoute: typeof McpRoute
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
-  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
-  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiRunCodeRoute: typeof ApiRunCodeRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
@@ -706,8 +506,6 @@ export interface RootRouteChildren {
   ApiVideoQuizRoute: typeof ApiVideoQuizRoute
   ApiYoutubeSearchRoute: typeof ApiYoutubeSearchRoute
   UHandleRoute: typeof UHandleRoute
-  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
-  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -724,13 +522,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -824,13 +615,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWrappedRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/voice': {
-      id: '/_authenticated/voice'
-      path: '/voice'
-      fullPath: '/voice'
-      preLoaderRoute: typeof AuthenticatedVoiceRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/videos': {
       id: '/_authenticated/videos'
       path: '/videos'
@@ -843,13 +627,6 @@ declare module '@tanstack/react-router' {
       path: '/tutor'
       fullPath: '/tutor'
       preLoaderRoute: typeof AuthenticatedTutorRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/timetable': {
-      id: '/_authenticated/timetable'
-      path: '/timetable'
-      fullPath: '/timetable'
-      preLoaderRoute: typeof AuthenticatedTimetableRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/solve': {
@@ -880,13 +657,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScheduleRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/rooms': {
-      id: '/_authenticated/rooms'
-      path: '/rooms'
-      fullPath: '/rooms'
-      preLoaderRoute: typeof AuthenticatedRoomsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/review': {
       id: '/_authenticated/review'
       path: '/review'
@@ -894,25 +664,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/research': {
-      id: '/_authenticated/research'
-      path: '/research'
-      fullPath: '/research'
-      preLoaderRoute: typeof AuthenticatedResearchRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/quizzes': {
       id: '/_authenticated/quizzes'
       path: '/quizzes'
       fullPath: '/quizzes'
       preLoaderRoute: typeof AuthenticatedQuizzesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/question-bank': {
-      id: '/_authenticated/question-bank'
-      path: '/question-bank'
-      fullPath: '/question-bank'
-      preLoaderRoute: typeof AuthenticatedQuestionBankRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/progress': {
@@ -941,13 +697,6 @@ declare module '@tanstack/react-router' {
       path: '/materials'
       fullPath: '/materials'
       preLoaderRoute: typeof AuthenticatedMaterialsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/library-chat': {
-      id: '/_authenticated/library-chat'
-      path: '/library-chat'
-      fullPath: '/library-chat'
-      preLoaderRoute: typeof AuthenticatedLibraryChatRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/gaps': {
@@ -992,47 +741,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommunityRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/codelab': {
-      id: '/_authenticated/codelab'
-      path: '/codelab'
-      fullPath: '/codelab'
-      preLoaderRoute: typeof AuthenticatedCodelabRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/clip': {
-      id: '/_authenticated/clip'
-      path: '/clip'
-      fullPath: '/clip'
-      preLoaderRoute: typeof AuthenticatedClipRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
-    }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/.mcp/list-tools': {
-      id: '/.mcp/list-tools'
-      path: '/.mcp/list-tools'
-      fullPath: '/.mcp/list-tools'
-      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/research/': {
-      id: '/_authenticated/research/'
-      path: '/'
-      fullPath: '/research/'
-      preLoaderRoute: typeof AuthenticatedResearchIndexRouteImport
-      parentRoute: typeof AuthenticatedResearchRoute
     }
     '/_authenticated/quizzes/': {
       id: '/_authenticated/quizzes/'
@@ -1048,40 +762,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMaterialsIndexRouteImport
       parentRoute: typeof AuthenticatedMaterialsRoute
     }
-    '/_authenticated/rooms/$id': {
-      id: '/_authenticated/rooms/$id'
-      path: '/$id'
-      fullPath: '/rooms/$id'
-      preLoaderRoute: typeof AuthenticatedRoomsIdRouteImport
-      parentRoute: typeof AuthenticatedRoomsRoute
-    }
-    '/_authenticated/research/$projectId': {
-      id: '/_authenticated/research/$projectId'
-      path: '/$projectId'
-      fullPath: '/research/$projectId'
-      preLoaderRoute: typeof AuthenticatedResearchProjectIdRouteImport
-      parentRoute: typeof AuthenticatedResearchRoute
-    }
     '/_authenticated/materials/$id': {
       id: '/_authenticated/materials/$id'
       path: '/$id'
       fullPath: '/materials/$id'
       preLoaderRoute: typeof AuthenticatedMaterialsIdRouteImport
       parentRoute: typeof AuthenticatedMaterialsRoute
-    }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/quizzes/$id/take': {
       id: '/_authenticated/quizzes/$id/take'
@@ -1131,91 +817,49 @@ const AuthenticatedQuizzesRouteChildren: AuthenticatedQuizzesRouteChildren = {
 const AuthenticatedQuizzesRouteWithChildren =
   AuthenticatedQuizzesRoute._addFileChildren(AuthenticatedQuizzesRouteChildren)
 
-interface AuthenticatedResearchRouteChildren {
-  AuthenticatedResearchProjectIdRoute: typeof AuthenticatedResearchProjectIdRoute
-  AuthenticatedResearchIndexRoute: typeof AuthenticatedResearchIndexRoute
-}
-
-const AuthenticatedResearchRouteChildren: AuthenticatedResearchRouteChildren = {
-  AuthenticatedResearchProjectIdRoute: AuthenticatedResearchProjectIdRoute,
-  AuthenticatedResearchIndexRoute: AuthenticatedResearchIndexRoute,
-}
-
-const AuthenticatedResearchRouteWithChildren =
-  AuthenticatedResearchRoute._addFileChildren(
-    AuthenticatedResearchRouteChildren,
-  )
-
-interface AuthenticatedRoomsRouteChildren {
-  AuthenticatedRoomsIdRoute: typeof AuthenticatedRoomsIdRoute
-}
-
-const AuthenticatedRoomsRouteChildren: AuthenticatedRoomsRouteChildren = {
-  AuthenticatedRoomsIdRoute: AuthenticatedRoomsIdRoute,
-}
-
-const AuthenticatedRoomsRouteWithChildren =
-  AuthenticatedRoomsRoute._addFileChildren(AuthenticatedRoomsRouteChildren)
-
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedClipRoute: typeof AuthenticatedClipRoute
-  AuthenticatedCodelabRoute: typeof AuthenticatedCodelabRoute
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExamsRoute: typeof AuthenticatedExamsRoute
   AuthenticatedFocusRoute: typeof AuthenticatedFocusRoute
   AuthenticatedFormulasRoute: typeof AuthenticatedFormulasRoute
   AuthenticatedGapsRoute: typeof AuthenticatedGapsRoute
-  AuthenticatedLibraryChatRoute: typeof AuthenticatedLibraryChatRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRouteWithChildren
   AuthenticatedMindmapsRoute: typeof AuthenticatedMindmapsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
-  AuthenticatedQuestionBankRoute: typeof AuthenticatedQuestionBankRoute
   AuthenticatedQuizzesRoute: typeof AuthenticatedQuizzesRouteWithChildren
-  AuthenticatedResearchRoute: typeof AuthenticatedResearchRouteWithChildren
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
-  AuthenticatedRoomsRoute: typeof AuthenticatedRoomsRouteWithChildren
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedShopRoute: typeof AuthenticatedShopRoute
   AuthenticatedSolveRoute: typeof AuthenticatedSolveRoute
-  AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
-  AuthenticatedVoiceRoute: typeof AuthenticatedVoiceRoute
   AuthenticatedWrappedRoute: typeof AuthenticatedWrappedRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedClipRoute: AuthenticatedClipRoute,
-  AuthenticatedCodelabRoute: AuthenticatedCodelabRoute,
   AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExamsRoute: AuthenticatedExamsRoute,
   AuthenticatedFocusRoute: AuthenticatedFocusRoute,
   AuthenticatedFormulasRoute: AuthenticatedFormulasRoute,
   AuthenticatedGapsRoute: AuthenticatedGapsRoute,
-  AuthenticatedLibraryChatRoute: AuthenticatedLibraryChatRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRouteWithChildren,
   AuthenticatedMindmapsRoute: AuthenticatedMindmapsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
-  AuthenticatedQuestionBankRoute: AuthenticatedQuestionBankRoute,
   AuthenticatedQuizzesRoute: AuthenticatedQuizzesRouteWithChildren,
-  AuthenticatedResearchRoute: AuthenticatedResearchRouteWithChildren,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
-  AuthenticatedRoomsRoute: AuthenticatedRoomsRouteWithChildren,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedShopRoute: AuthenticatedShopRoute,
   AuthenticatedSolveRoute: AuthenticatedSolveRoute,
-  AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
-  AuthenticatedVoiceRoute: AuthenticatedVoiceRoute,
   AuthenticatedWrappedRoute: AuthenticatedWrappedRoute,
 }
 
@@ -1228,12 +872,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   CompanionSelectRoute: CompanionSelectRoute,
   LoginRoute: LoginRoute,
-  McpRoute: McpRoute,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
-  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
-  Char91DotwellKnownChar93OauthProtectedResourceRoute:
-    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiChatRoute: ApiChatRoute,
   ApiRunCodeRoute: ApiRunCodeRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
@@ -1242,8 +882,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiVideoQuizRoute: ApiVideoQuizRoute,
   ApiYoutubeSearchRoute: ApiYoutubeSearchRoute,
   UHandleRoute: UHandleRoute,
-  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
-  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

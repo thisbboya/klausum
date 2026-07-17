@@ -78,7 +78,7 @@ export function AvailabilityGrid() {
   const targetMins = INTENSITY_META[intensity].minutes * 7;
 
   return (
-    <section className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-4">
+    <section className="card-chunky/60 bg-card/60 p-4 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-display text-lg font-semibold flex items-center gap-2">
@@ -88,7 +88,7 @@ export function AvailabilityGrid() {
         </div>
         {dirty && (
           <button onClick={save} disabled={saving}
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+            className="inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
             <Save className="h-3 w-3" /> {saving ? "Saving…" : "Save"}
           </button>
         )}
@@ -96,7 +96,7 @@ export function AvailabilityGrid() {
 
       <div>
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Intensity</div>
-        <div className="inline-flex rounded-lg border border-border/60 overflow-hidden">
+        <div className="inline-flex rounded-xl border-2 border-border/60 overflow-hidden">
           {(Object.keys(INTENSITY_META) as Intensity[]).map(k => (
             <button key={k} onClick={() => { setIntensity(k); setDirty(true); }}
               className={`px-3 py-1.5 text-xs font-semibold ${intensity === k ? "bg-primary text-primary-foreground" : "bg-card/40 text-muted-foreground hover:text-foreground"}`}>
@@ -134,7 +134,7 @@ export function AvailabilityGrid() {
 
       <div className="flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
         <span>{count} hour{count === 1 ? "" : "s"} selected · ~{Math.round(weeklyMins / 60)} hr/week</span>
-        <span className={weeklyMins >= targetMins ? "text-emerald-400" : "text-amber-400"}>
+        <span className={weeklyMins >= targetMins ? "text-success" : "text-primary"}>
           Target: ~{Math.round(targetMins / 60)} hr/week ({INTENSITY_META[intensity].label})
         </span>
       </div>

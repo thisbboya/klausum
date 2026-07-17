@@ -1,10 +1,13 @@
 import { Link, Outlet, useNavigate, useLocation, createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { KlausumMark } from "@/components/klausum-mark";
-import { LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, LogOut, NotebookPen, Network, ListChecks, Target, TrendingUp, Sigma, CalendarClock, Code2, Users, Mic, GraduationCap, Youtube, Shield, Trophy, FlaskConical, Camera, Bookmark, Library, Focus, Scissors, Gem } from "lucide-react";
+import { getCompanion } from "@/components/companion-svg";
+import { LogOut, Shield, ChevronDown } from "lucide-react";
+import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK } from "@/lib/nav";
+import { hasUnseenUpdates } from "@/lib/updates";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
@@ -48,6 +51,12 @@ function AuthLayout() {
     }
   }, [profile, location.pathname, navigate]);
 
+  // Pilot theming: expose the companion's color app-wide as --pilot
+  useEffect(() => {
+    const c = getCompanion(profile?.companion_id);
+    document.documentElement.style.setProperty("--pilot", c.color);
+  }, [profile?.companion_id]);
+
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -58,38 +67,17 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">
-      <aside className="hidden md:flex w-60 flex-col border-r border-border/60 bg-card/40 px-3 py-5">
-        <Link to="/dashboard" className="mb-8 flex items-center gap-2 px-2 text-primary">
+      <aside className="hidden md:flex w-60 flex-col border-r-2 border-border bg-background px-3 py-5">
+        <Link to="/dashboard" className="mb-8 flex items-center gap-2 px-2">
           <KlausumMark size={26} />
-          <span className="font-display text-base font-semibold">Klausum</span>
+          <span className="font-display text-lg font-extrabold text-primary">klausum</span>
         </Link>
-        <nav className="flex flex-col gap-1 text-sm">
-          <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavItem to="/materials" icon={BookOpen} label="Materials" />
-          <NavItem to="/solve" icon={Camera} label="Snap & Solve" />
-          <NavItem to="/question-bank" icon={Bookmark} label="Question Bank" />
-          <NavItem to="/notes" icon={NotebookPen} label="Notes" />
-          <NavItem to="/mindmaps" icon={Network} label="Mind Maps" />
-          <NavItem to="/quizzes" icon={ListChecks} label="Quizzes" />
-          <NavItem to="/review" icon={Brain} label="Review" />
-          <NavItem to="/gaps" icon={Target} label="Gaps" />
-          <NavItem to="/progress" icon={TrendingUp} label="Progress" />
-          <NavItem to="/formulas" icon={Sigma} label="Formulas" />
-          <NavItem to="/schedule" icon={CalendarClock} label="Schedule" />
-          <NavItem to="/timetable" icon={CalendarClock} label="Timetable" />
-          <NavItem to="/codelab" icon={Code2} label="Code Lab" />
-          <NavItem to="/rooms" icon={Users} label="Rooms" />
-          <NavItem to="/community" icon={Trophy} label="Community" />
-          <NavItem to="/voice" icon={Mic} label="Voice" />
-          <NavItem to="/videos" icon={Youtube} label="Videos" />
-          <NavItem to="/exams" icon={GraduationCap} label="Exams" />
-          <NavItem to="/tutor" icon={MessagesSquare} label="AI Tutor" />
-          <NavItem to="/library-chat" icon={Library} label="Library Chat" />
-          <NavItem to="/clip" icon={Scissors} label="Web Clipper" />
-          <NavItem to="/focus" icon={Focus} label="Focus Mode" />
-          <NavItem to="/shop" icon={Gem} label="Gem Shop" />
-          <NavItem to="/research" icon={FlaskConical} label="Research" />
-          <NavItem to="/settings" icon={Settings} label="Settings" />
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto text-sm">
+          {PRIMARY_LINKS.map((l) => (
+            <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} />
+          ))}
+          <MoreTools />
+          <NavItem to={SETTINGS_LINK.to} icon={SETTINGS_LINK.icon} label={SETTINGS_LINK.label} showDot={hasUnseenUpdates()} />
           {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}
         </nav>
         <div className="mt-auto px-2 text-xs text-muted-foreground space-y-2">
@@ -135,18 +123,48 @@ function AuthLayout() {
   );
 }
 
-function NavItem({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+function MoreTools() {
+  const location = useLocation();
+  const containsActive = MORE_LINKS.some(
+    (l) => location.pathname === l.to || location.pathname.startsWith(l.to + "/"),
+  );
+  const [open, setOpen] = useState(containsActive);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between rounded-xl border-2 border-transparent px-3 py-2 font-bold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+      >
+        <span className="text-xs font-extrabold uppercase tracking-wide">More tools</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-1 flex flex-col gap-1 border-l-2 border-border pl-2 ml-3">
+          {MORE_LINKS.map((l) => (
+            <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavItem({ to, icon: Icon, label, showDot }: { to: string; icon: any; label: string; showDot?: boolean }) {
   const location = useLocation();
   const active = location.pathname === to || location.pathname.startsWith(to + "/");
   return (
     <Link
       to={to as any}
-      className={`flex items-center gap-3 rounded-md px-3 py-2 transition ${
-        active ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-accent/10 hover:text-foreground"
+      className={`relative flex items-center gap-3 rounded-xl border-2 px-3 py-2 font-bold transition ${
+        active
+          ? "border-sky/40 bg-sky/12 text-sky"
+          : "border-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground"
       }`}
     >
       <Icon className="h-4 w-4" />
       {label}
+      {showDot && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-destructive" />}
     </Link>
   );
 }

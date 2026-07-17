@@ -308,14 +308,14 @@ export function PDFViewer({
           </div>
         ) : (
           loadError ? (
-            <div className="max-w-md rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground space-y-4">
+            <div className="max-w-md card-chunky bg-card p-6 text-center text-sm text-muted-foreground space-y-4">
               <p>{loadError}</p>
               <div className="flex items-center justify-center gap-2">
                 <a
                   href={pdfUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-4 py-2 hover:opacity-90 transition"
+                  className="inline-flex items-center gap-1.5 btn-3d rounded-full bg-primary text-primary-foreground text-xs font-semibold px-4 py-2 hover:opacity-90 transition"
                 >
                   Open in new tab ↗
                 </a>
@@ -365,7 +365,7 @@ export function PDFViewer({
                   window.getSelection()?.removeAllRanges();
                   setSelection(null);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90 active:scale-95 transition"
+                className="inline-flex items-center gap-1.5 btn-3d rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90 active:scale-95 transition"
               >
                 <Search className="h-3 w-3" /> Explain this
               </button>

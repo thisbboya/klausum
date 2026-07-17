@@ -130,7 +130,7 @@ function UsersTab() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search by email, name, or school"
-        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
       />
       {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
       {error && (
@@ -144,7 +144,7 @@ function UsersTab() {
           </button>
         </div>
       )}
-      <div className="rounded-xl border border-border overflow-hidden">
+      <div className="card-chunky overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 text-xs text-muted-foreground">
             <tr>
@@ -224,7 +224,7 @@ function StatsTab() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {cards.map((c) => (
-        <div key={c.key} className="rounded-xl border border-border bg-card p-4">
+        <div key={c.key} className="card-chunky bg-card p-4">
           <div className="text-xs text-muted-foreground">{c.label}</div>
           <div className="font-display text-2xl font-bold mt-1">{counts[c.key] ?? 0}</div>
         </div>
@@ -241,7 +241,7 @@ function MaterialsTab() {
   });
   if (isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
+    <div className="card-chunky overflow-hidden">
       <table className="w-full text-sm">
         <thead className="bg-muted/30 text-xs text-muted-foreground">
           <tr>

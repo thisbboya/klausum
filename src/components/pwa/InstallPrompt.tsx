@@ -72,7 +72,7 @@ export function InstallPrompt() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
-      <div className="pointer-events-auto flex max-w-md items-start gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <div className="pointer-events-auto flex max-w-md items-start gap-3 card-chunky bg-card/95 p-4 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="mt-0.5 rounded-lg bg-primary/15 p-2 text-primary">
           {deferred ? <Download className="h-5 w-5" /> : <Share className="h-5 w-5" />}
         </div>

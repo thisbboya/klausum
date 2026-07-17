@@ -82,7 +82,7 @@ function MapList() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">See how concepts connect. Click the canvas to add. Drag node-to-node to link.</p>
         </div>
-        <button onClick={createMap} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
+        <button onClick={createMap} className="inline-flex items-center gap-2 btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
           <Plus className="h-4 w-4" /> New map
         </button>
       </header>
@@ -96,7 +96,7 @@ function MapList() {
         <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {(maps ?? []).map((m) => (
             <li key={m.id}>
-              <Link to="/mindmaps" search={{ id: m.id }} className="block rounded-xl border border-border bg-card p-4 hover:border-primary/40 transition">
+              <Link to="/mindmaps" search={{ id: m.id }} className="block card-chunky bg-card p-4 hover:border-primary/40 transition">
                 <h3 className="font-display font-semibold truncate">{m.title}</h3>
                 <div className="mt-1 text-xs text-primary">{m.subject}</div>
                 <div className="mt-2 text-xs text-muted-foreground">{new Date(m.updated_at!).toLocaleDateString()}</div>
@@ -295,12 +295,12 @@ function MapEditor({ id }: { id: string }) {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-lg font-display font-semibold outline-none focus:border-primary"
+          className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-lg font-display font-semibold outline-none focus:border-primary"
         />
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </div>
 
@@ -309,18 +309,18 @@ function MapEditor({ id }: { id: string }) {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder="Generate from topic…"
-          className="flex-1 min-w-[200px] rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          className="flex-1 min-w-[200px] rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
         <ToolBtn onClick={aiGenerate} busy={busy === "gen"} icon={Sparkles}>AI Generate</ToolBtn>
         <ToolBtn onClick={aiExpand} busy={busy === "expand"} icon={Wand2} disabled={!selected}>Expand selected</ToolBtn>
-        <button onClick={() => addNode("sub")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Sub</button>
-        <button onClick={() => addNode("example")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Example</button>
-        <button onClick={() => addNode("warning")} className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/40">+ Warning</button>
+        <button onClick={() => addNode("sub")} className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:border-primary/40">+ Sub</button>
+        <button onClick={() => addNode("example")} className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:border-primary/40">+ Example</button>
+        <button onClick={() => addNode("warning")} className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:border-primary/40">+ Warning</button>
         <ToolBtn onClick={autoLayout} icon={LayoutGrid}>Auto-layout</ToolBtn>
         <ToolBtn onClick={exportPng} icon={Download}>Export PNG</ToolBtn>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden" style={{ height: 560 }}>
+      <div className="card-chunky bg-card overflow-hidden" style={{ height: 560 }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -349,7 +349,7 @@ function ToolBtn({ onClick, busy, icon: Icon, children, disabled }: any) {
     <button
       onClick={onClick}
       disabled={busy || disabled}
-      className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:border-primary/40 disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3 py-2 text-xs font-medium hover:border-primary/40 disabled:opacity-50"
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5 text-primary" />}
       {children}

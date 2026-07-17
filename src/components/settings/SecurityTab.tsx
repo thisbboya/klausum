@@ -11,7 +11,7 @@ import { checkGeminiKeys } from "@/lib/admin.functions";
 import { getAccessToken } from "@/lib/auth-helper";
 
 function inputCls() {
-  return "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
+  return "w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
 }
 
 export function SecurityTab() {
@@ -118,10 +118,10 @@ function TwoFactorSection() {
   }
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <div className="card-chunky/60 bg-card/60 p-4">
       <div className="flex items-start gap-3">
         <div
-          className={`rounded-lg p-2 ${verified ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}
+          className={`rounded-lg p-2 ${verified ? "bg-success/15 text-success" : "bg-primary/15 text-primary"}`}
         >
           {verified ? <ShieldCheck className="h-5 w-5" /> : <ShieldAlert className="h-5 w-5" />}
         </div>
@@ -136,21 +136,21 @@ function TwoFactorSection() {
               <Loader2 className="h-3 w-3 animate-spin" /> Checking status…
             </div>
           ) : verified ? (
-            <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2 text-sm">
-              <span className="text-emerald-400">
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-success/30 bg-success/5 p-2 text-sm">
+              <span className="text-success">
                 Enabled · {verified.friendly_name ?? "Authenticator"}
               </span>
               <button
                 onClick={disable}
                 disabled={busy}
-                className="rounded-md border border-red-500/40 px-2 py-1 text-xs font-semibold text-red-400 disabled:opacity-50"
+                className="rounded-md border border-destructive/40 px-2 py-1 text-xs font-semibold text-destructive disabled:opacity-50"
               >
                 Disable
               </button>
             </div>
           ) : enrolling ? (
             <div className="mt-3 space-y-3">
-              <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+              <div className="rounded-xl border-2 border-border/60 bg-background/60 p-3">
                 <div className="text-xs text-muted-foreground">
                   Scan this QR code with your authenticator app, then enter the 6-digit code below.
                 </div>
@@ -172,14 +172,14 @@ function TwoFactorSection() {
                 <button
                   onClick={verifyEnroll}
                   disabled={busy || code.length < 6}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                  className="btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                 >
                   {busy ? "Verifying…" : "Verify & enable"}
                 </button>
                 <button
                   onClick={cancelEnroll}
                   disabled={busy}
-                  className="rounded-lg border border-border px-3 py-1.5 text-xs"
+                  className="rounded-xl border-2 border-border px-3 py-1.5 text-xs"
                 >
                   Cancel
                 </button>
@@ -225,7 +225,7 @@ function PasswordSection() {
   }
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <div className="card-chunky/60 bg-card/60 p-4">
       <div className="flex items-start gap-3">
         <div className="rounded-lg bg-primary/15 p-2 text-primary">
           <KeyRound className="h-5 w-5" />
@@ -256,7 +256,7 @@ function PasswordSection() {
           <button
             onClick={update}
             disabled={busy || !pw}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            className="btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
           >
             {busy ? "Updating…" : "Update password"}
           </button>
@@ -321,7 +321,7 @@ function SessionSection() {
   }
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-3">
+    <div className="card-chunky/60 bg-card/60 p-4 space-y-3">
       <div className="font-semibold">This session</div>
       <dl className="grid grid-cols-[120px_1fr] gap-y-1.5 text-sm">
         <dt className="text-muted-foreground">Device</dt>
@@ -335,7 +335,7 @@ function SessionSection() {
         <button
           onClick={signOutEverywhere}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-400 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-50"
         >
           <LogOut className="h-3.5 w-3.5" /> Sign out everywhere
         </button>
@@ -369,7 +369,7 @@ function GeminiKeyHealthSection() {
   const failing = (results ?? []).filter((r) => !r.ok);
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-3">
+    <div className="card-chunky/60 bg-card/60 p-4 space-y-3">
       <div className="flex items-start gap-3">
         <div className="rounded-lg bg-primary/15 p-2 text-primary">
           <Sparkles className="h-5 w-5" />
@@ -400,14 +400,14 @@ function GeminiKeyHealthSection() {
             <div
               key={r.label}
               className={`rounded-lg border p-3 ${
-                r.ok ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"
+                r.ok ? "border-success/30 bg-success/5" : "border-primary/30 bg-primary/5"
               }`}
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-xs">
                   {r.label} <span className="text-muted-foreground">…{r.suffix}</span>
                 </span>
-                <span className={`text-xs font-semibold ${r.ok ? "text-emerald-400" : "text-amber-400"}`}>
+                <span className={`text-xs font-semibold ${r.ok ? "text-success" : "text-primary"}`}>
                   {r.ok ? "OK" : "Disabled"}
                 </span>
               </div>

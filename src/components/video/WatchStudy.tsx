@@ -319,7 +319,7 @@ export function WatchStudy({
           <p className="text-xs text-muted-foreground">{video.channel}</p>
 
           {/* Chapter row */}
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className="card-chunky bg-card p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
               Chapters {analyzing && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}
             </p>
@@ -350,8 +350,8 @@ export function WatchStudy({
               </div>
             )}
             {analyzeError && !analyzing && (
-              <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
-                <span className="text-amber-400 text-xs shrink-0">⚠️</span>
+              <div className="mt-2 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/10 p-2">
+                <span className="text-primary text-xs shrink-0">⚠️</span>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   This video is long — automatic chapter detection was limited.
                   The AI chat and quiz still work. Ask the AI anything about what you're watching.
@@ -362,7 +362,7 @@ export function WatchStudy({
 
           {/* Transcript */}
           {transcript.length > 0 && (
-            <div className="rounded-xl border border-border bg-card">
+            <div className="card-chunky bg-card">
               <button
                 onClick={() => setShowTranscript((v) => !v)}
                 className="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold"
@@ -416,7 +416,7 @@ export function WatchStudy({
 
         {/* RIGHT: AI panel */}
         <div className={`${mobileTab === "video" ? "hidden lg:block" : ""}`}>
-          <div className="rounded-xl border border-border bg-card overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[400px] sticky top-4">
+          <div className="card-chunky bg-card overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[400px] sticky top-4">
             <div className="flex border-b border-border">
               {(
                 [
@@ -642,7 +642,7 @@ function VideoChat({
           <button
             type="submit"
             disabled={!input.trim() || analyzing}
-            className="rounded-md bg-primary px-2.5 text-primary-foreground disabled:opacity-50"
+            className="btn-3d rounded-xl bg-primary px-2.5 text-primary-foreground disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
           </button>
@@ -752,7 +752,7 @@ function VideoNotes({
         <button
           onClick={addNote}
           disabled={!text.trim()}
-          className="w-full rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          className="w-full btn-3d rounded-xl bg-primary py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
         >
           Save note at {fmt(currentTime)}
         </button>
@@ -855,7 +855,7 @@ function VideoQuiz({
           <button
             onClick={generate}
             disabled={loading || !analyzeReady}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -873,7 +873,7 @@ function VideoQuiz({
             const picked = answers[i];
             const shown = revealed[i];
             return (
-              <div key={i} className="rounded-lg border border-border bg-card p-2.5">
+              <div key={i} className="rounded-xl border-2 border-border bg-card p-2.5">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
                     Q{i + 1} · Bloom L{q.bloom_level}
@@ -1007,7 +1007,7 @@ export function LibraryTab({ onPick }: { onPick: (v: Video) => void }) {
               thumbnail: s.thumbnail_url ?? undefined,
             })
           }
-          className="text-left rounded-lg border border-border bg-card overflow-hidden hover:border-primary/40 transition"
+          className="text-left rounded-xl border-2 border-border bg-card overflow-hidden hover:border-primary/40 transition"
         >
           {s.thumbnail_url && (
             <div className="relative">
@@ -1078,13 +1078,13 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search any topic — e.g. 'Newton's laws', 'quadratic equations'…"
-            className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm outline-none focus:border-primary"
+            className="w-full rounded-xl border-2 border-border bg-background pl-9 pr-3 py-2.5 text-sm outline-none focus:border-primary"
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+          className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
         </button>
@@ -1101,7 +1101,7 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
           {videos.map((v) => (
             <div
               key={v.id}
-              className="rounded-lg border border-border bg-card overflow-hidden hover:border-primary/40 transition"
+              className="rounded-xl border-2 border-border bg-card overflow-hidden hover:border-primary/40 transition"
             >
               {v.thumbnail && (
                 <img src={v.thumbnail} alt={v.title} className="w-full aspect-video object-cover" />
@@ -1111,7 +1111,7 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
                 <p className="text-[10px] text-muted-foreground">{v.channel}</p>
                 <button
                   onClick={() => onPick(v)}
-                  className="w-full rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground"
+                  className="w-full btn-3d rounded-xl bg-primary py-1.5 text-xs font-semibold text-primary-foreground"
                 >
                   <Play className="h-3 w-3 inline mr-1" /> Watch & study
                 </button>
@@ -1133,7 +1133,7 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
                 setQ(c);
                 search(c);
               }}
-              className="text-left rounded-lg border border-border bg-card px-2.5 py-2 text-xs font-medium hover:border-primary/40 transition"
+              className="text-left rounded-xl border-2 border-border bg-card px-2.5 py-2 text-xs font-medium hover:border-primary/40 transition"
             >
               {c}
             </button>

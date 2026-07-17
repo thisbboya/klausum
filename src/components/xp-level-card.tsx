@@ -26,39 +26,39 @@ export function XpLevelCard({ xp }: { xp: number }) {
   }, [info.total]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-full bg-teal-500/15 flex items-center justify-center">
-            <Zap className="h-4 w-4 text-teal-400" />
+          <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center">
+            <Zap className="h-5 w-5 fill-primary text-primary" />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
               Level {info.current.level}
             </div>
-            <div className="font-display text-base font-semibold text-foreground leading-tight">
+            <div className="font-display text-base font-extrabold text-foreground leading-tight">
               {info.current.name}
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div className="font-display text-2xl font-bold text-primary leading-none">
+          <div className="font-display text-2xl font-extrabold text-primary leading-none">
             {shown.toLocaleString()}
           </div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">
+          <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground mt-0.5">
             Total XP
           </div>
         </div>
       </div>
 
-      <div className="mt-4 h-2 rounded-full bg-muted overflow-hidden">
+      <div className="mt-4 h-3 rounded-full bg-surface-3 overflow-hidden">
         <div
-          className="xp-bar-fill h-full rounded-full bg-gradient-to-r from-primary to-amber-400"
+          className="xp-bar-fill h-full rounded-full bg-primary"
           style={{ width: `${info.progressPct}%` }}
         />
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+      <div className="mt-2 flex items-center justify-between text-[11px] font-bold text-muted-foreground">
         <span>
           {info.intoLevel} / {info.span} XP
         </span>

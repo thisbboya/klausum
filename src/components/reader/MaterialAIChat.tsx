@@ -319,8 +319,8 @@ export function MaterialAIChat({
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1 text-[10px] bg-success/10 text-success px-2 py-0.5 rounded-full font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             <Clock className="h-2.5 w-2.5" /> {formatFocus(focusSeconds)}
           </span>
           <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">

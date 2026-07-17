@@ -1,13 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { KlausumMark } from "@/components/klausum-mark";
-import { AuthSidePanel } from "@/components/auth-side-panel";
-import { AuthBg } from "@/components/auth-bg";
 import { toast } from "sonner";
-
-
 
 function safeNext(next: unknown): string {
   if (typeof next !== "string") return "/dashboard";
@@ -16,9 +11,25 @@ function safeNext(next: unknown): string {
 }
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>) => ({ next: typeof s.next === "string" ? s.next : undefined }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   component: LoginPage,
 });
+
+const inputClass =
+  "w-full rounded-xl border-2 border-border bg-surface-2 px-4 py-3 text-sm font-semibold outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-sky focus:bg-background";
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.2 6.2 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.5z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.2 6.2 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.3 0 10.1-2 13.7-5.3l-6.3-5.3C29.3 35 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.4l6.3 5.3c-.4.4 6.4-4.7 6.4-14.2 0-1.3-.1-2.6-.4-4z"/>
+    </svg>
+  );
+}
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -45,82 +56,90 @@ function LoginPage() {
   }
 
   async function handleGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + target,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + target },
     });
-    if (result.error) return toast.error(result.error.message ?? "Google sign-in failed");
+    if (error) return toast.error(error.message ?? "Google sign-in failed");
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <AuthSidePanel />
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12">
-        <AuthBg />
-        {/* Top bar */}
-        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-6 py-5">
-          <Link to="/" className="flex items-center gap-2 text-primary">
-            <KlausumMark size={24} />
-            <span className="font-display text-sm font-semibold">Klausum</span>
-          </Link>
-          <Link to="/signup" className="text-xs text-muted-foreground hover:text-foreground">
-            New here? <span className="text-primary">Sign up free →</span>
-          </Link>
-        </div>
-        {/* Bottom bar */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center gap-3 px-6 py-4 text-[11px] text-muted-foreground">
-          <span>Free forever for students</span>
-          <span>·</span>
-          <span>Built in Ghana 🇬🇭</span>
-        </div>
-      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
-
-
-        <Link to="/" className="mb-6 flex items-center justify-center gap-2 text-primary">
-          <KlausumMark size={32} />
-          <span className="font-display text-lg font-semibold">Klausum</span>
+    <div className="flex min-h-[100dvh] flex-col bg-background">
+      {/* Top bar */}
+      <header className="flex items-center justify-between px-4 py-4 md:px-8">
+        <Link to="/" className="flex items-center gap-2">
+          <KlausumMark size={28} />
+          <span className="font-display text-lg font-extrabold text-primary">klausum</span>
         </Link>
-        <h1 className="text-center font-display text-2xl font-semibold">Welcome back</h1>
-        <p className="mt-1 text-center text-sm text-muted-foreground">Log in to keep learning</p>
-
-        <button
-          type="button" onClick={handleGoogle}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background py-2.5 text-sm font-medium hover:bg-muted"
+        <Link
+          to="/signup"
+          className="btn-3d btn-3d-secondary rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-extrabold uppercase tracking-wide text-sky"
         >
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.2 6.2 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.2 6.2 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-2 13.7-5.3l-6.3-5.3C29.3 35 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.4l6.3 5.3c-.4.4 6.4-4.7 6.4-14.2 0-1.3-.1-2.6-.4-4z"/></svg>
-          Continue with Google
-        </button>
+          Sign up
+        </Link>
+      </header>
 
-        <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
-        </div>
+      <main className="flex flex-1 items-center justify-center px-4 py-8">
+        <div className="w-full max-w-sm">
+          <h1 className="text-center font-display text-2xl font-extrabold tracking-tight">
+            Log in
+          </h1>
 
-        <form onSubmit={handleEmail} className="space-y-3">
-          <input
-            type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com" maxLength={255}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
-          <input
-            type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password" minLength={6} maxLength={72}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
+          <form onSubmit={handleEmail} className="mt-8 space-y-3">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="email" className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+                Email
+              </label>
+              <input
+                id="email" type="email" required value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com" maxLength={255}
+                className={inputClass}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="password" className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+                Password
+              </label>
+              <input
+                id="password" type="password" required value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password" minLength={6} maxLength={72}
+                className={inputClass}
+              />
+            </div>
+            <button
+              type="submit" disabled={loading}
+              className="btn-3d btn-3d-sky mt-2 w-full rounded-2xl bg-sky py-3 text-sm font-extrabold uppercase tracking-wide text-sky-foreground"
+            >
+              {loading ? "Signing in…" : "Log in"}
+            </button>
+          </form>
+
+          <div className="my-6 flex items-center gap-3 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+            <div className="h-0.5 flex-1 rounded bg-border" /> or <div className="h-0.5 flex-1 rounded bg-border" />
+          </div>
+
           <button
-            type="submit" disabled={loading}
-            className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            type="button" onClick={handleGoogle}
+            className="btn-3d btn-3d-secondary flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-border bg-card py-3 text-sm font-extrabold text-foreground"
           >
-            {loading ? "Signing in…" : "Log in"}
+            <GoogleIcon />
+            Continue with Google
           </button>
-        </form>
 
-        <p className="mt-5 text-center text-sm text-muted-foreground">
-          New here?{" "}
-          <Link to="/signup" className="font-medium text-primary hover:underline">
-            Create an account
-          </Link>
-        </p>
-      </div>
-      </div>
+          <p className="mt-8 text-center text-sm font-semibold text-muted-foreground">
+            New to Klausum?{" "}
+            <Link to="/signup" className="font-extrabold text-sky hover:underline">
+              Create an account
+            </Link>
+          </p>
+        </div>
+      </main>
+
+      <footer className="px-4 py-4 text-center text-xs font-bold text-muted-foreground">
+        Free forever for students · Built in Ghana
+      </footer>
     </div>
   );
 }

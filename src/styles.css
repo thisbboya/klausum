@@ -22,8 +22,8 @@
 
 
 @theme inline {
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Nunito", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -53,6 +53,12 @@
   --color-ring: var(--ring);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-sky: var(--sky);
+  --color-sky-foreground: var(--sky-foreground);
+  --color-grape: var(--grape);
+  --color-grape-foreground: var(--grape-foreground);
 
   /* VARK */
   --color-visual: var(--visual);
@@ -74,39 +80,60 @@
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 1rem;
 
-  /* Light theme (default) */
-  --background: oklch(0.985 0.005 250);
-  --foreground: oklch(0.18 0.03 260);
+  /*
+   * Duolingo-style palette, Klausum edition.
+   * Sunshine gold = brand / streaks / XP. Green = success & go-actions.
+   * Sky = social / secondary. Tomato = errors & hearts. Grape = premium.
+   * High-saturation accents on clean white.
+   */
+
+  /* 3D pressed-edge colors (bottom edge of chunky buttons, ~30% darker) */
+  --edge-primary: oklch(0.7 0.15 83);
+  --edge-secondary: oklch(0.87 0 0);
+  --edge-success: oklch(0.62 0.19 135);
+  --edge-destructive: oklch(0.55 0.19 27);
+  --edge-sky: oklch(0.6 0.12 235);
+
+  --success: oklch(0.74 0.22 135);          /* Duo Green #58CC02 */
+  --success-foreground: oklch(1 0 0);
+  --sky: oklch(0.7 0.14 235);               /* Sky Blue #1CB0F6 */
+  --sky-foreground: oklch(1 0 0);
+  --grape: oklch(0.67 0.19 300);            /* Grape Soda #A570FF */
+  --grape-foreground: oklch(1 0 0);
+
+  /* Light theme (default) — clean white, Cloud Gray lines, charcoal text */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.4 0 0);             /* Charcoal #4B4B4B */
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.03 260);
+  --card-foreground: oklch(0.4 0 0);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.03 260);
+  --popover-foreground: oklch(0.4 0 0);
 
-  --surface-2: oklch(0.96 0.005 250);
-  --surface-3: oklch(0.93 0.01 250);
+  --surface-2: oklch(0.975 0 0);
+  --surface-3: oklch(0.945 0 0);
 
-  --primary: oklch(0.7 0.16 78);           /* Ghana gold (slightly darker for light bg contrast) */
-  --primary-foreground: oklch(0.18 0.03 260);
+  --primary: oklch(0.85 0.17 88);           /* Sunshine #FFC800 */
+  --primary-foreground: oklch(0.32 0.02 80);
 
-  --secondary: oklch(0.94 0.01 250);
-  --secondary-foreground: oklch(0.18 0.03 260);
+  --secondary: oklch(0.965 0 0);
+  --secondary-foreground: oklch(0.4 0 0);
 
-  --muted: oklch(0.95 0.005 250);
-  --muted-foreground: oklch(0.45 0.02 255);
+  --muted: oklch(0.965 0 0);
+  --muted-foreground: oklch(0.62 0 0);
 
-  --accent: oklch(0.7 0.16 78);
-  --accent-foreground: oklch(0.18 0.03 260);
+  --accent: oklch(0.85 0.17 88);
+  --accent-foreground: oklch(0.32 0.02 80);
 
-  --destructive: oklch(0.6 0.22 25);
-  --destructive-foreground: oklch(0.98 0.005 250);
+  --destructive: oklch(0.66 0.21 27);       /* Tomato #FF4B4B */
+  --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0.88 0.01 250);
-  --input: oklch(0.92 0.01 250);
-  --ring: oklch(0.7 0.16 78);
+  --border: oklch(0.92 0 0);                /* Cloud Gray #E5E5E5 */
+  --input: oklch(0.92 0 0);
+  --ring: oklch(0.85 0.17 88);
 
   --navy: oklch(0.32 0.07 260);
 
@@ -126,7 +153,18 @@
 }
 
 .dark {
-  /* Dark theme overrides */
+  /* Dark theme overrides — deep navy, same saturated accents */
+  --edge-primary: oklch(0.66 0.15 83);
+  --edge-secondary: oklch(0.24 0.03 260);
+  --edge-success: oklch(0.58 0.18 135);
+  --edge-destructive: oklch(0.5 0.18 27);
+  --edge-sky: oklch(0.55 0.11 235);
+  --success: oklch(0.74 0.22 135);
+  --success-foreground: oklch(0.18 0.03 260);
+  --sky: oklch(0.7 0.14 235);
+  --sky-foreground: oklch(0.18 0.03 260);
+  --grape: oklch(0.7 0.18 300);
+  --grape-foreground: oklch(0.18 0.03 260);
   --background: oklch(0.18 0.03 260);
   --foreground: oklch(0.97 0.005 250);
 
@@ -192,7 +230,7 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    font-weight: 600;
+    font-weight: 800;
     letter-spacing: -0.01em;
   }
 
@@ -229,8 +267,69 @@
 .prose-tutor pre code { background: transparent; padding: 0; }
 .prose-tutor h1, .prose-tutor h2, .prose-tutor h3 { margin-top: 1em; margin-bottom: 0.4em; }
 
+/* ───── Chunky 3D buttons (Duolingo-style pressed edge) ───── */
+@layer components {
+  .btn-3d {
+    --edge: var(--edge-primary);
+    box-shadow: 0 4px 0 0 var(--edge);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+    will-change: transform;
+  }
+  .btn-3d:hover { filter: brightness(1.05); }
+  .btn-3d:active,
+  .btn-3d[data-pressed="true"] {
+    /* drop flush + slight squash — presses like a physical key */
+    transform: translateY(4px) scale(0.985, 0.97);
+    box-shadow: 0 0 0 0 var(--edge);
+  }
+  .btn-3d:disabled { box-shadow: 0 4px 0 0 var(--edge); transform: none; filter: saturate(0.4) opacity(0.6); }
+  .btn-3d-secondary { --edge: var(--edge-secondary); }
+  .btn-3d-success { --edge: var(--edge-success); }
+  .btn-3d-destructive { --edge: var(--edge-destructive); }
+  .btn-3d-sky { --edge: var(--edge-sky); }
+
+  /* Chunky cards: thick border, fat radius */
+  .card-chunky {
+    border: 2px solid var(--border);
+    border-radius: calc(var(--radius) + 8px);
+  }
+  .card-chunky-hover {
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card-chunky-hover:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
+    box-shadow: 0 6px 0 0 color-mix(in oklch, var(--border) 70%, transparent);
+  }
+}
+
+/* ───── Living mascots: breathe + blink ───── */
+@keyframes mascot-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.02, 0.965); }
+}
+.mascot-body {
+  transform-box: fill-box;
+  transform-origin: 50% 85%;
+  animation: mascot-breathe 3.4s ease-in-out infinite;
+  animation-delay: var(--mascot-delay, 0s);
+}
+@keyframes mascot-blink {
+  0%, 91%, 100% { transform: scaleY(1); }
+  94%, 96% { transform: scaleY(0.08); }
+}
+.mascot-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mascot-blink 4.4s ease-in-out infinite;
+  animation-delay: var(--mascot-delay, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot-body, .mascot-eye { animation: none; }
+}
+
 /* ───── Duolingo-style micro-animations ───── */
-button:active { transform: scale(0.97); }
+button:not(.btn-3d):active { transform: scale(0.97); }
 
 @keyframes nav-pop {
   0% { transform: scale(1); }

@@ -1,7 +1,5 @@
 // Server-side helper to talk to AI models.
-// Uses a rotating pool of GEMINI_API_KEY[_2..8] when available, falls back to
-// Lovable AI Gateway otherwise. NEVER import this from client code.
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+// Uses a rotating pool of GEMINI_API_KEY[_2..8]. NEVER import this from client code.
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { LanguageModel } from "ai";
 import { pickGeminiKey, blockGeminiKey, hasGeminiKeys } from "./gemini-keys.server";
@@ -21,41 +19,25 @@ function toGoogleModelId(modelId: string): string {
   return map[id] ?? id;
 }
 
-export const createLovableAiGatewayProvider = (lovableApiKey: string) =>
-  createOpenAICompatible({
-    name: "lovable",
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    headers: {
-      "Lovable-API-Key": lovableApiKey,
-      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
-    },
-  });
-
 /**
- * Resolve a chat model. Prefers the rotating Gemini key pool for `google/*`
- * model IDs, then falls back to Lovable AI Gateway with LOVABLE_API_KEY.
+ * Resolve a chat model from the rotating Gemini key pool.
  *
- * Returns a tuple of [model, keyUsed]. `keyUsed` is the raw Gemini key string
- * if a Gemini key was picked (so callers can block it on 429), or null when
- * we fell back to the Lovable gateway.
+ * Returns the model plus the raw Gemini key string that was picked, so callers
+ * can block that key on a 429.
  */
 export function resolveModelWithKey(modelId: string = DEFAULT_MODEL): {
   model: LanguageModel;
-  geminiKey: string | null;
+  geminiKey: string;
 } {
-  if (modelId.startsWith("google/") && hasGeminiKeys()) {
-    const picked = pickGeminiKey();
-    if (picked) {
-      const google = createGoogleGenerativeAI({ apiKey: picked.key });
-      return { model: google(toGoogleModelId(modelId)), geminiKey: picked.key };
-    }
-    // pool exhausted → fall through to gateway
+  if (!hasGeminiKeys()) {
+    throw new Error("No AI provider key configured (set GEMINI_API_KEY).");
   }
-  const lovableKey = process.env.LOVABLE_API_KEY;
-  if (!lovableKey) {
-    throw new Error("No AI provider key configured (set GEMINI_API_KEY or LOVABLE_API_KEY).");
+  const picked = pickGeminiKey();
+  if (!picked) {
+    throw new Error("All Gemini keys are rate-limited. Try again shortly.");
   }
-  return { model: createLovableAiGatewayProvider(lovableKey)(modelId), geminiKey: null };
+  const google = createGoogleGenerativeAI({ apiKey: picked.key });
+  return { model: google(toGoogleModelId(modelId)), geminiKey: picked.key };
 }
 
 /** Back-compat thin wrapper for code paths that just want a model. */
@@ -85,7 +67,7 @@ export async function withGeminiRetry<T>(
         /not been used in project|SERVICE_DISABLED|generativelanguage\.googleapis\.com/i.test(msg);
       if (isApiDisabled) {
         // Long block — manual re-enable required in GCP.
-        if (geminiKey) blockGeminiKey(geminiKey, 24 * 60 * 60 * 1000);
+        blockGeminiKey(geminiKey, 24 * 60 * 60 * 1000);
         const projMatch = msg.match(/project[^0-9]{0,8}(\d{6,})/i);
         const tagged = new Error(
           `GEMINI_API_DISABLED${projMatch ? `:${projMatch[1]}` : ""} — Generative Language API is disabled in the Google Cloud project for this key.`,
@@ -98,7 +80,7 @@ export async function withGeminiRetry<T>(
         status === 429 ||
         /429|quota|rate.?limit|resource.?exhausted/i.test(msg);
       if (!isRateLimit) throw err;
-      if (geminiKey) blockGeminiKey(geminiKey, 60_000);
+      blockGeminiKey(geminiKey, 60_000);
       await new Promise((r) => setTimeout(r, 250 + attempt * 250));
     }
   }

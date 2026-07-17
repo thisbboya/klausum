@@ -21,7 +21,7 @@ export function XPBurst({ state }: { state: XPBurstState }) {
           exit={{ opacity: 0 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
-          +{state.amount} XP ⚡
+          +{state.amount} XP
         </motion.div>
       )}
     </AnimatePresence>

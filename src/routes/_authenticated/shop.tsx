@@ -19,7 +19,7 @@ type Item = {
 
 const ITEMS: Item[] = [
   { id: "streak_freeze", title: "Streak Freeze", desc: "Adds +1 freeze to protect your streak on a missed day.", cost: 30, icon: Snowflake, accent: "text-sky-400" },
-  { id: "hint_pack", title: "Hint Pack", desc: "5 hints you can use on hard quiz questions.", cost: 20, icon: Lightbulb, accent: "text-amber-400" },
+  { id: "hint_pack", title: "Hint Pack", desc: "5 hints you can use on hard quiz questions.", cost: 20, icon: Lightbulb, accent: "text-primary" },
   { id: "xp_boost", title: "2× XP Boost", desc: "Doubles XP for the next 30 minutes of study.", cost: 50, icon: Zap, accent: "text-fuchsia-400" },
 ];
 
@@ -45,9 +45,9 @@ function Shop() {
       if (error) throw error;
       const res = data as any;
       if (!res?.ok) {
-        toast.error(res?.reason === "not_enough_gems" ? `Need ${item.cost} 💎 · you have ${res.balance}` : "Purchase failed");
+        toast.error(res?.reason === "not_enough_gems" ? `Need ${item.cost} gems · you have ${res.balance}` : "Purchase failed");
       } else {
-        toast.success(`Purchased ${item.title} · −${item.cost} 💎`);
+        toast.success(`Purchased ${item.title} · −${item.cost} gems`);
         if (item.id === "xp_boost") {
           localStorage.setItem("klausum:xpBoostUntil", String(Date.now() + 30 * 60 * 1000));
         }
@@ -69,16 +69,16 @@ function Shop() {
       <header className="flex items-end justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold flex items-center gap-2">
-            <Gem className="h-7 w-7 text-cyan-400" /> Gem Shop
+            <Gem className="h-7 w-7 text-sky" /> Gem Shop
           </h1>
           <p className="text-sm text-muted-foreground">Spend gems earned from chests, quests, and perfect quizzes.</p>
         </div>
-        <div className="rounded-xl border border-border/60 bg-card/60 px-4 py-2 flex items-center gap-2 text-lg font-semibold">
-          <Gem className="h-5 w-5 text-cyan-400" /> {profile?.gems ?? 0}
+        <div className="card-chunky/60 bg-card/60 px-4 py-2 flex items-center gap-2 text-lg font-semibold">
+          <Gem className="h-5 w-5 text-sky" /> {profile?.gems ?? 0}
         </div>
       </header>
 
-      <div className="rounded-lg border border-border/50 bg-muted/20 px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
+      <div className="rounded-xl border-2 border-border/50 bg-muted/20 px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
         <Snowflake className="h-3.5 w-3.5 text-sky-400" /> You have {profile?.streak_freezes ?? 0} streak freeze{(profile?.streak_freezes ?? 0) === 1 ? "" : "s"} available.
       </div>
 
@@ -88,7 +88,7 @@ function Shop() {
           const affordable = (profile?.gems ?? 0) >= it.cost;
           const isBuying = buying === it.id;
           return (
-            <div key={it.id} className="rounded-2xl border border-border/60 bg-card/60 p-5 flex flex-col gap-3">
+            <div key={it.id} className="card-chunky/60 bg-card/60 p-5 flex flex-col gap-3">
               <div className={`h-11 w-11 rounded-xl bg-background/60 border border-border/60 flex items-center justify-center ${it.accent}`}>
                 <Icon className="h-6 w-6" />
               </div>
@@ -99,7 +99,7 @@ function Shop() {
               <button
                 onClick={() => buy(it)}
                 disabled={!affordable || isBuying}
-                className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold px-3 py-2 disabled:opacity-50 hover:opacity-90"
+                className="mt-auto inline-flex items-center justify-center gap-1.5 btn-3d rounded-xl bg-primary text-primary-foreground text-sm font-semibold px-3 py-2 disabled:opacity-50 hover:opacity-90"
               >
                 {isBuying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gem className="h-4 w-4" />}
                 {it.cost}

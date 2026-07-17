@@ -55,24 +55,6 @@ function SolvePage() {
     reader.readAsDataURL(file);
   }
 
-  async function saveToBank() {
-    if (!result || !user) return;
-    const stepsText = result.steps
-      .map((s) => `${s.step_number}. ${s.explanation}\n${s.work}`)
-      .join("\n\n");
-    const { error } = await supabase.from("question_bank").insert({
-      user_id: user.id,
-      question_text: result.problem_identified,
-      answer_text: `${stepsText}\n\n**Final answer:** ${result.final_answer}`,
-      subject: result.subject,
-      source: "snap_solve",
-      image_url: previewUrl,
-      steps: result.steps,
-    });
-    if (error) toast.error(error.message);
-    else toast.success("Saved to Question Bank");
-  }
-
   async function askFollowup() {
     if (!result || !followupQ.trim()) return;
     setFollowupBusy(true);
@@ -173,7 +155,7 @@ function SolvePage() {
 
           {result && !loading && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-border bg-card/60 p-4">
+              <div className="card-chunky bg-card/60 p-4">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
                   Problem · {result.subject}
                 </div>
@@ -184,9 +166,9 @@ function SolvePage() {
 
               <ol className="space-y-3">
                 {result.steps.map((s) => (
-                  <li key={s.step_number} className="rounded-xl border border-border bg-card/40 p-4">
+                  <li key={s.step_number} className="card-chunky bg-card/40 p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                      <span className="h-6 w-6 btn-3d rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                         {s.step_number}
                       </span>
                       <div className="text-sm font-medium"><MDMath>{s.explanation}</MDMath></div>
@@ -198,8 +180,8 @@ function SolvePage() {
                 ))}
               </ol>
 
-              <div className="rounded-xl border-2 border-amber-500/60 bg-amber-500/10 p-4">
-                <div className="text-[10px] uppercase tracking-wide text-amber-500 font-bold mb-1">
+              <div className="rounded-xl border-2 border-primary/60 bg-primary/10 p-4">
+                <div className="text-[10px] uppercase tracking-wide text-primary font-bold mb-1">
                   Final answer · confidence {result.confidence}
                 </div>
                 <div className="text-lg font-semibold">
@@ -207,21 +189,12 @@ function SolvePage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={saveToBank}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-                >
-                  <Bookmark className="h-4 w-4" /> Save to Question Bank
-                </button>
-              </div>
-
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
                 <div className="text-sm font-semibold text-primary">Ask a follow-up</div>
                 {followups.map((f, i) => (
                   <div key={i} className="space-y-1">
                     <div className="text-xs text-muted-foreground">You: {f.q}</div>
-                    <div className="rounded-lg border border-border/40 bg-background/50 p-3 text-sm">
+                    <div className="rounded-xl border-2 border-border/40 bg-background/50 p-3 text-sm">
                       <MDMath>{f.a}</MDMath>
                     </div>
                   </div>
@@ -231,13 +204,13 @@ function SolvePage() {
                     value={followupQ}
                     onChange={(e) => setFollowupQ(e.target.value)}
                     placeholder="Why did we multiply here?"
-                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    className="flex-1 rounded-xl border-2 border-border bg-background px-3 py-2 text-sm"
                     onKeyDown={(e) => e.key === "Enter" && askFollowup()}
                   />
                   <button
                     onClick={askFollowup}
                     disabled={followupBusy || !followupQ.trim()}
-                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                    className="inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {followupBusy ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

@@ -64,9 +64,9 @@ function GapsPage() {
   };
 
   const sevColor = (s: string) =>
-    s === "critical" ? "text-red-400 border-red-500/40 bg-red-500/10"
-    : s === "moderate" ? "text-amber-400 border-amber-500/40 bg-amber-500/10"
-    : "text-emerald-400 border-emerald-500/40 bg-emerald-500/10";
+    s === "critical" ? "text-destructive border-destructive/40 bg-destructive/10"
+    : s === "moderate" ? "text-primary border-primary/40 bg-primary/10"
+    : "text-success border-success/40 bg-success/10";
 
   const daysOpen = (iso: string) =>
     Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
@@ -221,7 +221,7 @@ function GapsPage() {
       </div>
 
       {counts.critical === 0 && filter === "all" && open.length > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-300">
+        <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-emerald-300">
           <PartyPopper className="h-4 w-4" /> No critical gaps right now — keep chipping at the moderates.
         </div>
       )}
@@ -256,7 +256,7 @@ function GapsPage() {
                     <div className="flex shrink-0 gap-2">
                       <button
                         onClick={() => resolve(g)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10"
+                        className="inline-flex items-center gap-1 rounded-lg border border-success/40 px-3 py-1.5 text-xs font-semibold text-success hover:bg-success/10"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" /> Close
                       </button>
@@ -276,26 +276,26 @@ function GapsPage() {
                     <button
                       onClick={() => spawnQuiz(g)}
                       disabled={busy?.id === g.id}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-50"
                     >
                       <ListChecks className="h-3.5 w-3.5" /> {busy?.id === g.id && busy?.kind === "quiz" ? "Building…" : "5-Q drill"}
                     </button>
                     <button
                       onClick={() => spawnDeck(g)}
                       disabled={busy?.id === g.id}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-50"
                     >
                       <Layers className="h-3.5 w-3.5" /> {busy?.id === g.id && busy?.kind === "deck" ? "Building…" : "Flashcards"}
                     </button>
                     <Link
                       to="/tutor"
-                      className="inline-flex items-center gap-1 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40"
                     >
                       <MessagesSquare className="h-3.5 w-3.5" /> Tutor
                     </Link>
                     <button
                       onClick={() => scheduleReview(g)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40"
                     >
                       <CalendarPlus className="h-3.5 w-3.5" /> +25m tomorrow
                     </button>
@@ -303,7 +303,7 @@ function GapsPage() {
                 )}
 
                 {explanation[g.id] && (
-                  <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-3 text-sm text-foreground/90 whitespace-pre-wrap">
+                  <div className="mt-3 rounded-xl border-2 border-border/40 bg-background/40 p-3 text-sm text-foreground/90 whitespace-pre-wrap">
                     {explanation[g.id]}
                   </div>
                 )}

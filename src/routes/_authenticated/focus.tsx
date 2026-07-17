@@ -131,7 +131,7 @@ function FocusMode() {
         <button onClick={reset} className="rounded-full border border-border/60 bg-card/60 p-3 hover:bg-accent/20" title="Reset">
           <RotateCcw className="h-5 w-5" />
         </button>
-        <button onClick={toggle} className="rounded-full bg-primary text-primary-foreground p-5 hover:opacity-90 shadow-lg">
+        <button onClick={toggle} className="btn-3d rounded-full bg-primary text-primary-foreground p-5 hover:opacity-90 shadow-lg">
           {running ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
         </button>
         <button onClick={skip} className="rounded-full border border-border/60 bg-card/60 p-3 hover:bg-accent/20" title="Skip phase">

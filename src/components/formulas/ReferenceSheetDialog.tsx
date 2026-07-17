@@ -72,7 +72,7 @@ export function ReferenceSheetDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl border border-border bg-card flex flex-col">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden card-chunky bg-card flex flex-col">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="font-display text-lg font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" /> AI Reference Sheet
@@ -86,19 +86,19 @@ export function ReferenceSheetDialog({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject (e.g. Physics)"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
             <input
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="Optional topic (e.g. Kinematics)"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
           <button
             onClick={generate}
             disabled={busy || !subject}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="inline-flex items-center gap-2 btn-3d rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             Generate
@@ -137,8 +137,8 @@ export function ReferenceSheetDialog({
 
         {items && (
           <div className="flex justify-end gap-2 border-t border-border p-4">
-            <button onClick={onClose} className="rounded-lg border border-border px-3 py-2 text-sm">Cancel</button>
-            <button onClick={addSelected} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+            <button onClick={onClose} className="rounded-xl border-2 border-border px-3 py-2 text-sm">Cancel</button>
+            <button onClick={addSelected} className="btn-3d rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
               Add selected
             </button>
           </div>
@@ -149,5 +149,5 @@ export function ReferenceSheetDialog({
 }
 
 function SafeBlock({ latex }: { latex: string }) {
-  try { return <BlockMath math={latex} />; } catch { return <code className="text-xs text-red-400">Invalid LaTeX</code>; }
+  try { return <BlockMath math={latex} />; } catch { return <code className="text-xs text-destructive">Invalid LaTeX</code>; }
 }

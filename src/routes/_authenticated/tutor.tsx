@@ -157,7 +157,7 @@ function Tutor() {
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto rounded-xl border border-border bg-card/30 p-4 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto card-chunky bg-card/30 p-4 space-y-4">
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground py-12">
             <Sparkles className="h-8 w-8 text-primary mb-2" />
@@ -171,7 +171,7 @@ function Tutor() {
                   key={a.label}
                   onClick={() => quickAction(a.prompt)}
                   disabled={!token}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-left hover:border-primary hover:bg-primary/5 transition disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3 py-2 text-xs text-left hover:border-primary hover:bg-primary/5 transition disabled:opacity-50"
                 >
                   <a.icon className="h-3.5 w-3.5 text-primary shrink-0" />
                   <span>{a.label}</span>
@@ -235,7 +235,7 @@ function Tutor() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={mode === "socratic" ? "Tell the tutor what you're trying to understand…" : "Ask a question…"}
-          className="flex-1 rounded-lg border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+          className="flex-1 rounded-xl border-2 border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
           disabled={isLoading || !token}
         />
         {isLoading ? (
@@ -251,7 +251,7 @@ function Tutor() {
           <button
             type="submit"
             disabled={!input.trim() || !token}
-            className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="btn-3d rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
           </button>

@@ -105,8 +105,8 @@ function SchedulePage() {
 
   const colorFor = (t: string) =>
     t === "review" ? "border-blue-500/40 bg-blue-500/15 text-blue-200"
-    : t === "quiz" ? "border-amber-500/40 bg-amber-500/15 text-amber-200"
-    : t === "break" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
+    : t === "quiz" ? "border-primary/40 bg-primary/15 text-amber-200"
+    : t === "break" ? "border-success/40 bg-success/15 text-emerald-200"
     : "border-primary/40 bg-primary/15 text-primary";
 
   return (
@@ -117,7 +117,7 @@ function SchedulePage() {
           <p className="text-sm text-muted-foreground">Plan your week. Stay on rhythm.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <div className="inline-flex rounded-lg border border-border/60 overflow-hidden">
+          <div className="inline-flex rounded-xl border-2 border-border/60 overflow-hidden">
             {(["list","week","month"] as View[]).map(v => (
               <button key={v} onClick={() => setView(v)} className={`px-3 py-2 text-xs font-semibold capitalize ${view===v?"bg-primary text-primary-foreground":"bg-card/40 text-muted-foreground hover:text-foreground"}`}>{v}</button>
             ))}
@@ -125,14 +125,14 @@ function SchedulePage() {
           <button onClick={smartPlan} disabled={busy} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">
             <Sparkles className="h-4 w-4" /> {busy ? "Planning…" : "AI Smart Plan"}
           </button>
-          <button onClick={() => setAdding(!adding)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+          <button onClick={() => setAdding(!adding)} className="inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
             <Plus className="h-4 w-4" /> Add
           </button>
         </div>
       </header>
 
       {adding && (
-        <div className="grid md:grid-cols-2 gap-3 rounded-xl border border-border/60 bg-card/60 p-4">
+        <div className="grid md:grid-cols-2 gap-3 card-chunky/60 bg-card/60 p-4">
           <input className="input md:col-span-2" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <input className="input" placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
           <select className="input" value={form.block_type} onChange={(e) => setForm({ ...form, block_type: e.target.value })}>
@@ -142,8 +142,8 @@ function SchedulePage() {
           <input className="input" type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
           <input className="input" type="number" min={5} max={240} value={form.duration} onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) || 25 })} />
           <div className="md:col-span-2 flex gap-2">
-            <button onClick={addBlock} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Save</button>
-            <button onClick={() => setAdding(false)} className="rounded-lg border border-border px-3 py-1.5 text-xs">Cancel</button>
+            <button onClick={addBlock} className="btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Save</button>
+            <button onClick={() => setAdding(false)} className="rounded-xl border-2 border-border px-3 py-1.5 text-xs">Cancel</button>
           </div>
         </div>
       )}
@@ -214,9 +214,9 @@ function ListView({ blocks, colorFor, onComplete, onDelete }: any) {
                     <div className="text-[11px] uppercase opacity-70">{b.block_type} · {b.subject}</div>
                   </div>
                   {!b.completed && (
-                    <button onClick={() => onComplete(b.id)} className="text-emerald-400 hover:text-emerald-300"><CheckCircle2 className="h-4 w-4" /></button>
+                    <button onClick={() => onComplete(b.id)} className="text-success hover:text-emerald-300"><CheckCircle2 className="h-4 w-4" /></button>
                   )}
-                  <button onClick={() => onDelete(b.id)} className="opacity-60 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => onDelete(b.id)} className="opacity-60 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                 </li>
               );
             })}
@@ -243,7 +243,7 @@ function WeekGrid({ cursor, blocks, colorFor, onComplete, onDelete }: any) {
   }, [blocks]);
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+    <div className="card-chunky/60 bg-card/40 overflow-hidden">
       <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 bg-card/60">
         <div />
         {days.map(d => (
@@ -299,7 +299,7 @@ function MonthGrid({ cursor, blocks, colorFor, onPick }: any) {
     (byDay[k] ??= []).push(b);
   }
   return (
-    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+    <div className="card-chunky/60 bg-card/40 overflow-hidden">
       <div className="grid grid-cols-7 border-b border-border/60 bg-card/60">
         {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => <div key={d} className="p-2 text-center text-xs font-semibold text-muted-foreground">{d}</div>)}
       </div>
@@ -361,41 +361,41 @@ function Pomodoro() {
   if (focus) {
     return (
       <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center">
-        <button onClick={() => setFocus(false)} className="absolute top-6 right-6 rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground"><Minimize2 className="h-5 w-5" /></button>
+        <button onClick={() => setFocus(false)} className="absolute top-6 right-6 rounded-xl border-2 border-border p-2 text-muted-foreground hover:text-foreground"><Minimize2 className="h-5 w-5" /></button>
         <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-6">Focus mode · Esc to exit</div>
         <div className="font-mono text-[12rem] font-bold leading-none tabular-nums">{mm}:{ss}</div>
         <div className="mt-8 w-[60vw] max-w-2xl h-2 rounded-full bg-border/40 overflow-hidden">
           <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
         </div>
         <div className="mt-10 flex items-center gap-3">
-          <select value={duration} onChange={(e) => { const v = parseInt(e.target.value); setDuration(v); setRemaining(v * 60); setRunning(false); }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+          <select value={duration} onChange={(e) => { const v = parseInt(e.target.value); setDuration(v); setRemaining(v * 60); setRunning(false); }} className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm">
             <option value={15}>15m</option><option value={25}>25m</option><option value={45}>45m</option><option value={60}>60m</option><option value={90}>90m</option>
           </select>
-          <button onClick={() => setRunning(!running)} className="rounded-lg bg-primary px-6 py-3 text-primary-foreground">
+          <button onClick={() => setRunning(!running)} className="btn-3d rounded-xl bg-primary px-6 py-3 text-primary-foreground">
             {running ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          <button onClick={() => { setRunning(false); setRemaining(duration * 60); }} className="rounded-lg border border-border p-3"><RotateCcw className="h-5 w-5" /></button>
+          <button onClick={() => { setRunning(false); setRemaining(duration * 60); }} className="rounded-xl border-2 border-border p-3"><RotateCcw className="h-5 w-5" /></button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <div className="card-chunky/60 bg-card/60 p-4">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase text-muted-foreground">Pomodoro</div>
           <div className="font-mono text-4xl font-bold">{mm}:{ss}</div>
         </div>
         <div className="flex items-center gap-2">
-          <select value={duration} onChange={(e) => { const v = parseInt(e.target.value); setDuration(v); setRemaining(v * 60); setRunning(false); }} className="rounded-lg border border-border bg-background px-2 py-1 text-xs">
+          <select value={duration} onChange={(e) => { const v = parseInt(e.target.value); setDuration(v); setRemaining(v * 60); setRunning(false); }} className="rounded-xl border-2 border-border bg-background px-2 py-1 text-xs">
             <option value={15}>15m</option><option value={25}>25m</option><option value={45}>45m</option><option value={60}>60m</option>
           </select>
           <button onClick={() => setRunning(!running)} className="rounded-lg bg-primary p-2 text-primary-foreground">
             {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
-          <button onClick={() => { setRunning(false); setRemaining(duration * 60); }} className="rounded-lg border border-border p-2"><RotateCcw className="h-4 w-4" /></button>
-          <button onClick={() => setFocus(true)} className="rounded-lg border border-border p-2" title="Focus mode"><Maximize2 className="h-4 w-4" /></button>
+          <button onClick={() => { setRunning(false); setRemaining(duration * 60); }} className="rounded-xl border-2 border-border p-2"><RotateCcw className="h-4 w-4" /></button>
+          <button onClick={() => setFocus(true)} className="rounded-xl border-2 border-border p-2" title="Focus mode"><Maximize2 className="h-4 w-4" /></button>
         </div>
       </div>
       <div className="mt-3 h-1.5 rounded-full bg-border/40 overflow-hidden">

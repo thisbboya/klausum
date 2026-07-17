@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck, Bell, Sparkles, Crown, Users } from "lucide-react";
+import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck, Bell, Sparkles, Crown, Users, Megaphone, LifeBuoy, Mail } from "lucide-react";
 import { SecurityTab } from "@/components/settings/SecurityTab";
 import { useTheme } from "@/components/theme-provider";
 import { CompanionSVG, getCompanion } from "@/components/companion-svg";
+import { UPDATES, hasUnseenUpdates, markUpdatesSeen } from "@/lib/updates";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
@@ -17,24 +18,42 @@ const TABS = [
   { id: "preferences", label: "Preferences", icon: Sliders },
   { id: "security", label: "Security", icon: ShieldCheck },
   { id: "data", label: "Account & Data", icon: Database },
+  { id: "updates", label: "Updates", icon: Megaphone },
+  { id: "support", label: "Support", icon: LifeBuoy },
 ];
 
 function SettingsPage() {
   const [tab, setTab] = useState("profile");
+  const [unseen, setUnseen] = useState(false);
+  useEffect(() => { setUnseen(hasUnseenUpdates()); }, []);
+
+  function selectTab(id: string) {
+    setTab(id);
+    if (id === "updates") {
+      markUpdatesSeen();
+      setUnseen(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl font-bold">Settings</h1>
-      <div className="flex flex-wrap gap-2 border-b border-border/60">
+      <h1 className="font-display text-3xl font-extrabold">Settings</h1>
+      <div className="flex flex-wrap gap-2">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
           return (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition ${active ? "border-primary text-primary font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              onClick={() => selectTab(t.id)}
+              className={`relative inline-flex items-center gap-1.5 rounded-full border-2 px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-wide transition ${
+                active ? "border-sky/40 bg-sky/12 text-sky" : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <Icon className="h-4 w-4" /> {t.label}
+              <Icon className="h-3.5 w-3.5" /> {t.label}
+              {t.id === "updates" && unseen && (
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-destructive" />
+              )}
             </button>
           );
         })}
@@ -44,6 +63,55 @@ function SettingsPage() {
       {tab === "preferences" && <PreferencesTab />}
       {tab === "security" && <SecurityTab />}
       {tab === "data" && <DataTab />}
+      {tab === "updates" && <UpdatesTab />}
+      {tab === "support" && <SupportTab />}
+    </div>
+  );
+}
+
+function UpdatesTab() {
+  return (
+    <div className="max-w-xl space-y-3">
+      {UPDATES.map((u) => (
+        <div key={u.id} className="card-chunky bg-card p-4">
+          <div className="flex items-center gap-2">
+            <Megaphone className="h-4 w-4 text-primary" />
+            <h3 className="font-display text-base font-extrabold">{u.title}</h3>
+          </div>
+          <p className="mt-1.5 text-sm font-semibold text-muted-foreground">{u.body}</p>
+          <div className="mt-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground/70">
+            {new Date(u.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SupportTab() {
+  const email = "hello@klausum.app";
+  return (
+    <div className="max-w-xl space-y-3">
+      <a
+        href={`mailto:${email}`}
+        className="card-chunky card-chunky-hover flex items-center gap-4 bg-card p-4"
+      >
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky/15">
+          <Mail className="h-5 w-5 text-sky" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Email</div>
+          <div className="truncate text-sm font-extrabold">{email}</div>
+          <div className="text-xs font-semibold text-muted-foreground">For questions, bugs, or feedback</div>
+        </div>
+      </a>
+      <div className="card-chunky bg-card p-4">
+        <div className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Response time</div>
+        <div className="mt-1 flex items-center justify-between text-sm font-bold">
+          <span>Email</span>
+          <span className="text-muted-foreground">Within 24 hours</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -104,7 +172,7 @@ function ProfileTab() {
         <Field label="Email"><input value={user?.email ?? ""} disabled className="input opacity-60" /></Field>
         <Field label="Full name"><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="input" /></Field>
         <Field label="@handle (unique, lowercase a-z, 0-9, _)">
-          <div className="flex items-center rounded-lg border border-border bg-background pl-2">
+          <div className="flex items-center rounded-xl border-2 border-border bg-background pl-2">
             <span className="text-muted-foreground text-sm">@</span>
             <input
               value={form.handle}
@@ -126,7 +194,7 @@ function ProfileTab() {
           </Field>
           <Field label="Field of study"><input value={form.field_of_study} onChange={(e) => setForm({ ...form, field_of_study: e.target.value })} className="input" /></Field>
         </div>
-        <button onClick={save} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+        <button onClick={save} disabled={saving} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
       </div>
 
       <CompanionCard profile={profile} />
@@ -142,7 +210,7 @@ function ProfileTab() {
 function CompanionCard({ profile }: { profile: any }) {
   const c = getCompanion(profile?.companion_id ?? 1);
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4 flex items-center gap-4">
+    <div className="card-chunky/60 bg-card/60 p-4 flex items-center gap-4">
       <CompanionSVG id={c.id} size={56} />
       <div className="flex-1 min-w-0">
         <div className="text-xs uppercase text-muted-foreground">Your companion</div>
@@ -167,7 +235,7 @@ function PlanCard({ userId }: { userId?: string }) {
     },
   });
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <div className="card-chunky/60 bg-card/60 p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Crown className="h-4 w-4 text-primary" />
@@ -176,11 +244,11 @@ function PlanCard({ userId }: { userId?: string }) {
         <span className="text-xs text-muted-foreground">This month</span>
       </div>
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-lg border border-border/40 p-3">
+        <div className="rounded-xl border-2 border-border/40 p-3">
           <div className="text-xs text-muted-foreground">AI messages</div>
           <div className="font-mono text-lg">{usage?.ai_messages_used ?? 0}</div>
         </div>
-        <div className="rounded-lg border border-border/40 p-3">
+        <div className="rounded-xl border-2 border-border/40 p-3">
           <div className="text-xs text-muted-foreground">YouTube videos</div>
           <div className="font-mono text-lg">{usage?.youtube_videos_used ?? 0}</div>
         </div>
@@ -193,7 +261,7 @@ function CohortCard({ profile }: { profile: any }) {
   if (!profile) return null;
   const memberSince = profile.created_at ? new Date(profile.created_at).toLocaleDateString() : "—";
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <div className="card-chunky/60 bg-card/60 p-4">
       <div className="flex items-center gap-2 mb-2">
         <Users className="h-4 w-4 text-primary" />
         <span className="font-semibold">Klausum cohort</span>
@@ -236,7 +304,7 @@ function NotificationsCard() {
   };
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+    <div className="card-chunky/60 bg-card/60 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-primary" />
@@ -246,7 +314,7 @@ function NotificationsCard() {
           </div>
         </div>
         {perm !== "granted" && perm !== "unsupported" && (
-          <button onClick={enable} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+          <button onClick={enable} className="btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
             Enable
           </button>
         )}
@@ -278,13 +346,13 @@ function LearningTab() {
 
   return (
     <div className="max-w-lg space-y-4">
-      <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+      <div className="card-chunky/60 bg-card/60 p-4">
         <div className="text-xs uppercase text-muted-foreground">Your VARK profile</div>
         <div className="mt-1 text-2xl font-bold capitalize">{profile?.primary_style ?? "—"}</div>
         <div className="text-xs text-muted-foreground">Secondary: {profile?.secondary_style ?? "—"}</div>
         <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
           {(["visual", "auditory", "reading", "kinesthetic"] as const).map((k) => (
-            <div key={k} className="rounded-lg border border-border/40 p-2">
+            <div key={k} className="rounded-xl border-2 border-border/40 p-2">
               <div className="capitalize text-muted-foreground">{k}</div>
               <div className="font-mono">{(profile as any)?.[`${k}_score`] ?? 0}</div>
             </div>
@@ -297,8 +365,8 @@ function LearningTab() {
         </select>
       </Field>
       <div className="flex gap-2">
-        <button onClick={save} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
-        <button onClick={retake} className="rounded-lg border border-border px-4 py-2 text-sm">Retake VARK quiz</button>
+        <button onClick={save} disabled={saving} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+        <button onClick={retake} className="rounded-xl border-2 border-border px-4 py-2 text-sm">Retake VARK quiz</button>
       </div>
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
     </div>
@@ -348,7 +416,7 @@ function PreferencesTab() {
         Dark mode <span className="text-xs text-muted-foreground">(currently {theme})</span>
       </label>
       <SoundsToggle />
-      <button onClick={save} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+      <button onClick={save} disabled={saving} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
     </div>
   );
@@ -406,15 +474,15 @@ function DataTab() {
 
   return (
     <div className="max-w-lg space-y-4">
-      <div className="rounded-xl border border-border/60 bg-card/60 p-4 space-y-2">
+      <div className="card-chunky/60 bg-card/60 p-4 space-y-2">
         <div className="font-semibold">Export your data</div>
         <p className="text-sm text-muted-foreground">Download a JSON snapshot of all your study data.</p>
         <button onClick={exportData} disabled={busy} className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">{busy ? "Exporting…" : "Download export"}</button>
       </div>
-      <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 space-y-2">
-        <div className="font-semibold text-red-400">Sign out</div>
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+        <div className="font-semibold text-destructive">Sign out</div>
         <p className="text-sm text-muted-foreground">You'll need to sign back in to access your study materials.</p>
-        <button onClick={signOut} className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-400">
+        <button onClick={signOut} className="inline-flex items-center gap-1 rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-semibold text-destructive">
           <LogOut className="h-3.5 w-3.5" /> Sign out
         </button>
       </div>
