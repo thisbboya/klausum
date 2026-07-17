@@ -51,10 +51,23 @@ function AuthLayout() {
     }
   }, [profile, location.pathname, navigate]);
 
-  // Pilot theming: expose the companion's color app-wide as --pilot
+  // Pilot theming: the companion's color becomes the app's primary color
+  // (CourieX-style full re-theme), plus --pilot for targeted tinting.
   useEffect(() => {
-    const c = getCompanion(profile?.companion_id);
-    document.documentElement.style.setProperty("--pilot", c.color);
+    const root = document.documentElement;
+    if (!profile?.companion_id) {
+      root.style.removeProperty("--pilot");
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--primary-foreground");
+      return;
+    }
+    const c = getCompanion(profile.companion_id);
+    root.style.setProperty("--pilot", c.color);
+    root.style.setProperty("--primary", c.color);
+    // Perceived luminance decides whether text on primary is dark or white
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.color.slice(i, i + 2), 16) / 255);
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    root.style.setProperty("--primary-foreground", lum > 0.6 ? "oklch(0.25 0.02 80)" : "#ffffff");
   }, [profile?.companion_id]);
 
   if (loading || !user) {

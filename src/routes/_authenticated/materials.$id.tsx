@@ -701,21 +701,26 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
   };
 
   const reader = (
-    <div className="flex h-full flex-col bg-background">
-      <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-        <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40 hover:text-foreground">‹ Prev</button>
-        <span className="font-medium">Page {page} / {totalPages}</span>
-        <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40 hover:text-foreground">Next ›</button>
-      </div>
-      <div className="flex-1 overflow-auto p-5 md:p-6" onMouseUp={captureSelection} onTouchEnd={() => setTimeout(captureSelection, 50)}>
+    <div className="flex h-full flex-col bg-surface-2/60">
+      {totalPages > 1 && (
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="rounded-lg border-2 border-border px-3 py-1.5 font-bold disabled:opacity-40 hover:text-foreground">‹ Prev</button>
+          <span className="font-extrabold">Page {page} / {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded-lg border-2 border-border px-3 py-1.5 font-bold disabled:opacity-40 hover:text-foreground">Next ›</button>
+        </div>
+      )}
+      <div className="flex-1 overflow-auto p-4 md:p-6" onMouseUp={captureSelection} onTouchEnd={() => setTimeout(captureSelection, 50)}>
         {selection && (
-          <button onClick={() => isMobile && setMobileTab("chat")} className="mb-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+          <button onClick={() => isMobile && setMobileTab("chat")} className="btn-3d mb-3 rounded-full bg-primary px-3.5 py-1.5 text-xs font-extrabold text-primary-foreground">
             Ask AI about selected text
           </button>
         )}
-        <article className="prose prose-invert prose-sm md:prose-base max-w-none whitespace-pre-wrap">
-          {currentPageText || "No readable text was extracted for this material."}
-        </article>
+        {/* Document canvas — reads like paper, not a terminal */}
+        <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm md:p-10">
+          <article className="prose prose-sm md:prose-base max-w-none whitespace-pre-wrap leading-relaxed text-foreground/95 dark:prose-invert">
+            {currentPageText || "No readable text was extracted for this material."}
+          </article>
+        </div>
       </div>
     </div>
   );
@@ -747,7 +752,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
         <div className="flex shrink-0 border-b border-border bg-card">
           {(["read", "chat"] as const).map((t) => (
             <button key={t} onClick={() => setMobileTab(t)} className={`flex-1 py-2.5 text-xs font-semibold ${mobileTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}>
-              {t === "read" ? `📖 Read · p.${page}/${totalPages}` : "🤖 AI Chat"}
+              {t === "read" ? `Read · p.${page}/${totalPages}` : "AI Chat"}
             </button>
           ))}
         </div>
@@ -967,7 +972,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
                   : "text-muted-foreground"
               }`}
             >
-              {t === "read" ? `📄 Read · p.${page}/${totalPages || "…"}` : "🤖 AI Chat"}
+              {t === "read" ? `Read · p.${page}/${totalPages || "…"}` : "AI Chat"}
             </button>
           ))}
         </div>
