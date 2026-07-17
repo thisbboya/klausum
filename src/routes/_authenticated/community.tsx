@@ -290,7 +290,8 @@ function LeaderboardTab() {
     queryKey: ["leaderboard", scope, friendIds.join(","), (schoolIds ?? []).join(",")],
     enabled: !!user && (scope !== "school" || schoolIds !== undefined),
     queryFn: async () => {
-      const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0, 0, 0, 0); return d.toISOString().slice(0, 10); })();
+      // Monday-based, matching DATE_TRUNC('week', ...) in update_weekly_leaderboard
+      const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); d.setHours(0, 0, 0, 0); return d.toISOString().slice(0, 10); })();
       let q = supabase.from("leaderboard_weekly").select("user_id, xp_this_week").eq("week_start", weekStart);
       if (scope === "friends" && friendIds.length > 0) q = q.in("user_id", friendIds);
       if (scope === "school") q = q.in("user_id", schoolIds ?? []);
@@ -304,8 +305,11 @@ function LeaderboardTab() {
     },
   });
 
-  const podium = rows.slice(0, 3);
-  const rest = rows.slice(3);
+  // Podium only makes sense fully seated; with 1-2 entrants everyone goes in the list
+  const hasPodium = rows.length >= 3;
+  const podium = hasPodium ? rows.slice(0, 3) : [];
+  const rest = hasPodium ? rows.slice(3) : rows;
+  const rankOffset = hasPodium ? 4 : 1;
 
   return (
     <div className="space-y-5">
@@ -333,7 +337,7 @@ function LeaderboardTab() {
         </div>
       ) : (
         <>
-          {podium.length === 3 && (
+          {hasPodium && (
             <div className="grid grid-cols-3 items-end gap-2">
               <PodiumCard rank={2} row={podium[1]} isMe={podium[1].user_id === user?.id} />
               <PodiumCard rank={1} row={podium[0]} isMe={podium[0].user_id === user?.id} />
@@ -344,7 +348,7 @@ function LeaderboardTab() {
             {rest.map((r: any, i: number) => (
               <li key={r.user_id} className={`flex items-center gap-3 rounded-xl border-2 p-2.5 ${r.user_id === user?.id ? "border-primary/40 bg-primary/10" : "border-border bg-card"}`}>
                 <div className="w-7 text-center font-mono text-sm font-extrabold text-muted-foreground">
-                  {i + 4}
+                  {i + rankOffset}
                 </div>
                 <Avatar p={r.profile} />
                 <div className="flex-1 min-w-0">
