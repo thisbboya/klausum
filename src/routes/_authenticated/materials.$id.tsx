@@ -24,16 +24,16 @@ export const Route = createFileRoute("/_authenticated/materials/$id")({
 });
 
 const TABS = [
-  { key: "read", label: "📖 Read", color: "text-foreground" },
+  { key: "read", label: "Read", color: "text-foreground" },
   { key: "summary", label: "Summary", color: "text-foreground" },
-  { key: "original", label: "📄 Original", color: "text-foreground" },
-  { key: "visual", label: "👁️ Visual", color: "text-[color:var(--color-visual)]" },
-  { key: "auditory", label: "🎧 Auditory", color: "text-[color:var(--color-auditory)]" },
-  { key: "reading", label: "📖 Reading", color: "text-[color:var(--color-reading)]" },
+  { key: "original", label: "Original", color: "text-foreground" },
+  { key: "visual", label: "Visual", color: "text-[color:var(--color-visual)]" },
+  { key: "auditory", label: "Auditory", color: "text-[color:var(--color-auditory)]" },
+  { key: "reading", label: "Reading", color: "text-[color:var(--color-reading)]" },
   { key: "kinesthetic", label: "Kinesthetic", color: "text-[color:var(--color-kinesthetic)]" },
-  { key: "cornell", label: "📓 Cornell", color: "text-foreground" },
-  { key: "graph", label: "🕸️ Concept Graph", color: "text-foreground" },
-  { key: "formulas", label: "🧮 Formulas", color: "text-foreground" },
+  { key: "cornell", label: "Cornell", color: "text-foreground" },
+  { key: "graph", label: "Concept Graph", color: "text-foreground" },
+  { key: "formulas", label: "Formulas", color: "text-foreground" },
   { key: "questions", label: "Bloom Q&A", color: "text-foreground" },
 ] as const;
 
@@ -191,7 +191,7 @@ function MaterialDetail() {
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-1 border-b border-border overflow-x-auto">
+          <div className="scrollbar-none flex flex-nowrap gap-1 overflow-x-auto border-b border-border whitespace-nowrap">
             {visibleTabs.map((t) => (
               <button key={t.key} onClick={() => setTab(t.key)}
                 className={`px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap transition ${

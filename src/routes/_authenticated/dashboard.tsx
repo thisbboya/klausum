@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen, Brain, MessagesSquare, Plus, CalendarClock,
-  Frown, Meh, Smile, Laugh, Flame, Sparkles, X, Play, ChevronRight,
+  Frown, Meh, Smile, Laugh, Flame, Sparkles, X, Play, ChevronRight, ListChecks,
 } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
@@ -200,36 +200,25 @@ function Dashboard() {
 
 
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <ActionCard
-          to="/review"
-          icon={Brain}
-          title={`Review ${data?.dueCount ?? 0} cards`}
-          desc="Spaced-repetition session powered by FSRS-5."
-          highlight={(data?.dueCount ?? 0) > 0}
-        />
-        <ActionCard
-          to="/materials"
-          icon={BookOpen}
-          title="Upload material"
-          desc="PDF, Word, or text. AI rewrites it for your learning style."
-        />
-        <ActionCard
-          to="/tutor"
-          icon={MessagesSquare}
-          title="Ask the tutor"
-          desc="Standard or Socratic mode. Math & code supported."
-        />
+      {/* CourieX-style compact action trio — icon tiles, no paragraph copy */}
+      <section className="flex items-start justify-center gap-8 py-2 md:gap-14">
+        {[
+          { to: "/quizzes", icon: ListChecks, label: "Quiz" },
+          { to: "/review", icon: Brain, label: (data?.dueCount ?? 0) > 0 ? `Review · ${data?.dueCount}` : "Flashcards" },
+          { to: "/materials", icon: BookOpen, label: "Materials" },
+        ].map(({ to, icon: Icon, label }) => (
+          <Link key={to} to={to} className="group flex flex-col items-center gap-2">
+            <span className="card-chunky card-chunky-hover flex h-16 w-16 items-center justify-center bg-card transition group-hover:-translate-y-0.5">
+              <Icon className="h-7 w-7 text-primary" />
+            </span>
+            <span className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
+              {label}
+            </span>
+          </Link>
+        ))}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <DailyCheckin
-          existing={data?.checkin}
-          userId={user?.id}
-          onSaved={() => qc.invalidateQueries({ queryKey: ["dash", user?.id] })}
-        />
-        <ExamCountdown exams={data?.exams ?? []} />
-      </section>
+      <ExamCountdown exams={data?.exams ?? []} />
 
       {data?.materials && data.materials.length > 0 && (
         <section>

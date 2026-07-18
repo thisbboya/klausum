@@ -23,57 +23,12 @@ const QUESTIONS: Q[] = [
     ],
   },
   {
-    q: "You remember a movie scene best by:",
-    options: [
-      { label: "Picturing the scene in your head", style: "visual" },
-      { label: "Recalling the dialogue or music", style: "auditory" },
-      { label: "Remembering the subtitles or script", style: "reading" },
-      { label: "Re-enacting what the character did", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "When assembling something from instructions, you:",
-    options: [
-      { label: "Look at the diagrams first", style: "visual" },
-      { label: "Ask someone to walk you through it", style: "auditory" },
-      { label: "Read every step before starting", style: "reading" },
-      { label: "Just start and learn as you go", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "When stuck on a math problem, you:",
-    options: [
-      { label: "Draw it out", style: "visual" },
-      { label: "Talk through it out loud", style: "auditory" },
-      { label: "Re-read the textbook", style: "reading" },
-      { label: "Try plugging in numbers", style: "kinesthetic" },
-    ],
-  },
-  {
     q: "When studying for an exam, you usually:",
     options: [
       { label: "Make mind maps or flashcards with images", style: "visual" },
       { label: "Read your notes aloud or discuss with a friend", style: "auditory" },
       { label: "Rewrite notes and create summaries", style: "reading" },
       { label: "Practice problems repeatedly", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "You best remember information when you:",
-    options: [
-      { label: "Visualise a picture of it", style: "visual" },
-      { label: "Recall someone's voice explaining it", style: "auditory" },
-      { label: "Re-read what you wrote", style: "reading" },
-      { label: "Recall doing the action", style: "kinesthetic" },
-    ],
-  },
-  {
-    q: "Pick the kind of online lesson that grabs you:",
-    options: [
-      { label: "Animated explainer with infographics", style: "visual" },
-      { label: "Audio lecture or interview", style: "auditory" },
-      { label: "Long-form article with examples", style: "reading" },
-      { label: "Interactive simulation or coding sandbox", style: "kinesthetic" },
     ],
   },
   {

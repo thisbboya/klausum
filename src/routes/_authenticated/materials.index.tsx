@@ -237,8 +237,12 @@ export function MaterialsPage() {
     }
   }
 
+  // Gemini's inline-data ceiling; larger files are stored + viewable but
+  // skip the AI rewrite instead of failing the whole upload.
+  const AI_INLINE_LIMIT = 18 * 1024 * 1024;
+
   async function handleFile(file: File) {
-    if (file.size > 20 * 1024 * 1024) return toast.error("Max 20MB");
+    if (file.size > 120 * 1024 * 1024) return toast.error("Max 120MB");
     const lower = file.name.toLowerCase();
     const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
@@ -260,7 +264,8 @@ export function MaterialsPage() {
         text, rawContent: text, fileName: file.name, fileType: file.type,
       });
     } else {
-      const fileBase64 = await fileToBase64(file);
+      const tooBigForAI = file.size > AI_INLINE_LIMIT;
+      const fileBase64 = tooBigForAI ? undefined : await fileToBase64(file);
       const resolvedMime = file.type || officeMime[ext] || "application/octet-stream";
       // Stash EVERY original in storage so the viewer can render it
       // (PDF natively, images inline, office docs via embedded viewer).
@@ -275,6 +280,35 @@ export function MaterialsPage() {
         else fileStoragePath = path;
       }
       setUploadingFile(null);
+
+      if (tooBigForAI) {
+        // Too large for the AI pipeline: store + register it so the viewer
+        // (and PDF chat, which reads pages client-side) still work fully.
+        if (!fileStoragePath) return toast.error("Upload failed — file could not be stored");
+        const { data: row, error } = await supabase
+          .from("study_materials")
+          .insert({
+            user_id: user!.id,
+            title: t,
+            subject,
+            field_category: field,
+            is_stem: STEM_FIELDS.has(field),
+            original_content: `[large file: ${file.name}]`,
+            file_name: file.name,
+            file_type: isPdf ? "pdf" : (officeMime[ext] ? ext.slice(1) : file.type),
+            pdf_storage_path: isPdf ? fileStoragePath : null,
+            file_storage_path: fileStoragePath,
+            processing_status: "ready",
+          } as any)
+          .select("id")
+          .single();
+        if (error) return toast.error(error.message);
+        toast.success("Big file stored — reader and AI chat work; study-tool generation needs files under 18MB");
+        qc.invalidateQueries({ queryKey: ["materials"] });
+        navigate({ to: "/materials/$id", params: { id: row.id } });
+        return;
+      }
+
       await runProcess({
         title: t, subject, fieldCategory: field, isStem: STEM_FIELDS.has(field),
         fileBase64, mimeType: resolvedMime,
@@ -454,7 +488,7 @@ export function MaterialsPage() {
                   <>
                     <Upload className="h-7 w-7 mx-auto text-sky" />
                     <p className="mt-3 text-sm font-bold text-sky">Drop your file here or click to browse</p>
-                    <p className="text-xs font-semibold text-muted-foreground">PDF, PowerPoint, Word, Excel, TXT, MD, or images · Max 20MB</p>
+                    <p className="text-xs font-semibold text-muted-foreground">PDF, PowerPoint, Word, Excel, TXT, MD, or images · Max 120MB</p>
                   </>
                 )}
               </label>

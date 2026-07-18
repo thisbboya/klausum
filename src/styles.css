@@ -559,3 +559,11 @@ body.landing::before {
 .react-flow__minimap-mask {
   fill: hsla(0, 0%, 0%, 0.5) !important;
 }
+
+/* Hide scrollbars on horizontal pill/tab rows while keeping them scrollable */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

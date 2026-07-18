@@ -415,34 +415,62 @@ function WrappedPage() {
           <StoryBody story={story} accent={story.theme.accent} />
         </div>
 
-      {/* Hidden share card rendered off-screen */}
+      {/* Hidden share card — Spotify-style framed story (9:16), captured
+          with the CURRENT slide's theme so every share looks distinct. */}
       <div className="pointer-events-none fixed -left-[9999px] top-0">
-        <div ref={shareRef} className="flex h-[640px] w-[512px] flex-col justify-between p-10"
-          style={{ background: THEMES[0].bg }}>
-          <div className="flex items-center justify-between">
-            <div className="font-display text-sm font-extrabold uppercase tracking-[0.3em]" style={{ color: THEMES[0].accent }}>
-              Klausum Wrapped
-            </div>
-            {data.companionId && <CompanionSVG id={data.companionId} size={72} animate={false} />}
-          </div>
-          <div>
-            <div className="font-display text-4xl font-extrabold text-white">{data.fullName.split(/[@\s]/)[0]}'s semester</div>
-            <div className="mt-6 space-y-3">
-              {[
-                [`${data.totals.studyHours > 0 ? `${data.totals.studyHours} hours` : `${data.totals.studyMinutes} minutes`}`, "of focused study"],
-                [`${data.totals.cardsReviewed}`, "flashcards reviewed"],
-                [`${Math.round(data.totals.quizAccuracy * 100)}%`, "quiz accuracy"],
-                [`${data.totals.xpEarned.toLocaleString()} XP`, "earned"],
-                ...(data.rank ? [[`Top ${data.rank.percentile}%`, "of all students"]] : []),
-              ].map(([big, small]) => (
-                <div key={small as string} className="flex items-baseline gap-3">
-                  <span className="font-display text-3xl font-extrabold" style={{ color: THEMES[0].accent }}>{big}</span>
-                  <span className="text-lg font-bold text-white/80">{small}</span>
+        <div
+          ref={shareRef}
+          className="flex h-[910px] w-[512px] flex-col p-6"
+          style={{ background: story.theme.bg }}
+        >
+          {/* The frame: thick accent border in the slide's color, like
+              Spotify's story frames */}
+          <div
+            className="flex flex-1 flex-col justify-between rounded-[2rem] p-8"
+            style={{ border: `6px solid ${story.theme.accent}` }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-display text-2xl font-extrabold lowercase text-white">klausum</div>
+                <div className="font-display text-[11px] font-extrabold uppercase tracking-[0.35em]" style={{ color: story.theme.accent }}>
+                  Wrapped 2026
                 </div>
-              ))}
+              </div>
+              <CompanionSVG id={data.companionId} size={84} animate={false} />
+            </div>
+
+            <div className="text-center">
+              <div className="font-display text-3xl font-extrabold text-white">
+                {data.fullName.split(/[@\s]/)[0]}'s semester
+              </div>
+              <div className="mt-8 space-y-5">
+                {[
+                  [`${data.totals.studyHours > 0 ? `${data.totals.studyHours}h` : `${data.totals.studyMinutes}m`}`, "focused study"],
+                  [`${data.totals.cardsReviewed}`, "flashcards reviewed"],
+                  [`${Math.round(data.totals.quizAccuracy * 100)}%`, "quiz accuracy"],
+                  [`${data.totals.xpEarned.toLocaleString()}`, "XP earned"],
+                  ...(data.rank ? [[`Top ${data.rank.percentile}%`, "of all students"]] : []),
+                ].map(([big, small]) => (
+                  <div key={small as string}>
+                    <div className="font-display text-5xl font-extrabold leading-none" style={{ color: story.theme.accent }}>
+                      {big}
+                    </div>
+                    <div className="mt-1 text-sm font-extrabold uppercase tracking-widest text-white/75">{small}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-extrabold uppercase tracking-widest text-white/60">
+                {data.companionName} was my pilot
+              </div>
+              <div className="rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide"
+                style={{ backgroundColor: story.theme.accent, color: "#111" }}>
+                klausum.app
+              </div>
             </div>
           </div>
-          <div className="text-sm font-extrabold uppercase tracking-widest text-white/60">klausum · study smarter</div>
         </div>
       </div>
     </div>
