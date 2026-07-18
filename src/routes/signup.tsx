@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
-import { KlausumMark } from "@/components/klausum-mark";
+import { KlausumMark, AnimatedKlausumMark } from "@/components/klausum-mark";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
@@ -149,6 +149,9 @@ function SignupPage() {
 
       <main className="flex flex-1 items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm">
+          <div className="mb-5 flex justify-center">
+            <AnimatedKlausumMark size={72} />
+          </div>
           {/* Step progress — fills as you move form → otp */}
           <motion.div
             initial={{ opacity: 0, y: -8 }}

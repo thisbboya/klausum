@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { KlausumMark } from "@/components/klausum-mark";
+import { KlausumMark, AnimatedKlausumMark } from "@/components/klausum-mark";
 import { toast } from "sonner";
 
 function safeNext(next: unknown): string {
@@ -81,6 +81,9 @@ function LoginPage() {
 
       <main className="flex flex-1 items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm">
+          <div className="mb-4 flex justify-center">
+            <AnimatedKlausumMark size={72} />
+          </div>
           <h1 className="text-center font-display text-2xl font-extrabold tracking-tight">
             Log in
           </h1>

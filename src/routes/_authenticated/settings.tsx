@@ -70,9 +70,23 @@ function SettingsPage() {
 }
 
 function UpdatesTab() {
+  // Admin-published updates from the DB, with the static changelog as the base
+  const { data: dbUpdates = [] } = useQuery({
+    queryKey: ["app_updates"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("app_updates")
+        .select("id,title,body,created_at")
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+      return (data ?? []).map((u: any) => ({ id: u.id, title: u.title, body: u.body, date: u.created_at }));
+    },
+  });
+  const all = [...dbUpdates, ...UPDATES];
+
   return (
     <div className="max-w-xl space-y-3">
-      {UPDATES.map((u) => (
+      {all.map((u) => (
         <div key={u.id} className="card-chunky bg-card p-4">
           <div className="flex items-center gap-2">
             <Megaphone className="h-4 w-4 text-primary" />

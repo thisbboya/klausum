@@ -17,8 +17,6 @@ import { CompanionHero } from "@/components/companion-hero";
 import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { HeartsRow } from "@/components/hearts-row";
-import { DailyQuests } from "@/components/daily-quests";
-import { ChestCard } from "@/components/chest-card";
 import { ensureTodayQuests } from "@/lib/quests";
 
 
@@ -184,14 +182,6 @@ function Dashboard() {
         <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
         <LeaguesCard />
       </div>
-
-      <div className="grid gap-4 md:grid-cols-[1fr,300px]">
-        <DailyQuests userId={user?.id} />
-        <ChestCard userId={user?.id} tier="bronze" unlocked={!!data?.chestUnlocked} />
-      </div>
-
-
-
 
 
 

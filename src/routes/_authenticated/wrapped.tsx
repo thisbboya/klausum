@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { generateWrapped, saveWrappedSnapshot, type WrappedData } from "@/lib/wrapped";
 import { X, Download, Share2 } from "lucide-react";
-import html2canvas from "html2canvas";
+import { toBlob } from "html-to-image";
 import { toast } from "sonner";
 import { CompanionSVG, getCompanion } from "@/components/companion-svg";
 import { VarkRadar } from "@/components/wrapped/VarkRadar";
@@ -320,8 +320,9 @@ function WrappedPage() {
   async function shareCard(useShareSheet: boolean) {
     if (!shareRef.current || !data) return;
     try {
-      const canvas = await html2canvas(shareRef.current, { backgroundColor: null, scale: 2 });
-      const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/png"));
+      // html-to-image serializes via SVG foreignObject, so modern CSS color
+      // functions (oklch) render fine — html2canvas choked on them.
+      const blob = await toBlob(shareRef.current, { pixelRatio: 2, cacheBust: true });
       if (!blob) throw new Error("Could not render image");
       const file = new File([blob], "klausum-wrapped.png", { type: "image/png" });
       if (useShareSheet && navigator.canShare?.({ files: [file] })) {
@@ -415,60 +416,69 @@ function WrappedPage() {
           <StoryBody story={story} accent={story.theme.accent} />
         </div>
 
-      {/* Hidden share card — Spotify-style framed story (9:16), captured
-          with the CURRENT slide's theme so every share looks distinct. */}
-      <div className="pointer-events-none fixed -left-[9999px] top-0">
+      {/* Hidden share card — Duolingo "Year in Review" layout. Only hex/rgba
+          colors so html-to-image never touches an oklch token. */}
+      <div style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none" }}>
         <div
           ref={shareRef}
-          className="flex h-[910px] w-[512px] flex-col p-6"
-          style={{ background: story.theme.bg }}
+          style={{
+            width: 512,
+            height: 910,
+            background: story.theme.bg,
+            padding: 28,
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: "'Nunito', system-ui, sans-serif",
+          }}
         >
-          {/* The frame: thick accent border in the slide's color, like
-              Spotify's story frames */}
-          <div
-            className="flex flex-1 flex-col justify-between rounded-[2rem] p-8"
-            style={{ border: `6px solid ${story.theme.accent}` }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-display text-2xl font-extrabold lowercase text-white">klausum</div>
-                <div className="font-display text-[11px] font-extrabold uppercase tracking-[0.35em]" style={{ color: story.theme.accent }}>
-                  Wrapped 2026
-                </div>
-              </div>
-              <CompanionSVG id={data.companionId} size={84} animate={false} />
+          {/* Header: klausum wordmark + WRAPPED year */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", letterSpacing: "-0.02em" }}>klausum</div>
+            <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.28em", color: story.theme.accent }}>
+              WRAPPED 2026
             </div>
+          </div>
 
-            <div className="text-center">
-              <div className="font-display text-3xl font-extrabold text-white">
-                {data.fullName.split(/[@\s]/)[0]}'s semester
-              </div>
-              <div className="mt-8 space-y-5">
-                {[
-                  [`${data.totals.studyHours > 0 ? `${data.totals.studyHours}h` : `${data.totals.studyMinutes}m`}`, "focused study"],
-                  [`${data.totals.cardsReviewed}`, "flashcards reviewed"],
-                  [`${Math.round(data.totals.quizAccuracy * 100)}%`, "quiz accuracy"],
-                  [`${data.totals.xpEarned.toLocaleString()}`, "XP earned"],
-                  ...(data.rank ? [[`Top ${data.rank.percentile}%`, "of all students"]] : []),
-                ].map(([big, small]) => (
-                  <div key={small as string}>
-                    <div className="font-display text-5xl font-extrabold leading-none" style={{ color: story.theme.accent }}>
-                      {big}
-                    </div>
-                    <div className="mt-1 text-sm font-extrabold uppercase tracking-widest text-white/75">{small}</div>
-                  </div>
-                ))}
-              </div>
+          {/* Hero: mascot on an accent halo */}
+          <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 10px" }}>
+            <div
+              style={{
+                width: 260, height: 260, borderRadius: "50%",
+                background: `radial-gradient(circle, ${story.theme.accent}44 0%, transparent 70%)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <CompanionSVG id={data.companionId} size={220} animate={false} />
             </div>
+          </div>
 
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-extrabold uppercase tracking-widest text-white/60">
-                {data.companionName} was my pilot
+          {/* Headline */}
+          <div style={{ textAlign: "center", fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1.15, padding: "0 24px" }}>
+            {data.rank
+              ? `I'm a top ${data.rank.percentile}% learner on Klausum!`
+              : `${data.fullName.split(/[@\s]/)[0]}'s semester on Klausum`}
+          </div>
+
+          {/* 2x2 stat tiles */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 26 }}>
+            {[
+              { icon: "⚡", big: data.totals.xpEarned.toLocaleString(), small: "total XP" },
+              { icon: "🔥", big: String(Math.max(data.totals.longestStreak, data.totals.currentStreak)), small: "longest streak" },
+              { icon: "⏱️", big: data.totals.studyHours > 0 ? `${data.totals.studyHours}` : `${data.totals.studyMinutes}`, small: data.totals.studyHours > 0 ? "hours studied" : "minutes studied" },
+              { icon: "🎯", big: `${Math.round(data.totals.quizAccuracy * 100)}%`, small: "quiz accuracy" },
+            ].map((t) => (
+              <div key={t.small} style={{ background: "rgba(255,255,255,0.95)", borderRadius: 20, padding: "16px 18px" }}>
+                <div style={{ fontSize: 26, lineHeight: 1 }}>{t.icon}</div>
+                <div style={{ fontSize: 34, fontWeight: 900, color: "#1a1a2e", marginTop: 6, lineHeight: 1 }}>{t.big}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#6b6b7b", marginTop: 2 }}>{t.small}</div>
               </div>
-              <div className="rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide"
-                style={{ backgroundColor: story.theme.accent, color: "#111" }}>
-                klausum.app
-              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div style={{ marginTop: "auto", paddingTop: 20, textAlign: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "rgba(255,255,255,0.7)" }}>
+              {data.companionName} was my pilot · klausum.app
             </div>
           </div>
         </div>
