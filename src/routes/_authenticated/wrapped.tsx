@@ -301,11 +301,18 @@ function WrappedPage() {
   }, [stories.length]);
   const prev = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
 
-  // Auto-advance timer (except on the finale)
+  // Auto-advance with true pause/resume (Spotify behaviour): holding freezes
+  // the timer mid-slide and releasing continues from where it stopped.
+  const remainingRef = useRef(STORY_MS);
+  useEffect(() => { remainingRef.current = STORY_MS; }, [idx]);
   useEffect(() => {
     if (!data || paused || idx >= stories.length - 1) return;
-    const id = setTimeout(next, STORY_MS);
-    return () => clearTimeout(id);
+    const startedAt = Date.now();
+    const id = setTimeout(next, remainingRef.current);
+    return () => {
+      clearTimeout(id);
+      remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startedAt));
+    };
   }, [idx, paused, data, next, stories.length]);
 
   useEffect(() => {
@@ -378,12 +385,15 @@ function WrappedPage() {
           <div key={st.key} className="h-1 flex-1 overflow-hidden rounded-full bg-white/25">
             {i < idx && <div className="h-full w-full bg-white" />}
             {i === idx && (
-              <motion.div
-                key={`${idx}-${paused}`}
-                className="h-full bg-white"
-                initial={{ width: "0%" }}
-                animate={{ width: paused || idx === stories.length - 1 ? "0%" : "100%" }}
-                transition={{ duration: STORY_MS / 1000, ease: "linear" }}
+              <div
+                key={idx}
+                className="wrapped-fill h-full bg-white"
+                style={{
+                  animationDuration: `${STORY_MS}ms`,
+                  animationPlayState: paused ? "paused" : "running",
+                  width: idx === stories.length - 1 ? "100%" : undefined,
+                  animationName: idx === stories.length - 1 ? "none" : undefined,
+                }}
               />
             )}
           </div>

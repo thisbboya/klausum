@@ -609,6 +609,9 @@ body.landing::before {
   100% { transform: scale(1, 1); }
 }
 .kumi-poke { animation: kumi-poke 0.45s ease-out; }
+/* Wrapped story bar — CSS-driven so pausing freezes it mid-fill (Spotify) */
+@keyframes wrapped-fill { from { width: 0%; } to { width: 100%; } }
+.wrapped-fill { animation: wrapped-fill linear forwards; }
 /* Moving highlight across the loading bar fill */
 @keyframes loader-shimmer {
   0% { background-position: -80px 0; }

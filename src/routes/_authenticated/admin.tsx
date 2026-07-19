@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Shield, Users, BarChart3, BookOpen, Megaphone, KeyRound, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Loader2, Shield, Users, BarChart3, BookOpen, Megaphone, KeyRound, SlidersHorizontal, Trash2, Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 // Admin data comes from SECURITY DEFINER RPCs (admin_list_users, admin_stats,
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const { isAdmin, isLoading } = useIsAdmin();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"users" | "stats" | "materials" | "updates" | "apis" | "algorithm">("users");
+  const [tab, setTab] = useState<"users" | "insights" | "stats" | "materials" | "updates" | "apis" | "algorithm">("users");
 
   if (isLoading) {
     return (
@@ -56,6 +56,9 @@ function AdminPage() {
         <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={Users}>
           Users
         </TabBtn>
+        <TabBtn active={tab === "insights"} onClick={() => setTab("insights")} icon={Brain}>
+          Insights
+        </TabBtn>
         <TabBtn active={tab === "stats"} onClick={() => setTab("stats")} icon={BarChart3}>
           Stats
         </TabBtn>
@@ -74,6 +77,7 @@ function AdminPage() {
       </div>
 
       {tab === "users" && <UsersTab />}
+      {tab === "insights" && <InsightsTab />}
       {tab === "stats" && <StatsTab />}
       {tab === "materials" && <MaterialsTab />}
       {tab === "updates" && <UpdatesAdminTab />}
@@ -227,6 +231,92 @@ function UsersTab() {
                 </td>
               </tr>
             )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Per-user learning analytics: engagement score + churn-risk classification,
+// computed in the DB (admin_user_insights) from XP, streaks, cards, attempts,
+// accuracy, materials, and recency of activity.
+function InsightsTab() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["admin", "insights"],
+    queryFn: async () => {
+      const { data: rows, error } = await (supabase as any).rpc("admin_user_insights");
+      if (error) throw error;
+      return (rows ?? []) as any[];
+    },
+  });
+  if (isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (error) return <div className="text-sm text-destructive">Failed: {(error as any)?.message}</div>;
+
+  const riskStyle: Record<string, string> = {
+    hooked: "bg-success/15 text-success",
+    casual: "bg-primary/15 text-primary",
+    "cooling off": "bg-sky/15 text-sky",
+    "churn risk": "bg-destructive/15 text-destructive",
+  };
+  const summary = (data ?? []).reduce<Record<string, number>>((acc, u) => {
+    acc[u.risk] = (acc[u.risk] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {["hooked", "casual", "cooling off", "churn risk"].map((r) => (
+          <div key={r} className="card-chunky bg-card p-4">
+            <div className="text-xs text-muted-foreground capitalize">{r}</div>
+            <div className="mt-1 font-display text-2xl font-bold">{summary[r] ?? 0}</div>
+          </div>
+        ))}
+      </div>
+      <div className="card-chunky overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/30 text-xs text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 text-left">User</th>
+              <th className="px-3 py-2 text-left">Engagement</th>
+              <th className="px-3 py-2 text-left">XP</th>
+              <th className="px-3 py-2 text-left">Streak</th>
+              <th className="px-3 py-2 text-left">Quizzes</th>
+              <th className="px-3 py-2 text-left">Accuracy</th>
+              <th className="px-3 py-2 text-left">Cards</th>
+              <th className="px-3 py-2 text-left">Inactive</th>
+              <th className="px-3 py-2 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data ?? []).map((u) => (
+              <tr key={u.id} className="border-t border-border">
+                <td className="px-3 py-2">
+                  <div className="font-medium">{u.full_name || "—"}</div>
+                  <div className="text-xs text-muted-foreground">{u.email}</div>
+                </td>
+                <td className="px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${u.engagement}%` }} />
+                    </div>
+                    <span className="text-xs font-bold">{u.engagement}</span>
+                  </div>
+                </td>
+                <td className="px-3 py-2">{u.xp_total}</td>
+                <td className="px-3 py-2">{u.streak_days}d</td>
+                <td className="px-3 py-2">{u.attempts}</td>
+                <td className="px-3 py-2">{u.avg_accuracy != null ? `${u.avg_accuracy}%` : "—"}</td>
+                <td className="px-3 py-2">{u.cards}</td>
+                <td className="px-3 py-2 text-muted-foreground">{u.days_inactive != null ? `${u.days_inactive}d` : "—"}</td>
+                <td className="px-3 py-2">
+                  <span className={`rounded px-2 py-0.5 text-xs ${riskStyle[u.risk] ?? "bg-muted text-muted-foreground"}`}>
+                    {u.risk}
+                  </span>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

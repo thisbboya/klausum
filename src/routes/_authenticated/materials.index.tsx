@@ -57,6 +57,10 @@ export function MaterialsPage() {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
+  // In-app share/join dialogs — window.prompt is blocked by some browsers (Brave)
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [shareInfo, setShareInfo] = useState<{ name: string; code: string } | null>(null);
   const [uploadingFile, setUploadingFile] = useState<string | null>(null);
 
   // Custom courses (folders with icon + color); tolerate a missing table
@@ -352,11 +356,12 @@ export function MaterialsPage() {
     }
   }
 
-  async function joinCourse() {
-    const code = window.prompt("Enter the course share code (e.g. AB12CD):");
-    if (!code?.trim()) return;
+  async function joinCourse(code: string) {
+    if (!code.trim()) return;
     const { data, error } = await (supabase as any).rpc("join_course_by_code", { p_code: code.trim() });
     if (error) return toast.error(error.message);
+    setJoinOpen(false);
+    setJoinCode("");
     toast.success(`Joined "${data.name}" — its materials are now in your library`);
     qc.invalidateQueries({ queryKey: ["courses"] });
     qc.invalidateQueries({ queryKey: ["materials"] });
@@ -382,12 +387,8 @@ export function MaterialsPage() {
       if (error) return toast.error(error.message);
     }
     qc.invalidateQueries({ queryKey: ["courses"] });
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success(`Share code ${code} copied — friends enter it under "Join course"`);
-    } catch {
-      window.prompt("Share this code with friends:", code);
-    }
+    setShareInfo({ name: subjectName, code });
+    try { await navigator.clipboard.writeText(code); } catch {}
   }
 
   return (
@@ -400,7 +401,7 @@ export function MaterialsPage() {
         {!activeSubject && (
           <div className="flex shrink-0 gap-2">
             <button
-              onClick={joinCourse}
+              onClick={() => setJoinOpen(true)}
               className="rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
             >
               Join course
@@ -420,6 +421,60 @@ export function MaterialsPage() {
           </div>
         )}
       </header>
+
+      {joinOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setJoinOpen(false)}>
+          <div className="card-chunky w-full max-w-sm bg-card p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-lg font-extrabold">Join a course</h2>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              Enter the 6-character code a friend shared with you.
+            </p>
+            <input
+              autoFocus
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => { if (e.key === "Enter") joinCourse(joinCode); }}
+              placeholder="AB12CD"
+              maxLength={6}
+              className="mt-4 w-full rounded-xl border-2 border-border bg-background px-3 py-3 text-center font-display text-xl font-extrabold tracking-[0.35em] uppercase outline-none focus:border-primary"
+            />
+            <button
+              onClick={() => joinCourse(joinCode)}
+              disabled={joinCode.trim().length < 4}
+              className="btn-3d mt-4 w-full rounded-2xl bg-primary px-4 py-2.5 font-display font-extrabold uppercase tracking-wide text-primary-foreground disabled:opacity-50"
+            >
+              Join course
+            </button>
+          </div>
+        </div>
+      )}
+
+      {shareInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShareInfo(null)}>
+          <div className="card-chunky w-full max-w-sm bg-card p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-lg font-extrabold">Share “{shareInfo.name}”</h2>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              Friends enter this code under “Join course” and get every material in it.
+            </p>
+            <div className="mt-4 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/8 py-4 font-display text-3xl font-extrabold tracking-[0.3em] text-primary">
+              {shareInfo.code}
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(shareInfo.code);
+                  toast.success("Code copied");
+                } catch {
+                  toast.error("Copy blocked — select the code and copy manually");
+                }
+              }}
+              className="btn-3d mt-4 w-full rounded-2xl bg-primary px-4 py-2.5 font-display font-extrabold uppercase tracking-wide text-primary-foreground"
+            >
+              Copy code
+            </button>
+          </div>
+        </div>
+      )}
 
       {showCourseModal && (
         <CourseModal
