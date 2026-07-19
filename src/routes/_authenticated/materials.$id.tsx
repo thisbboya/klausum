@@ -1091,14 +1091,14 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
       <div className="w-[62%] border-r border-border flex flex-col">
         {TocPanel}
         <div className="flex-1 overflow-hidden">
-          <PDFViewer
-            pdfUrl={signedUrl}
-            page={page}
-            onPageChange={handlePageChange}
-            onTotalPages={setTotalPages}
-            onAllPagesIndexed={setPageIndex}
-            onAskAboutSelection={handleAskAboutSelection}
-            onAddNote={handleAddNote}
+          {/* Desktop: the browser's own PDF viewer — full toolbar (zoom, print,
+              download, page nav), exactly the CourieX reading experience.
+              Mobile keeps pdf.js below because Android won't inline PDFs. */}
+          <iframe
+            key={page}
+            title={material.title}
+            src={`${signedUrl}#page=${page}&view=FitH`}
+            className="h-full w-full border-0 bg-white"
           />
         </div>
       </div>

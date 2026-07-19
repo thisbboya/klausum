@@ -23,14 +23,27 @@ function AdminPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"users" | "stats" | "materials" | "updates" | "apis" | "algorithm">("users");
 
-  useEffect(() => {
-    if (!isLoading && !isAdmin) navigate({ to: "/dashboard" });
-  }, [isAdmin, isLoading, navigate]);
-
-  if (isLoading || !isAdmin) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  // Visible gate instead of a silent bounce — failures stay debuggable
+  if (!isAdmin) {
+    return (
+      <div className="card-chunky mx-auto max-w-md border-dashed p-10 text-center">
+        <Shield className="mx-auto h-8 w-8 text-muted-foreground" />
+        <p className="mt-3 text-sm font-bold text-muted-foreground">
+          This area is for admins. If you were just granted access, refresh the page.
+        </p>
+        <button
+          onClick={() => navigate({ to: "/dashboard" })}
+          className="mt-4 rounded-xl border-2 border-border px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
+        >
+          Back to dashboard
+        </button>
       </div>
     );
   }
