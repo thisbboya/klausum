@@ -10,6 +10,7 @@ import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { checkAndApplyStreakFreeze } from "@/lib/streak-freeze";
+import { StreakCelebration } from "@/components/streak-celebration";
 import { refillHeartsIfDue } from "@/lib/hearts";
 
 import { WeeklyConsistency } from "@/components/weekly-consistency";
@@ -142,6 +143,7 @@ function Dashboard() {
           </div>
         </div>
       )}
+      <StreakCelebration streak={profile?.streak_days} />
       <CompanionHero
         firstName={firstName}
         companionId={profile?.companion_id}

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { KlausumMark } from "@/components/klausum-mark";
+import { KlausumLogo } from "@/components/klausum-mark";
 import { getCompanion } from "@/components/companion-svg";
 import { LogOut, Shield, ChevronDown } from "lucide-react";
 import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK } from "@/lib/nav";
@@ -82,8 +82,7 @@ function AuthLayout() {
     <div className="min-h-screen flex bg-background text-foreground">
       <aside className="hidden md:flex w-60 flex-col border-r-2 border-border bg-background px-3 py-5">
         <Link to="/dashboard" className="mb-8 flex items-center gap-2 px-2">
-          <KlausumMark size={26} />
-          <span className="font-display text-lg font-extrabold text-primary">klausum</span>
+          <KlausumLogo size={24} />
         </Link>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto text-sm">
           {PRIMARY_LINKS.map((l) => (

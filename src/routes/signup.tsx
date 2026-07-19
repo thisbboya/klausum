@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
-import { KlausumMark, AnimatedKlausumMark } from "@/components/klausum-mark";
+import { KlausumLogo, AnimatedKlausumMark } from "@/components/klausum-mark";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
@@ -135,9 +135,8 @@ function SignupPage() {
             transition={spring}
             className="inline-flex"
           >
-            <KlausumMark size={28} />
+            <KlausumLogo size={26} />
           </motion.span>
-          <span className="font-display text-lg font-extrabold text-primary">klausum</span>
         </Link>
         <Link
           to="/login"

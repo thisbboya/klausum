@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
-import { KlausumMark } from "@/components/klausum-mark";
+import { KlausumLogo } from "@/components/klausum-mark";
 import { COMPANIONS, CompanionSVG } from "@/components/companion-svg";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
@@ -128,8 +128,7 @@ function Onboarding() {
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col transition-colors" style={tint}>
       <header className="px-6 py-4 flex items-center gap-2">
-        <KlausumMark size={24} />
-        <span className="font-display font-extrabold text-primary">klausum</span>
+        <KlausumLogo size={22} />
       </header>
 
       <div className="mx-auto w-full max-w-xl px-4 pb-16 flex-1 flex flex-col justify-center">

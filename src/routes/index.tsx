@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { KlausumMark } from "@/components/klausum-mark";
+import { KlausumMark, KlausumLogo } from "@/components/klausum-mark";
 import {
   Brain, FileText, Target, Trophy, Flame, ArrowRight, Star,
   Upload, Wand2, Heart, Zap, BookOpen, Users,
@@ -107,10 +107,7 @@ function Nav() {
     <header className="sticky top-3 z-50 px-3 md:px-6">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border-2 border-border bg-card/95 px-4 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)] backdrop-blur md:px-6">
         <Link to="/" className="flex items-center gap-2">
-          <KlausumMark size={30} />
-          <span className="font-display text-xl font-extrabold tracking-tight text-primary">
-            klausum
-          </span>
+          <KlausumLogo size={28} />
         </Link>
         <div className="flex items-center gap-3">
           <Link
@@ -601,8 +598,7 @@ function Landing() {
         <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
-              <KlausumMark size={24} />
-              <span className="font-display text-base font-extrabold text-primary">klausum</span>
+              <KlausumLogo size={20} />
             </div>
             <p className="mt-3 text-sm font-semibold text-muted-foreground">
               Learning that bends to your mind.

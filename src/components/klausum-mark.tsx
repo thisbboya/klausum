@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { SVGProps } from "react";
 import { animate, createTimeline, stagger } from "animejs";
+import { Kumi } from "@/components/kumi";
 
 type Props = SVGProps<SVGSVGElement> & { size?: number };
 
@@ -46,6 +47,34 @@ export function KlausumMark({ size = 32, ...props }: Props) {
         fill="var(--primary-foreground, #fff)"
       />
     </svg>
+  );
+}
+
+/**
+ * The full Duolingo-style lockup: Kumi the mascot beside the lowercase
+ * wordmark. Use this everywhere the brand name appears — mascot IS the logo.
+ */
+export function KlausumLogo({
+  size = 28,
+  animate: animateMascot = true,
+  className = "",
+  wordmarkClassName = "",
+}: {
+  size?: number;
+  animate?: boolean;
+  className?: string;
+  wordmarkClassName?: string;
+}) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${className}`}>
+      <Kumi size={Math.round(size * 1.3)} animate={animateMascot} />
+      <span
+        className={`font-display font-extrabold leading-none text-primary ${wordmarkClassName}`}
+        style={{ fontSize: Math.round(size * 0.82), letterSpacing: "-0.02em" }}
+      >
+        klausum
+      </span>
+    </span>
   );
 }
 

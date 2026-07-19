@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { KlausumMark, AnimatedKlausumMark } from "@/components/klausum-mark";
+import { KlausumLogo, AnimatedKlausumMark } from "@/components/klausum-mark";
 import { toast } from "sonner";
 
 function safeNext(next: unknown): string {
@@ -68,8 +68,7 @@ function LoginPage() {
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-4 md:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <KlausumMark size={28} />
-          <span className="font-display text-lg font-extrabold text-primary">klausum</span>
+          <KlausumLogo size={26} />
         </Link>
         <Link
           to="/signup"

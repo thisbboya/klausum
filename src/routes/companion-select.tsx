@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { COMPANIONS, CompanionSVG } from "@/components/companion-svg";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
-import { KlausumMark } from "@/components/klausum-mark";
+import { KlausumLogo } from "@/components/klausum-mark";
 
 export const Route = createFileRoute("/companion-select")({
   component: CompanionSelect,
@@ -38,8 +38,7 @@ function CompanionSelect() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="px-6 py-4 flex items-center gap-2 text-primary">
-        <KlausumMark size={24} />
-        <span className="font-display font-semibold">Klausum</span>
+        <KlausumLogo size={22} />
       </header>
       <div className="mx-auto w-full max-w-5xl px-4 pb-32 flex-1">
         <div className="text-center mb-10">

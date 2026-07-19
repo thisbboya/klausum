@@ -581,6 +581,25 @@ body.landing::before {
   50% { opacity: 1; transform: translateY(-4px); }
 }
 .loader-dot { animation: loader-dot 0.9s ease-in-out infinite; }
+/* Ground shadow squashes in sync with the bounce */
+@keyframes kumi-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.5; }
+  40% { transform: scaleX(0.7); opacity: 0.3; }
+  55% { transform: scaleX(1.1); opacity: 0.6; }
+}
+.kumi-shadow { animation: kumi-shadow 1.5s ease-in-out infinite; }
+/* Moving highlight across the loading bar fill */
+@keyframes loader-shimmer {
+  0% { background-position: -80px 0; }
+  100% { background-position: 160px 0; }
+}
+.loader-shimmer {
+  background-image: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%);
+  background-size: 80px 100%;
+  background-repeat: no-repeat;
+  background-color: var(--primary);
+  animation: loader-shimmer 1.4s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .kumi-bounce, .loader-dot { animation: none; }
+  .kumi-bounce, .loader-dot, .kumi-shadow, .loader-shimmer { animation: none; }
 }
