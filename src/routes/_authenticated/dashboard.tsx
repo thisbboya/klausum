@@ -159,98 +159,146 @@ function Dashboard() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
-        <LeaguesCard />
-      </div>
+      {/* CourieX-style two-column layout: content left, status rail right */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
 
-
-
-
-
-
-
-
-      {/* CourieX-style compact action trio — icon tiles, no paragraph copy */}
-      <section className="flex items-start justify-center gap-8 py-2 md:gap-14">
-        {[
-          { to: "/quizzes", icon: ListChecks, label: "Quiz" },
-          { to: "/review", icon: Brain, label: (data?.dueCount ?? 0) > 0 ? `Review · ${data?.dueCount}` : "Flashcards" },
-          { to: "/materials", icon: BookOpen, label: "Materials" },
-        ].map(({ to, icon: Icon, label }) => (
-          <Link key={to} to={to} className="group flex flex-col items-center gap-2">
-            <span className="card-chunky card-chunky-hover flex h-16 w-16 items-center justify-center bg-card transition group-hover:-translate-y-0.5">
-              <Icon className="h-7 w-7 text-primary" />
-            </span>
-            <span className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-              {label}
-            </span>
-          </Link>
-        ))}
-      </section>
-
-
-      {data?.materials && data.materials.length > 0 && (
-        <section>
-          <h2 className="font-display text-lg font-extrabold mb-3">Jump back in</h2>
-          <Link
-            to="/materials/$id"
-            params={{ id: data.materials[0].id }}
-            className="card-chunky card-chunky-hover flex items-center gap-4 bg-card p-4"
-          >
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-success/15">
-              <Play className="h-6 w-6 fill-success text-success" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                Last material
-              </div>
-              <div className="truncate font-display text-base font-extrabold">
-                {data.materials[0].title}
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-          </Link>
-        </section>
-      )}
-
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-lg font-extrabold">Recent materials</h2>
-          <Link to="/materials" className="text-xs font-extrabold text-sky hover:underline">
-            View all
-          </Link>
-        </div>
-        {(!data?.materials || data.materials.length === 0) ? (
-          <div className="card-chunky border-dashed p-10 text-center">
-            <p className="text-sm font-semibold text-muted-foreground">No materials yet.</p>
-            <Link
-              to="/materials"
-              className="btn-3d btn-3d-success mt-4 inline-flex items-center gap-2 rounded-2xl bg-success px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
-            >
-              <Plus className="h-4 w-4" /> Upload your first
-            </Link>
-          </div>
-        ) : (
-          <ul className="card-chunky divide-y-2 divide-border overflow-hidden bg-card">
-            {data.materials.map((m) => (
-              <li key={m.id}>
+          {/* Jump back in — CourieX card row */}
+          <section>
+            <h2 className="mb-3 font-display text-lg font-extrabold">Jump back in</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {data?.materials && data.materials.length > 0 && (
                 <Link
                   to="/materials/$id"
-                  params={{ id: m.id }}
-                  className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-2"
+                  params={{ id: data.materials[0].id }}
+                  className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4"
                 >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-extrabold">{m.title}</div>
-                    <div className="text-xs font-semibold text-muted-foreground">{m.subject}</div>
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-success/15">
+                    <Play className="h-5 w-5 fill-success text-success" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                      Continue reading
+                    </div>
+                    <div className="truncate font-display text-sm font-extrabold">
+                      {data.materials[0].title}
+                    </div>
                   </div>
-                  <StatusBadge status={m.processing_status} />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </Link>
+              )}
+              <Link to="/review" className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15">
+                  <Brain className="h-5 w-5 text-primary" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                    Review
+                  </div>
+                  <div className="font-display text-sm font-extrabold">
+                    {(data?.dueCount ?? 0) > 0 ? `${data?.dueCount} cards due` : "All caught up"}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+              <Link to="/quizzes" className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky/15">
+                  <ListChecks className="h-5 w-5 text-sky" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                    Quiz yourself
+                  </div>
+                  <div className="font-display text-sm font-extrabold">Practice quiz</div>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+              <Link to="/materials" className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface-2">
+                  <BookOpen className="h-5 w-5 text-muted-foreground" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                    Materials
+                  </div>
+                  <div className="font-display text-sm font-extrabold">Upload &amp; browse</div>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+            </div>
+          </section>
+
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-lg font-extrabold">Recent materials</h2>
+              <Link to="/materials" className="text-xs font-extrabold text-sky hover:underline">
+                View all
+              </Link>
+            </div>
+            {(!data?.materials || data.materials.length === 0) ? (
+              <div className="card-chunky border-dashed p-10 text-center">
+                <p className="text-sm font-semibold text-muted-foreground">No materials yet.</p>
+                <Link
+                  to="/materials"
+                  className="btn-3d btn-3d-success mt-4 inline-flex items-center gap-2 rounded-2xl bg-success px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
+                >
+                  <Plus className="h-4 w-4" /> Upload your first
+                </Link>
+              </div>
+            ) : (
+              <ul className="card-chunky divide-y-2 divide-border overflow-hidden bg-card">
+                {data.materials.map((m) => (
+                  <li key={m.id}>
+                    <Link
+                      to="/materials/$id"
+                      params={{ id: m.id }}
+                      className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-extrabold">{m.title}</div>
+                        <div className="text-xs font-semibold text-muted-foreground">{m.subject}</div>
+                      </div>
+                      <StatusBadge status={m.processing_status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* Right rail — level, league, weekly snapshot (CourieX style) */}
+        <aside className="space-y-4">
+          <XpLevelCard xp={profile?.xp_total ?? 0} />
+          <LeaguesCard />
+          <div className="card-chunky bg-card p-4">
+            <h3 className="font-display text-sm font-extrabold uppercase tracking-wide">
+              Weekly snapshot
+            </h3>
+            <ul className="mt-3 space-y-2 text-sm font-semibold">
+              <li className="flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Brain className="h-4 w-4" /> Cards due
+                </span>
+                <span className="font-extrabold">{data?.dueCount ?? 0}</span>
               </li>
-            ))}
-          </ul>
-        )}
-      </section>
+              <li className="flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Sparkles className="h-4 w-4" /> Total cards
+                </span>
+                <span className="font-extrabold">{data?.totalCards ?? 0}</span>
+              </li>
+              <li className="flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <BookOpen className="h-4 w-4" /> Materials
+                </span>
+                <span className="font-extrabold">{data?.materials?.length ?? 0}</span>
+              </li>
+            </ul>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

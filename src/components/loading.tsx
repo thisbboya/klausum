@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Kumi } from "@/components/kumi";
+import { Sounds } from "@/lib/sounds";
 
 // Duolingo-style loading tips: real, safe study-science facts and nudges.
 // A random one shows per load so waits feel like content, not dead time.
@@ -26,25 +27,58 @@ const LINES = [
  * a goal-gradient bar fills toward (but never past) done, and a study tip
  * turns the wait into a micro-lesson. Never a bare "Loading..." again.
  */
+const POKE_LINES = [
+  "Hehe, that tickles!",
+  "Again! Again!",
+  "Okay okay, it's coming!",
+  "You're speeding it up, I swear.",
+  "Kumi.exe is very ticklish.",
+];
+
 export function KlausumLoading({ label }: { label?: string }) {
   const [i, setI] = useState(0);
   const [progress, setProgress] = useState(8);
+  const [pokes, setPokes] = useState(0);
+  const [poking, setPoking] = useState(false);
+  const pokeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const tip = useMemo(() => TIPS[Math.floor(Math.random() * TIPS.length)], []);
 
   useEffect(() => {
     const t = setInterval(() => setI((x) => (x + 1) % LINES.length), 2200);
     // Asymptotic fill — always moving, caps at 92% (goal-gradient effect)
     const p = setInterval(() => setProgress((x) => x + (92 - x) * 0.06), 200);
-    return () => { clearInterval(t); clearInterval(p); };
+    return () => { clearInterval(t); clearInterval(p); clearTimeout(pokeTimer.current); };
   }, []);
+
+  function poke() {
+    Sounds.flip();
+    setPokes((n) => n + 1);
+    setPoking(false);
+    // restart the squash animation on rapid taps
+    requestAnimationFrame(() => setPoking(true));
+    clearTimeout(pokeTimer.current);
+    pokeTimer.current = setTimeout(() => setPoking(false), 500);
+  }
 
   return (
     <div className="flex flex-col items-center justify-center gap-5 px-6 py-16">
       <div className="relative flex flex-col items-center">
-        <div className="kumi-bounce">
-          <Kumi size={110} />
-        </div>
+        <button
+          type="button"
+          onClick={poke}
+          aria-label="Poke Kumi"
+          className="kumi-bounce cursor-pointer select-none outline-none"
+        >
+          <div className={poking ? "kumi-poke" : undefined}>
+            <Kumi size={110} />
+          </div>
+        </button>
         <div className="kumi-shadow mt-1 h-2.5 w-16 rounded-full bg-foreground/15" />
+        {pokes > 0 && (
+          <p className="absolute -top-6 whitespace-nowrap text-xs font-extrabold text-primary">
+            {POKE_LINES[Math.min(pokes - 1, POKE_LINES.length - 1)]}
+          </p>
+        )}
       </div>
 
       <div className="w-full max-w-xs">

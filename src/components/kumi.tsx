@@ -14,9 +14,13 @@ export function Kumi({ size = 96, animate = true }: { size?: number; animate?: b
         <path d="M58 22 C62 12 70 10 74 12" stroke="#B45309" strokeWidth="3" strokeLinecap="round" fill="none" />
         <path d="M22 12 l1.8 3.6 3.8 1.5 -3.8 1.5 -1.8 3.6 -1.8 -3.6 -3.8 -1.5 3.8 -1.5 Z" fill="#FFC800" />
         <path d="M74 12 l1.8 3.6 3.8 1.5 -3.8 1.5 -1.8 3.6 -1.8 -3.6 -3.8 -1.5 3.8 -1.5 Z" fill="#FFC800" />
-        {/* wings */}
-        <ellipse cx="18" cy="52" rx="10" ry="16" fill="#FFE9A8" opacity="0.9" transform="rotate(-18 18 52)" />
-        <ellipse cx="78" cy="52" rx="10" ry="16" fill="#FFE9A8" opacity="0.9" transform="rotate(18 78 52)" />
+        {/* wings — flutter when animated */}
+        <g className={cls("kumi-wing-l")} style={{ transformOrigin: "26px 44px" }}>
+          <ellipse cx="18" cy="52" rx="10" ry="16" fill="#FFE9A8" opacity="0.9" transform="rotate(-18 18 52)" />
+        </g>
+        <g className={cls("kumi-wing-r")} style={{ transformOrigin: "70px 44px" }}>
+          <ellipse cx="78" cy="52" rx="10" ry="16" fill="#FFE9A8" opacity="0.9" transform="rotate(18 78 52)" />
+        </g>
         {/* body */}
         <circle cx="48" cy="54" r="30" fill="#FFC800" />
         <circle cx="48" cy="54" r="30" stroke="#B45309" strokeWidth="2.5" opacity="0.35" />

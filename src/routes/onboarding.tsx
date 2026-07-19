@@ -118,6 +118,7 @@ function Onboarding() {
       toast.error(error.message);
       return false;
     }
+    try { localStorage.setItem("klausum:onboarded", "1"); } catch {}
     return true;
   }
 

@@ -588,6 +588,27 @@ body.landing::before {
   55% { transform: scaleX(1.1); opacity: 0.6; }
 }
 .kumi-shadow { animation: kumi-shadow 1.5s ease-in-out infinite; }
+/* Wing flutter — quick beats with rests, like a real firefly */
+@keyframes kumi-flutter-l {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  65%, 75%, 85% { transform: rotate(-16deg); }
+  70%, 80%, 90% { transform: rotate(6deg); }
+}
+@keyframes kumi-flutter-r {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  65%, 75%, 85% { transform: rotate(16deg); }
+  70%, 80%, 90% { transform: rotate(-6deg); }
+}
+.kumi-wing-l { animation: kumi-flutter-l 2.6s ease-in-out infinite; }
+.kumi-wing-r { animation: kumi-flutter-r 2.6s ease-in-out infinite; }
+/* Poke reaction — a happy squash-and-stretch */
+@keyframes kumi-poke {
+  0% { transform: scale(1, 1); }
+  30% { transform: scale(1.15, 0.8); }
+  60% { transform: scale(0.92, 1.1); }
+  100% { transform: scale(1, 1); }
+}
+.kumi-poke { animation: kumi-poke 0.45s ease-out; }
 /* Moving highlight across the loading bar fill */
 @keyframes loader-shimmer {
   0% { background-position: -80px 0; }
@@ -601,5 +622,6 @@ body.landing::before {
   animation: loader-shimmer 1.4s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .kumi-bounce, .loader-dot, .kumi-shadow, .loader-shimmer { animation: none; }
+  .kumi-bounce, .loader-dot, .kumi-shadow, .loader-shimmer,
+  .kumi-wing-l, .kumi-wing-r, .kumi-poke { animation: none; }
 }

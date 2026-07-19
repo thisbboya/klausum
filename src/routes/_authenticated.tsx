@@ -44,11 +44,22 @@ function AuthLayout() {
     },
   });
 
-  // Onboarding redirect
+  // Onboarding redirect — self-healing so a lost DB write can never bounce a
+  // finished user back into pilot selection / VARK from pages like the shop.
   useEffect(() => {
-    if (profile && !profile.onboarding_completed && location.pathname !== "/onboarding") {
-      navigate({ to: "/onboarding" });
+    if (!profile) return;
+    if (profile.onboarding_completed) {
+      try { localStorage.setItem("klausum:onboarded", "1"); } catch {}
+      return;
     }
+    let doneLocally = false;
+    try { doneLocally = localStorage.getItem("klausum:onboarded") === "1"; } catch {}
+    if (doneLocally) {
+      // Repair the missing flag instead of re-running onboarding
+      supabase.from("user_profiles").update({ onboarding_completed: true }).eq("id", profile.id).then(() => {});
+      return;
+    }
+    if (location.pathname !== "/onboarding") navigate({ to: "/onboarding" });
   }, [profile, location.pathname, navigate]);
 
   // Pilot theming: the companion's color becomes the app's primary color
@@ -123,7 +134,13 @@ function AuthLayout() {
             navigate({ to: "/" });
           }}
         />
-        <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10 space-y-4">
+        <div
+          className={`mx-auto space-y-4 px-4 ${
+            /^\/materials\/[^/]+$/.test(location.pathname)
+              ? "max-w-[1500px] py-4 md:px-5 md:py-5" // CourieX-wide reading canvas
+              : "max-w-5xl py-6 md:px-8 md:py-10"
+          }`}
+        >
           {profile && !profile.level && location.pathname !== "/settings" && (
             <ProfileCompletionBanner level={profile?.level} />
           )}

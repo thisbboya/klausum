@@ -362,6 +362,7 @@ function LearningTab() {
   }
 
   async function retake() {
+    try { localStorage.removeItem("klausum:onboarded"); } catch {}
     await supabase.from("user_profiles").update({ vark_completed: false, onboarding_completed: false }).eq("id", user!.id);
     navigate({ to: "/onboarding" });
   }
