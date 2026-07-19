@@ -1,18 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Shield, Users, BarChart3, BookOpen, Megaphone, KeyRound, SlidersHorizontal, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
-import { getAccessToken } from "@/lib/auth-helper";
-import {
-  adminListUsers,
-  adminSetRole,
-  adminGetStats,
-  adminListMaterials,
-} from "@/lib/admin.functions";
+// Admin data comes from SECURITY DEFINER RPCs (admin_list_users, admin_stats,
+// admin_recent_materials, admin_set_role) so no service-role key is needed.
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
@@ -114,23 +108,34 @@ function TabBtn({
 }
 
 function UsersTab() {
-  const fn = useServerFn(adminListUsers);
-  const setRoleFn = useServerFn(adminSetRole);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["admin", "users"],
-    queryFn: async () => fn({ data: { accessToken: await getAccessToken() } }),
+    queryFn: async () => {
+      const { data: rows, error } = await (supabase as any).rpc("admin_list_users");
+      if (error) throw error;
+      return {
+        users: (rows ?? []).map((u: any) => ({
+          ...u,
+          school: u.handle ?? "",
+          streak_days: u.streak_days ?? 0,
+          roles: u.is_admin ? ["admin"] : [],
+        })),
+      };
+    },
   });
 
-  async function toggleAdmin(userId: string, makeAdmin: boolean) {
-    setPendingId(userId);
+  async function toggleAdmin(email: string, makeAdmin: boolean, id: string) {
+    setPendingId(id);
     try {
-      await setRoleFn({
-        data: { accessToken: await getAccessToken(), userId, role: "admin", enabled: makeAdmin },
+      const { error } = await (supabase as any).rpc("admin_set_role", {
+        p_email: email,
+        p_make_admin: makeAdmin,
       });
+      if (error) throw error;
       toast.success(makeAdmin ? "Admin granted" : "Admin removed");
       await qc.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (e: any) {
@@ -140,7 +145,7 @@ function UsersTab() {
     }
   }
 
-  const users = (data?.users ?? []).filter((u) => {
+  const users = (data?.users ?? []).filter((u: any) => {
     if (!search) return true;
     const s = search.toLowerCase();
     return (
@@ -183,7 +188,7 @@ function UsersTab() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => {
+            {users.map((u: any) => {
               const isAdmin = u.roles.includes("admin");
               const pending = pendingId === u.id;
               return (
@@ -204,7 +209,7 @@ function UsersTab() {
                   </td>
                   <td className="px-3 py-2 text-right">
                     <button
-                      onClick={() => toggleAdmin(u.id, !isAdmin)}
+                      onClick={() => toggleAdmin(u.email, !isAdmin, u.id)}
                       disabled={pending}
                       className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/10 disabled:opacity-50"
                     >
@@ -230,10 +235,13 @@ function UsersTab() {
 }
 
 function StatsTab() {
-  const fn = useServerFn(adminGetStats);
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "stats"],
-    queryFn: async () => fn({ data: { accessToken: await getAccessToken() } }),
+    queryFn: async () => {
+      const { data: counts, error } = await (supabase as any).rpc("admin_stats");
+      if (error) throw error;
+      return { counts: (counts ?? {}) as Record<string, number> };
+    },
   });
   if (isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   const counts = data?.counts ?? {};
@@ -260,10 +268,13 @@ function StatsTab() {
 }
 
 function MaterialsTab() {
-  const fn = useServerFn(adminListMaterials);
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "materials"],
-    queryFn: async () => fn({ data: { accessToken: await getAccessToken() } }),
+    queryFn: async () => {
+      const { data: rows, error } = await (supabase as any).rpc("admin_recent_materials");
+      if (error) throw error;
+      return { materials: (rows ?? []) as any[] };
+    },
   });
   if (isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   return (

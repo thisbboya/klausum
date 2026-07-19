@@ -867,6 +867,14 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   const [pageIndex, setPageIndex] = useState<Record<number, string> | undefined>(undefined);
   const [selection, setSelection] = useState<string | null>(null);
   const [autoSendOnSelection, setAutoSendOnSelection] = useState(false);
+  // Native = browser PDF engine; highlight = pdf.js with select-to-ask-AI
+  const [pdfMode, setPdfModeState] = useState<"native" | "highlight">(() => {
+    try { return localStorage.getItem("klausum:pdfMode") === "highlight" ? "highlight" : "native"; } catch { return "native"; }
+  });
+  const setPdfMode = (m: "native" | "highlight") => {
+    setPdfModeState(m);
+    try { localStorage.setItem("klausum:pdfMode", m); } catch {}
+  };
   const [tocOpen, setTocOpen] = useState(false);
   const summarizeFn = useServerFn(summarizeMaterial);
   const addNoteFn = useServerFn(appendMaterialNote);
@@ -1089,17 +1097,42 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   return (
     <div className="flex h-[calc(100dvh-6rem)] min-h-[640px] card-chunky overflow-hidden">
       <div className="w-[62%] border-r border-border flex flex-col">
+        <div className="flex items-center justify-end gap-1 border-b border-border bg-card px-2 py-1">
+          {(["native", "highlight"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setPdfMode(m)}
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide transition ${
+                pdfMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {m === "native" ? "Reader" : "Highlight + AI"}
+            </button>
+          ))}
+        </div>
         {TocPanel}
         <div className="flex-1 overflow-hidden">
-          {/* Desktop: the browser's own PDF viewer — full toolbar (zoom, print,
-              download, page nav), exactly the CourieX reading experience.
-              Mobile keeps pdf.js below because Android won't inline PDFs. */}
-          <iframe
-            key={page}
-            title={material.title}
-            src={`${signedUrl}#page=${page}&view=FitH`}
-            className="h-full w-full border-0 bg-white"
-          />
+          {pdfMode === "native" ? (
+            /* Browser's own PDF engine — full toolbar, CourieX reading feel.
+               Selection inside this iframe is invisible to the app (cross-origin),
+               so highlight-AI lives in the "Highlight + AI" mode below. */
+            <iframe
+              key={page}
+              title={material.title}
+              src={`${signedUrl}#page=${page}&view=FitH`}
+              className="h-full w-full border-0 bg-white"
+            />
+          ) : (
+            <PDFViewer
+              pdfUrl={signedUrl}
+              page={page}
+              onPageChange={handlePageChange}
+              onTotalPages={setTotalPages}
+              onAllPagesIndexed={setPageIndex}
+              onAskAboutSelection={handleAskAboutSelection}
+              onAddNote={handleAddNote}
+            />
+          )}
         </div>
       </div>
       <div className="w-[38%]">
