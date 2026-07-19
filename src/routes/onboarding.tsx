@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { KlausumLoading } from "@/components/loading";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,7 +79,7 @@ function Onboarding() {
   }, [user, loading, navigate]);
 
   if (loading || !user) {
-    return <div className="flex min-h-[100dvh] items-center justify-center text-sm font-semibold text-muted-foreground">Loading…</div>;
+    return <div className="flex min-h-[100dvh] items-center justify-center"><KlausumLoading /></div>;
   }
 
   // steps: 0 pilot · 1..8 VARK · 9 profile · 10 goals · 11 frequency · 12 building

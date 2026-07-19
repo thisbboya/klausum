@@ -241,7 +241,32 @@ export function MaterialsPage() {
   // skip the AI rewrite instead of failing the whole upload.
   const AI_INLINE_LIMIT = 18 * 1024 * 1024;
 
-  async function handleFile(file: File) {
+  /** Shrink images hard before they touch storage or the AI: max 1600px,
+   *  JPEG q0.72 — a 8MB phone photo becomes ~300KB and still reads crisply. */
+  async function compressImage(file: File): Promise<File> {
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bmp.width * scale);
+      canvas.height = Math.round(bmp.height * scale);
+      canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.72));
+      if (blob && blob.size < file.size) {
+        return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+      }
+    } catch { /* fall through with original */ }
+    return file;
+  }
+
+  async function handleFile(original: File) {
+    let file = original;
+    if (file.type.startsWith("image/")) {
+      file = await compressImage(file);
+      if (file.size < original.size) {
+        toast.success(`Compressed ${(original.size / 1048576).toFixed(1)}MB → ${(file.size / 1048576).toFixed(1)}MB`);
+      }
+    }
     if (file.size > 120 * 1024 * 1024) return toast.error("Max 120MB");
     const lower = file.name.toLowerCase();
     const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
@@ -628,14 +653,31 @@ export function MaterialsPage() {
               ← All subjects
             </button>
             {(!courseByName[activeSubject] || courseByName[activeSubject].user_id === user?.id) && (
-              <button
-                onClick={() => shareCourse(activeSubject)}
-                className="rounded-xl border-2 border-border bg-card px-3.5 py-1.5 text-xs font-extrabold text-muted-foreground hover:text-foreground"
-              >
-                {courseByName[activeSubject]?.share_code
-                  ? `Share code: ${courseByName[activeSubject].share_code}`
-                  : "⤴ Share course"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => shareCourse(activeSubject)}
+                  className="rounded-xl border-2 border-border bg-card px-3.5 py-1.5 text-xs font-extrabold text-muted-foreground hover:text-foreground"
+                >
+                  {courseByName[activeSubject]?.share_code
+                    ? `Share code: ${courseByName[activeSubject].share_code}`
+                    : "⤴ Share course"}
+                </button>
+                {courseByName[activeSubject] && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete the course "${activeSubject}"? Materials inside stay in your library.`)) return;
+                      const { error } = await (supabase as any).from("courses").delete().eq("id", courseByName[activeSubject].id);
+                      if (error) return toast.error(error.message);
+                      toast.success("Course deleted");
+                      setActiveSubject(null);
+                      qc.invalidateQueries({ queryKey: ["courses"] });
+                    }}
+                    className="rounded-xl border-2 border-destructive/40 px-3 py-1.5 text-xs font-extrabold text-destructive hover:bg-destructive/10"
+                  >
+                    Delete course
+                  </button>
+                )}
+              </div>
             )}
           </div>
           <ul className="divide-y-2 divide-border card-chunky bg-card">

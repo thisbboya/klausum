@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { KlausumLoading } from "@/components/loading";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -244,7 +245,7 @@ function NoteEditor({ id }: { id: string }) {
   }
 
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Loading note…</div>;
+    return <KlausumLoading label="Opening your note…" />;
   }
 
   return (

@@ -157,27 +157,6 @@ function Dashboard() {
         </div>
       )}
 
-      {profile?.primary_style && (
-        <p className="text-xs text-muted-foreground -mt-3">
-          Primary style:{" "}
-          <span className="text-primary font-medium capitalize">{profile.primary_style}</span>
-          {profile.secondary_style && (
-            <> · secondary <span className="capitalize">{profile.secondary_style}</span></>
-          )}
-        </p>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <XpLevelCard xp={profile?.xp_total ?? 0} />
-        <Stat
-          to="/review"
-          label="Cards due now"
-          value={data?.dueCount ?? 0}
-          sub={`of ${data?.totalCards ?? 0} total`}
-          accent
-        />
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2">
         <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
         <LeaguesCard />
@@ -208,7 +187,6 @@ function Dashboard() {
         ))}
       </section>
 
-      <ExamCountdown exams={data?.exams ?? []} />
 
       {data?.materials && data.materials.length > 0 && (
         <section>

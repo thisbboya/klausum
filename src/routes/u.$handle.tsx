@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { KlausumLoading } from "@/components/loading";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CompanionSVG, COMPANIONS } from "@/components/companion-svg";
@@ -29,7 +30,7 @@ function PublicProfilePage() {
   });
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center"><KlausumLoading /></div>;
   }
   if (error || !data) {
     return (

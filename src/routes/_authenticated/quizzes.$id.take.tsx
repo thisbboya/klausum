@@ -1,4 +1,5 @@
 import { awardXp } from "@/lib/xp";
+import { KlausumLoading } from "@/components/loading";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -271,7 +272,7 @@ function TakeQuiz() {
     navigate({ to: "/quizzes/$id/results", params: { id }, search: { attempt: attempt.id } });
   }
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (loading) return <KlausumLoading label="Setting up your quiz…" />;
   if (!q) return <div className="text-sm text-muted-foreground">No questions in this quiz.</div>;
 
   const answered = Object.keys(answers).length;

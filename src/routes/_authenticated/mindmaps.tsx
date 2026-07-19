@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { KlausumLoading } from "@/components/loading";
 import { useEffect, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -281,7 +282,7 @@ function MapEditor({ id }: { id: string }) {
     }
   }
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading map…</div>;
+  if (loading) return <KlausumLoading label="Drawing your map…" />;
 
   return (
     <div className="space-y-3">

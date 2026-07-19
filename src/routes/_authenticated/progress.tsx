@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { KlausumLoading } from "@/components/loading";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +53,7 @@ function ProgressPage() {
     },
   });
 
-  if (!data) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (!data) return <KlausumLoading />;
   const { profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions, cards } = data;
 
   // FSRS card health bins (by stability days)

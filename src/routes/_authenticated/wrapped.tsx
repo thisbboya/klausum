@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Kumi } from "@/components/kumi";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -448,7 +449,7 @@ function WrappedPage() {
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <CompanionSVG id={data.companionId} size={220} animate={false} />
+              <Kumi size={220} animate={false} />
             </div>
           </div>
 

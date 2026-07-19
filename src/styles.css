@@ -567,3 +567,20 @@ body.landing::before {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Kumi loader */
+@keyframes kumi-bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  40% { transform: translateY(-12px) scale(0.98, 1.04); }
+  55% { transform: translateY(0) scale(1.04, 0.94); }
+  70% { transform: translateY(-4px) scale(1, 1); }
+}
+.kumi-bounce { animation: kumi-bounce 1.5s ease-in-out infinite; }
+@keyframes loader-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-4px); }
+}
+.loader-dot { animation: loader-dot 0.9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .kumi-bounce, .loader-dot { animation: none; }
+}

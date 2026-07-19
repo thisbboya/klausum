@@ -138,51 +138,21 @@ function MaterialDetail() {
         </div>
       </header>
 
-      {/* Material Studio — CourieX-style "choose what to create" hub */}
-      <section>
-        <div className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-success">Studio</div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Link
-            to="/quizzes"
-            search={{ from: material.id } as any}
-            className="card-chunky card-chunky-hover bg-card p-4"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15">
-              <ListChecks className="h-5 w-5 text-success" />
-            </span>
-            <div className="mt-2.5 font-display text-sm font-extrabold">Quiz</div>
-            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">Exam-style questions from this material.</div>
+      {/* Compact action row — only actions that actually apply to this material */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          to="/quizzes"
+          search={{ from: material.id } as any}
+          className="btn-3d rounded-xl bg-success px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-success-foreground"
+        >
+          Quiz this
+        </Link>
+        {deck && (deck.total_cards ?? 0) > 0 && (
+          <Link to="/review" className="btn-3d rounded-xl bg-primary px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-primary-foreground">
+            Review {deck.total_cards} cards
           </Link>
-          <Link
-            to="/review"
-            className="card-chunky card-chunky-hover bg-card p-4"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/15">
-              <Layers className="h-5 w-5 text-warning" />
-            </span>
-            <div className="mt-2.5 font-display text-sm font-extrabold">Flashcards</div>
-            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
-              {deck ? `${deck.total_cards} cards ready to review.` : "Deck is being prepared."}
-            </div>
-          </Link>
-          <Link to="/tutor" className="card-chunky card-chunky-hover bg-card p-4">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky/15">
-              <MessagesSquare className="h-5 w-5 text-sky" />
-            </span>
-            <div className="mt-2.5 font-display text-sm font-extrabold">Ask AI</div>
-            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">Chat about it — or use the AI Chat tab below.</div>
-          </Link>
-          <Link to="/mindmaps" className="card-chunky card-chunky-hover bg-card p-4">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-grape/15">
-              <Network className="h-5 w-5 text-grape" />
-            </span>
-            <div className="mt-2.5 font-display text-sm font-extrabold">Mind map</div>
-            <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">See its concepts as a visual graph.</div>
-          </Link>
-        </div>
-      </section>
-
-      <YouTubeLinks text={[material.ai_summary, material.adapted_reading].filter(Boolean).join("\n")} />
+        )}
+      </div>
 
       {!isReady ? (
         <div className="card-chunky bg-card p-8 text-center">
@@ -191,15 +161,29 @@ function MaterialDetail() {
         </div>
       ) : (
         <>
-          <div className="scrollbar-none flex flex-nowrap gap-1 overflow-x-auto border-b border-border whitespace-nowrap">
-            {visibleTabs.map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap transition ${
-                  tab === t.key ? `border-primary font-medium ${t.color}` : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}>
-                {t.label}
-              </button>
-            ))}
+          {/* CourieX-simple: Read is the main mode; every other view lives in
+              one compact dropdown so mobile and desktop stay uncluttered */}
+          <div className="flex items-center justify-between gap-3 border-b border-border pb-2">
+            <button
+              onClick={() => setTab("read")}
+              className={`rounded-full border-2 px-4 py-1.5 text-sm font-extrabold transition ${
+                tab === "read"
+                  ? "border-primary/40 bg-primary/12 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Read
+            </button>
+            <select
+              value={tab === "read" ? "" : tab}
+              onChange={(e) => e.target.value && setTab(e.target.value as any)}
+              className="rounded-xl border-2 border-border bg-card px-3 py-1.5 text-sm font-bold text-muted-foreground outline-none focus:border-primary"
+            >
+              <option value="">Study views…</option>
+              {visibleTabs.filter((t) => t.key !== "read").map((t) => (
+                <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </select>
           </div>
 
           {tab === "read" && user && (

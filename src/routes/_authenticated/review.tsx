@@ -1,4 +1,5 @@
 import { awardXp } from "@/lib/xp";
+import { KlausumLoading } from "@/components/loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -228,7 +229,7 @@ function ReviewPage() {
     Sounds.levelUp();
   }, [sessionEnded]);
 
-  if (!cards) return <div className="text-center py-20 text-sm text-muted-foreground">Loading…</div>;
+  if (!cards) return <KlausumLoading label="Shuffling your cards…" />;
 
   if (cards.length === 0) {
     const pct = reviewedToday > 0 ? Math.round((firstTryRight / reviewedToday) * 100) : 0;

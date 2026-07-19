@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { KlausumLoading } from "@/components/loading";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -41,7 +42,7 @@ function Results() {
     })();
   }, [id, attempt]);
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (loading) return <KlausumLoading />;
   if (!quiz || !att) return <div className="text-sm text-muted-foreground">No results.</div>;
 
   const pct = Math.round((att.score / att.total) * 100);

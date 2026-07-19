@@ -51,66 +51,96 @@ function tone(freq: number, duration: number, type: OscillatorType = "sine", vol
   }
 }
 
+
+/**
+ * A marimba-like pluck: fundamental + soft 2nd harmonic, fast attack and a
+ * natural exponential decay. Sounds like a friendly instrument, not a beep.
+ * Tiny random detune keeps repeated taps from feeling robotic (micro-novelty).
+ */
+function pluck(freq: number, duration = 0.22, volume = 0.2, delay = 0, humanize = true) {
+  const c = getCtx();
+  if (!c) return;
+  try {
+    const f = humanize ? freq * (1 + (Math.random() - 0.5) * 0.03) : freq;
+    const t0 = c.currentTime + delay;
+    for (const [mult, vol] of [[1, volume], [2, volume * 0.28], [3, volume * 0.08]] as const) {
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.connect(gain); gain.connect(c.destination);
+      osc.type = "sine";
+      osc.frequency.value = f * mult;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+      osc.start(t0); osc.stop(t0 + duration + 0.02);
+    }
+  } catch {}
+}
+
+/** Bright noise shimmer layered under big rewards. */
+function sparkle(delay = 0, duration = 0.35, volume = 0.06) {
+  const c = getCtx();
+  if (!c) return;
+  try {
+    const t0 = c.currentTime + delay;
+    const len = Math.floor(c.sampleRate * duration);
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const filter = c.createBiquadFilter();
+    filter.type = "highpass"; filter.frequency.value = 5000;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(volume, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    src.connect(filter); filter.connect(gain); gain.connect(c.destination);
+    src.start(t0);
+  } catch {}
+}
+
+// Pentatonic ladder — every combination of these sounds pleasant, which is
+// why Duolingo-style apps live on it.
+const P = { c5: 523.25, d5: 587.33, e5: 659.25, g5: 783.99, a5: 880, c6: 1046.5, e6: 1318.5, g6: 1568 };
+
 export const Sounds = {
-  // UI feedback
-  tap()    { if (!enabled()) return; tone(600, 0.04, "triangle", 0.08); },
-  nav()    { if (!enabled()) return; tone(500, 0.06, "sine", 0.1); },
+  // UI feedback — soft wooden tap, humanized so it never repeats exactly
+  tap()    { if (!enabled()) return; pluck(P.a5, 0.09, 0.07); },
+  nav()    { if (!enabled()) return; pluck(P.g5, 0.12, 0.08); },
 
   // Flashcard
-  flip()   { if (!enabled()) return; tone(440, 0.06, "triangle", 0.12); },
-  again()  { if (!enabled()) return; tone(196, 0.28, "sawtooth", 0.18); },
-  hard()   { if (!enabled()) return; tone(330, 0.12, "sine", 0.15); },
-  good()   { if (!enabled()) return; tone(523, 0.09, "sine", 0.2); tone(659, 0.12, "sine", 0.2, 0.08); },
-  easy()   {
-    if (!enabled()) return;
-    tone(523, 0.08, "sine", 0.22);
-    tone(659, 0.08, "sine", 0.22, 0.07);
-    tone(784, 0.14, "sine", 0.22, 0.14);
-  },
+  flip()   { if (!enabled()) return; pluck(P.e5, 0.1, 0.1); },
+  // "again" is a gentle low thud — informative, never punishing
+  again()  { if (!enabled()) return; pluck(196, 0.3, 0.14, 0, false); },
+  hard()   { if (!enabled()) return; pluck(P.d5 / 2, 0.18, 0.12, 0, false); },
+  good()   { if (!enabled()) return; pluck(P.c5, 0.16, 0.16); pluck(P.e5, 0.2, 0.16, 0.07); },
+  easy()   { if (!enabled()) return; pluck(P.c5, 0.14, 0.16); pluck(P.e5, 0.14, 0.16, 0.06); pluck(P.g5, 0.24, 0.18, 0.12); },
 
   // Quiz
-  correct() {
-    if (!enabled()) return;
-    tone(523, 0.08, "sine", 0.2);
-    tone(659, 0.08, "sine", 0.2, 0.07);
-    tone(784, 0.15, "sine", 0.2, 0.14);
-  },
-  wrong() { if (!enabled()) return; tone(220, 0.3, "sawtooth", 0.18); },
+  correct() { if (!enabled()) return; pluck(P.c5, 0.14, 0.16); pluck(P.e5, 0.14, 0.16, 0.06); pluck(P.g5, 0.24, 0.18, 0.12); sparkle(0.12, 0.25, 0.04); },
+  // soft descending "hm" — keeps players in flow instead of stinging them
+  wrong()   { if (!enabled()) return; pluck(P.d5 / 2, 0.16, 0.12, 0, false); pluck(P.c5 / 2, 0.26, 0.12, 0.09, false); },
 
-  // Rewards
-  xpEarn() {
-    if (!enabled()) return;
-    tone(660, 0.07, "sine", 0.18);
-    tone(880, 0.1, "sine", 0.18, 0.07);
-  },
+  // Rewards — ascending pentatonic + shimmer (variable-reward moments)
+  xpEarn() { if (!enabled()) return; pluck(P.e5, 0.1, 0.14); pluck(P.a5, 0.16, 0.14, 0.06); },
   chest() {
     if (!enabled()) return;
-    [880, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.12, "sine", 0.2, i * 0.07));
+    [P.a5, P.c6, P.e6, P.g6].forEach((f, i) => pluck(f, 0.18, 0.16, i * 0.07));
+    sparkle(0.2, 0.4, 0.07);
   },
   levelUp() {
     if (!enabled()) return;
-    [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.15, "sine", 0.25, i * 0.09));
+    [P.c5, P.e5, P.g5, P.c6, P.e6].forEach((f, i) => pluck(f, 0.2, 0.18, i * 0.09));
+    sparkle(0.35, 0.45, 0.08);
   },
-  streak() {
-    if (!enabled()) return;
-    tone(784, 0.1, "sine", 0.22);
-    tone(1047, 0.15, "sine", 0.22, 0.1);
-  },
+  streak() { if (!enabled()) return; pluck(P.g5, 0.12, 0.16); pluck(P.c6, 0.2, 0.18, 0.09); },
   streakMilestone() {
     if (!enabled()) return;
-    [523, 659, 784, 1047, 1319, 1047, 1319, 1568].forEach((f, i) =>
-      tone(f, 0.18, "sine", 0.28, i * 0.08),
-    );
+    [P.c5, P.e5, P.g5, P.c6, P.e6, P.c6, P.e6, P.g6].forEach((f, i) => pluck(f, 0.2, 0.2, i * 0.08));
+    sparkle(0.5, 0.5, 0.09);
   },
-  questComplete() {
-    if (!enabled()) return;
-    [659, 784, 1047].forEach((f, i) => tone(f, 0.14, "sine", 0.22, i * 0.08));
-  },
-  heartBreak() {
-    if (!enabled()) return;
-    tone(330, 0.08, "triangle", 0.15);
-    tone(220, 0.18, "triangle", 0.18, 0.07);
-  },
+  questComplete() { if (!enabled()) return; [P.e5, P.g5, P.c6].forEach((f, i) => pluck(f, 0.16, 0.16, i * 0.08)); },
+  heartBreak() { if (!enabled()) return; pluck(P.e5 / 2, 0.12, 0.12, 0, false); pluck(220, 0.22, 0.13, 0.07, false); },
 
   // Legacy aliases (kept so existing code keeps working)
   buttonTap() { this.tap(); },
