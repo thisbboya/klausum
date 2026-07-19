@@ -229,6 +229,8 @@ function Dashboard() {
             </div>
           </section>
 
+          <QuizPerformance userId={user?.id} />
+
           <section>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-lg font-extrabold">Recent materials</h2>
@@ -300,6 +302,75 @@ function Dashboard() {
         </aside>
       </div>
     </div>
+  );
+}
+
+// CourieX-style Quiz Performance: taken / avg accuracy / correct, plus recents
+function QuizPerformance({ userId }: { userId?: string }) {
+  const { data } = useQuery({
+    queryKey: ["quizPerf", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const [{ data: attempts }, { data: quizzes }] = await Promise.all([
+        supabase
+          .from("quiz_attempts")
+          .select("id, quiz_id, score, total, completed_at")
+          .eq("user_id", userId!)
+          .order("completed_at", { ascending: false })
+          .limit(20),
+        supabase.from("quizzes").select("id, title").eq("user_id", userId!).limit(50),
+      ]);
+      const titles = new Map((quizzes ?? []).map((q) => [q.id, q.title]));
+      return (attempts ?? []).map((a) => ({ ...a, title: titles.get(a.quiz_id) ?? "Quiz" }));
+    },
+  });
+  if (!data || data.length === 0) return null;
+  const correct = data.reduce((s, a) => s + (a.score ?? 0), 0);
+  const totalQ = data.reduce((s, a) => s + (a.total ?? 0), 0);
+  const acc = totalQ ? Math.round((correct / totalQ) * 100) : 0;
+  return (
+    <section className="card-chunky bg-card p-4">
+      <h2 className="font-display text-lg font-extrabold">Quiz performance</h2>
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        {[
+          { label: "Quizzes taken", value: data.length },
+          { label: "Avg accuracy", value: `${acc}%` },
+          { label: "Correct answers", value: correct },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl bg-surface-2 p-3 text-center">
+            <div className="font-display text-2xl font-extrabold text-primary">{s.value}</div>
+            <div className="mt-0.5 text-[11px] font-bold text-muted-foreground">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 space-y-2">
+        {data.slice(0, 3).map((a) => {
+          const pct = a.total ? Math.round(((a.score ?? 0) / a.total) * 100) : 0;
+          return (
+            <div key={a.id} className="flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2 text-sm">
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${
+                    pct >= 70 ? "bg-success/15 text-success" : pct >= 40 ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
+                  }`}
+                >
+                  {pct}%
+                </span>
+                <div className="min-w-0">
+                  <div className="truncate font-extrabold">{a.title}</div>
+                  <div className="text-xs font-semibold text-muted-foreground">
+                    {a.score ?? 0}/{a.total ?? 0} correct
+                  </div>
+                </div>
+              </div>
+              <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                {a.completed_at ? new Date(a.completed_at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : ""}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

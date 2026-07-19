@@ -289,7 +289,10 @@ export function MaterialsPage() {
         text, rawContent: text, fileName: file.name, fileType: file.type,
       });
     } else {
-      const tooBigForAI = file.size > AI_INLINE_LIMIT;
+      // Gemini inline-data accepts only PDF/images/text — office docs always
+      // take the store-and-register path (Office viewer + AI chat still work).
+      const isOffice = !!officeMime[ext] || Object.values(officeMime).includes(file.type);
+      const tooBigForAI = file.size > AI_INLINE_LIMIT || isOffice;
       const fileBase64 = tooBigForAI ? undefined : await fileToBase64(file);
       const resolvedMime = file.type || officeMime[ext] || "application/octet-stream";
       // Stash EVERY original in storage so the viewer can render it
@@ -328,7 +331,11 @@ export function MaterialsPage() {
           .select("id")
           .single();
         if (error) return toast.error(error.message);
-        toast.success("Big file stored — reader and AI chat work; study-tool generation needs files under 18MB");
+        toast.success(
+          isOffice
+            ? "Uploaded — opens in the document viewer with AI chat"
+            : "Big file stored — reader and AI chat work; study-tool generation needs files under 18MB",
+        );
         qc.invalidateQueries({ queryKey: ["materials"] });
         navigate({ to: "/materials/$id", params: { id: row.id } });
         return;
@@ -450,11 +457,12 @@ export function MaterialsPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* CourieX-simple: title + course. Field/STEM stays automatic. */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <input
               value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="Material title (e.g. Week 3 Lecture Notes)"
-              className="md:col-span-3 rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
             <select value={subject} onChange={(e) => setSubject(e.target.value)}
               className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm">
@@ -465,13 +473,6 @@ export function MaterialsPage() {
               )}
               {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
             </select>
-            <select value={field} onChange={(e) => setField(e.target.value)}
-              className="rounded-xl border-2 border-border bg-background px-3 py-2 text-sm">
-              {FIELDS.map((f) => <option key={f}>{f}</option>)}
-            </select>
-            <div className="text-xs text-muted-foreground self-center">
-              {STEM_FIELDS.has(field) ? "STEM — formulas extracted" : "General"}
-            </div>
           </div>
 
           <>
