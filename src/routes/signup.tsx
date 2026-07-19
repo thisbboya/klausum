@@ -4,6 +4,7 @@ import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { KlausumLogo, AnimatedKlausumMark } from "@/components/klausum-mark";
+import { AuthBg } from "@/components/auth-bg";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
@@ -125,7 +126,8 @@ function SignupPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="flex min-h-[100dvh] flex-col bg-background">
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-background">
+      <AuthBg />
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-4 md:px-8">
         <Link to="/" className="flex items-center gap-2">
@@ -146,7 +148,7 @@ function SignupPage() {
         </Link>
       </header>
 
-      <main className="flex flex-1 items-center justify-center px-4 py-8">
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm">
           <div className="mb-5 flex justify-center">
             <AnimatedKlausumMark size={72} />

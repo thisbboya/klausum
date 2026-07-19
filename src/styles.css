@@ -609,6 +609,14 @@ body.landing::before {
   100% { transform: scale(1, 1); }
 }
 .kumi-poke { animation: kumi-poke 0.45s ease-out; }
+/* Auth-page floating sparks */
+@keyframes klausum-spark-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.35; }
+  50% { transform: translateY(-18px) rotate(45deg); opacity: 0.75; }
+}
+.klausum-spark-float { animation: klausum-spark-float 8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .klausum-spark-float { animation: none; } }
+
 /* Wrapped story bar — CSS-driven so pausing freezes it mid-fill (Spotify) */
 @keyframes wrapped-fill { from { width: 0%; } to { width: 100%; } }
 .wrapped-fill { animation: wrapped-fill linear forwards; }
