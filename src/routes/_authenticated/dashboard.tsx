@@ -19,6 +19,7 @@ import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { HeartsRow } from "@/components/hearts-row";
 import { ensureTodayQuests } from "@/lib/quests";
+import { BADGES } from "@/lib/gamification";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -297,12 +298,24 @@ function Dashboard() {
                 </span>
                 <span className="font-extrabold">{data?.materials?.length ?? 0}</span>
               </li>
+              <li>
+                <Link to="/progress" className="flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2 transition hover:bg-primary/10">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Flame className="h-4 w-4" /> Badges
+                  </span>
+                  <span className="font-extrabold">{badgesSeenCount()}/{BADGES.length}</span>
+                </Link>
+              </li>
             </ul>
           </div>
         </aside>
       </div>
     </div>
   );
+}
+
+function badgesSeenCount(): number {
+  try { return JSON.parse(localStorage.getItem("klausum:badgesSeen") || "[]").length; } catch { return 0; }
 }
 
 // CourieX-style Quiz Performance: taken / avg accuracy / correct, plus recents

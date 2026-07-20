@@ -11,14 +11,32 @@ import { Sounds } from "@/lib/sounds";
 import { submitDuelScore } from "@/lib/duels";
 
 type Q = {
+  qtype?: "mcq" | "true_false" | "fill_blank";
   question: string;
-  options: { A: string; B: string; C: string; D: string };
-  correct: "A" | "B" | "C" | "D";
+  options?: { A: string; B: string; C?: string; D?: string };
+  correct?: "A" | "B" | "C" | "D";
+  answer?: string;
   explanation: string;
   topic: string;
   difficulty: string;
   bloom_level: number;
 };
+
+const qtypeOf = (q: Q) => q.qtype ?? "mcq";
+const normalizeText = (s: string) =>
+  s.toLowerCase().trim().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ");
+/** One scoring rule for every question type. */
+function isRightAnswer(qq: Q, got: string | undefined): boolean {
+  if (!got) return false;
+  if (qtypeOf(qq) === "fill_blank") return normalizeText(got) === normalizeText(qq.answer ?? "");
+  return got === qq.correct;
+}
+/** Human-readable correct answer for the feedback banner. */
+function correctDisplay(qq: Q): string {
+  if (qtypeOf(qq) === "fill_blank") return qq.answer ?? "";
+  const letter = qq.correct ?? "A";
+  return qq.options?.[letter] ?? letter;
+}
 
 type Search = { timer?: number; challenge?: string };
 
@@ -50,6 +68,8 @@ function TakeQuiz() {
   const [flash, setFlash] = useState<"green" | "red" | null>(null);
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
+  const [blankText, setBlankText] = useState("");
+  useEffect(() => { setBlankText(""); }, [idx]);
 
   useEffect(() => {
     (async () => {
@@ -95,7 +115,7 @@ function TakeQuiz() {
   function pick(letter: string) {
     if (checked[idx]) return; // locked after check
     setAnswers({ ...answers, [idx]: letter });
-    const right = letter === q.correct;
+    const right = isRightAnswer(q, letter);
     setChecked({ ...checked, [idx]: true });
     if (right) {
       Sounds.correct();
@@ -122,7 +142,7 @@ function TakeQuiz() {
     const correctTopics: string[] = [];
     questions.forEach((qq, i) => {
       const got = answers[i];
-      const right = got === qq.correct;
+      const right = isRightAnswer(qq, got);
       if (right) score++;
       const k = `L${qq.bloom_level}`;
       bloom[k] = bloom[k] ?? { right: 0, total: 0 };
@@ -280,7 +300,7 @@ function TakeQuiz() {
 
   const isChecked = !!checked[idx];
   const userAnswer = answers[idx];
-  const isCorrect = isChecked && userAnswer === q.correct;
+  const isCorrect = isChecked && isRightAnswer(q, userAnswer);
 
   return (
     <div className={`space-y-6 max-w-2xl mx-auto transition ${flash === "green" ? "flash-green" : flash === "red" ? "flash-red" : ""}`}>
@@ -328,35 +348,69 @@ function TakeQuiz() {
               <Flag className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-6 space-y-3">
-            {(["A", "B", "C", "D"] as const).map((letter) => {
-              const sel = userAnswer === letter;
-              const isRightAns = letter === q.correct;
-              let cls = "border-border bg-background hover:border-primary/40";
-              if (isChecked) {
-                if (isRightAns) cls = "border-success bg-success/15 text-success answer-correct";
-                else if (sel) cls = "border-destructive bg-destructive/15 text-destructive";
-                else cls = "border-border bg-background opacity-60";
-              } else if (sel) {
-                cls = "border-primary bg-primary/10 text-foreground";
-              }
-              return (
+          {qtypeOf(q) === "fill_blank" ? (
+            /* Fill-in-the-blank: type the answer, Enter or Check submits */
+            <div className="mt-6 space-y-3">
+              <input
+                value={isChecked ? userAnswer ?? "" : blankText}
+                onChange={(e) => setBlankText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && blankText.trim()) pick(blankText.trim()); }}
+                disabled={isChecked}
+                placeholder="Type your answer…"
+                autoFocus
+                className={`w-full rounded-xl border-2 px-5 py-4 text-base md:text-lg outline-none transition ${
+                  isChecked
+                    ? isCorrect
+                      ? "border-success bg-success/15 text-success"
+                      : "border-destructive bg-destructive/15 text-destructive"
+                    : "border-border bg-background focus:border-primary"
+                }`}
+              />
+              {!isChecked && (
                 <button
-                  key={letter}
-                  onClick={() => pick(letter)}
-                  disabled={isChecked}
-                  className={`w-full text-left rounded-xl border-2 px-5 py-4 min-h-[56px] text-base md:text-lg transition flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-primary/40 ${cls}`}
+                  onClick={() => blankText.trim() && pick(blankText.trim())}
+                  disabled={!blankText.trim()}
+                  className="btn-3d w-full rounded-xl bg-primary px-5 py-3 font-display font-extrabold uppercase tracking-wide text-primary-foreground disabled:opacity-40"
                 >
-                  <span className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-current/30 font-mono text-sm font-bold shrink-0">{letter}</span>
-                    <span>{q.options[letter]}</span>
-                  </span>
-                  {isChecked && isRightAns && <Check className="h-5 w-5 shrink-0" />}
-                  {isChecked && sel && !isRightAns && <X className="h-5 w-5 shrink-0" />}
+                  Check
                 </button>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-6 space-y-3">
+              {(qtypeOf(q) === "true_false" ? (["A", "B"] as const) : (["A", "B", "C", "D"] as const))
+                .filter((letter) => q.options?.[letter] != null)
+                .map((letter) => {
+                  const sel = userAnswer === letter;
+                  const isRightAns = letter === q.correct;
+                  let cls = "border-border bg-background hover:border-primary/40";
+                  if (isChecked) {
+                    if (isRightAns) cls = "border-success bg-success/15 text-success answer-correct";
+                    else if (sel) cls = "border-destructive bg-destructive/15 text-destructive";
+                    else cls = "border-border bg-background opacity-60";
+                  } else if (sel) {
+                    cls = "border-primary bg-primary/10 text-foreground";
+                  }
+                  return (
+                    <button
+                      key={letter}
+                      onClick={() => pick(letter)}
+                      disabled={isChecked}
+                      className={`w-full text-left rounded-xl border-2 px-5 py-4 min-h-[56px] text-base md:text-lg transition flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-primary/40 ${cls}`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-current/30 font-mono text-sm font-bold shrink-0">
+                          {qtypeOf(q) === "true_false" ? (letter === "A" ? "T" : "F") : letter}
+                        </span>
+                        <span>{q.options?.[letter]}</span>
+                      </span>
+                      {isChecked && isRightAns && <Check className="h-5 w-5 shrink-0" />}
+                      {isChecked && sel && !isRightAns && <X className="h-5 w-5 shrink-0" />}
+                    </button>
+                  );
+                })}
+            </div>
+          )}
           <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
             <span>Bloom L{q.bloom_level} · {q.difficulty}</span>
             <span className="truncate ml-2">{q.topic}</span>
@@ -388,7 +442,7 @@ function TakeQuiz() {
                   {isCorrect ? "Correct!" : "Incorrect"}
                 </div>
                 {!isCorrect && (
-                  <div className="text-xs text-muted-foreground mt-1">Answer: <span className="text-success font-semibold">{q.correct}</span></div>
+                  <div className="text-xs text-muted-foreground mt-1">Answer: <span className="text-success font-semibold">{correctDisplay(q)}</span></div>
                 )}
                 {q.explanation && (
                   <p className="text-xs text-muted-foreground mt-1.5">{q.explanation}</p>

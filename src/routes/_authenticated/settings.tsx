@@ -151,11 +151,73 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+// CourieX-style "Share profile" dialog: link opens the public /u/handle page.
+function ShareProfileModal({ name, handle, onClose }: { name: string; handle: string; onClose: () => void }) {
+  const url = `${window.location.origin}/u/${handle}`;
+  const text = `Study with me on Klausum! ${url}`;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Copy blocked — select the link and copy manually");
+    }
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="card-chunky w-full max-w-sm bg-card p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-display text-lg font-extrabold">Share profile</h2>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">
+          Send a link that opens your public Klausum profile.
+        </p>
+        <div className="mt-4 rounded-2xl border-2 border-border bg-surface-2 p-4">
+          <div className="font-display font-extrabold">{name}</div>
+          <div className="text-sm font-bold text-sky">@{handle}</div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button onClick={copy} className="rounded-xl border-2 border-border bg-card px-3 py-2.5 text-sm font-bold hover:border-primary/50">
+            Copy link
+          </button>
+          <button
+            onClick={async () => {
+              if (navigator.share) {
+                try { await navigator.share({ title: "My Klausum profile", url }); } catch {}
+              } else copy();
+            }}
+            className="btn-3d rounded-xl bg-primary px-3 py-2.5 text-sm font-extrabold text-primary-foreground"
+          >
+            Share via…
+          </button>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(text)}`}
+            target="_blank" rel="noreferrer"
+            className="rounded-xl border-2 border-border bg-card px-3 py-2.5 text-center text-sm font-bold hover:border-primary/50"
+          >
+            WhatsApp
+          </a>
+          <a
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`}
+            target="_blank" rel="noreferrer"
+            className="rounded-xl border-2 border-border bg-card px-3 py-2.5 text-center text-sm font-bold hover:border-primary/50"
+          >
+            Post to X
+          </a>
+        </div>
+        <div className="mt-4 rounded-xl bg-surface-2 px-3 py-2">
+          <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Invite link</div>
+          <div className="break-all text-xs font-semibold">{url}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProfileTab() {
   const { user } = useAuth();
   const { data: profile, refetch } = useProfile();
   const [form, setForm] = useState({ full_name: "", handle: "", country: "", school: "", level: "", field_of_study: "" });
   const [saving, setSaving] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   useEffect(() => {
     if (profile) setForm({
       full_name: profile.full_name ?? "",
@@ -208,8 +270,27 @@ function ProfileTab() {
           </Field>
           <Field label="Field of study"><input value={form.field_of_study} onChange={(e) => setForm({ ...form, field_of_study: e.target.value })} className="input" /></Field>
         </div>
-        <button onClick={save} disabled={saving} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+        <div className="flex items-center gap-2">
+          <button onClick={save} disabled={saving} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+          <button
+            onClick={() => {
+              if (!profile?.handle) return toast.error("Set a @handle first, then share your profile");
+              setShareOpen(true);
+            }}
+            className="rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
+          >
+            ⤴ Share profile
+          </button>
+        </div>
       </div>
+
+      {shareOpen && profile?.handle && (
+        <ShareProfileModal
+          name={profile.full_name ?? "Klausum learner"}
+          handle={profile.handle}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
 
       <CompanionCard profile={profile} />
       <PlanCard userId={user?.id} />

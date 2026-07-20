@@ -10,6 +10,20 @@ import { motion } from "framer-motion";
 
 type Search = { attempt?: string };
 
+// Question-type-aware scoring (mirrors take page): fill_blank compares
+// normalized text against `answer`; mcq/true_false compare the letter.
+const normText = (s: string) =>
+  s.toLowerCase().trim().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ");
+function isRightAns(qq: any, got: string | undefined): boolean {
+  if (!got) return false;
+  if ((qq.qtype ?? "mcq") === "fill_blank") return normText(got) === normText(qq.answer ?? "");
+  return got === qq.correct;
+}
+function answerText(qq: any): string {
+  if ((qq.qtype ?? "mcq") === "fill_blank") return qq.answer ?? "";
+  return `${qq.correct}. ${qq.options?.[qq.correct] ?? ""}`;
+}
+
 export const Route = createFileRoute("/_authenticated/quizzes/$id/results")({
   validateSearch: (s: Record<string, unknown>): Search => ({ attempt: typeof s.attempt === "string" ? s.attempt : undefined }),
   component: Results,
@@ -98,7 +112,7 @@ function Results() {
             <button
               onClick={async () => {
                 if (!user) return;
-                const wrong = questions.map((qq: any, i: number) => ({ qq, i })).filter(({ qq, i }) => userAnswers[i] !== qq.correct);
+                const wrong = questions.map((qq: any, i: number) => ({ qq, i })).filter(({ qq, i }) => !isRightAns(qq, userAnswers[i]));
                 if (wrong.length === 0) return toast.info("No wrong answers — nothing to drill.");
                 setMakingDeck(true);
                 try {
@@ -114,7 +128,7 @@ function Results() {
                     deck_id: deck.id,
                     user_id: user.id,
                     front: qq.question,
-                    back: `${qq.correct}. ${qq.options[qq.correct]}\n\n${qq.explanation}`,
+                    back: `${answerText(qq)}\n\n${qq.explanation}`,
                     bloom_level: qq.bloom_level,
                     tags: [qq.topic],
                   }));
@@ -162,27 +176,43 @@ function Results() {
         <ul className="space-y-3">
           {questions.map((q, i) => {
             const got = userAnswers[i];
-            const right = got === q.correct;
+            const right = isRightAns(q, got);
             return (
               <li key={i} className={`rounded-xl border p-4 ${right ? "border-success/30 bg-success/5" : "border-destructive/40 bg-destructive/5"}`}>
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm font-medium leading-relaxed">{i + 1}. {q.question}</p>
                   <span className="shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">L{q.bloom_level}</span>
                 </div>
-                <div className="mt-2 grid gap-1 text-xs">
-                  {(["A","B","C","D"] as const).map((l) => {
-                    const isCorrect = l === q.correct;
-                    const isPicked = l === got;
-                    return (
-                      <div key={l} className={`flex gap-2 px-2 py-1 rounded ${isCorrect ? "text-success" : isPicked ? "text-destructive" : "text-muted-foreground"}`}>
-                        <span className="font-mono">{l}.</span>
-                        <span>{q.options[l]}</span>
-                        {isCorrect && <span className="ml-auto">✓ correct</span>}
-                        {isPicked && !isCorrect && <span className="ml-auto">your pick</span>}
+                {(q.qtype ?? "mcq") === "fill_blank" ? (
+                  <div className="mt-2 grid gap-1 text-xs">
+                    <div className="flex gap-2 rounded px-2 py-1 text-success">
+                      <span>Answer: {q.answer}</span>
+                      <span className="ml-auto">✓ correct</span>
+                    </div>
+                    {!right && (
+                      <div className="flex gap-2 rounded px-2 py-1 text-destructive">
+                        <span>You wrote: {got || "—"}</span>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-2 grid gap-1 text-xs">
+                    {(["A","B","C","D"] as const)
+                      .filter((l) => q.options?.[l] != null)
+                      .map((l) => {
+                        const isCorrect = l === q.correct;
+                        const isPicked = l === got;
+                        return (
+                          <div key={l} className={`flex gap-2 px-2 py-1 rounded ${isCorrect ? "text-success" : isPicked ? "text-destructive" : "text-muted-foreground"}`}>
+                            <span className="font-mono">{l}.</span>
+                            <span>{q.options?.[l]}</span>
+                            {isCorrect && <span className="ml-auto">✓ correct</span>}
+                            {isPicked && !isCorrect && <span className="ml-auto">your pick</span>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
                 <p className="mt-2 text-xs text-muted-foreground italic">{q.explanation}</p>
               </li>
             );

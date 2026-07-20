@@ -116,6 +116,7 @@ export function MaterialsPage() {
     setUploading(true);
     setStepIdx(0);
     let rowId: string | null = null;
+    let stepTimer: ReturnType<typeof setInterval> | undefined;
     try {
       // 1. Get token FIRST so we never create an orphan row
       const accessToken = await getAccessToken();
@@ -143,7 +144,7 @@ export function MaterialsPage() {
       rowId = row.id;
       qc.invalidateQueries({ queryKey: ["materials"] });
 
-      const stepTimer = setInterval(() => {
+      stepTimer = setInterval(() => {
         setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
       }, 2200);
 
@@ -185,42 +186,48 @@ export function MaterialsPage() {
         .eq("id", row.id);
       if (updateErr) throw updateErr;
 
-      // Create deck + flashcards
-      const { data: deck, error: deckErr } = await supabase
-        .from("flashcard_decks")
-        .insert({
+      // Create deck + flashcards. The material itself is already saved and
+      // "ready" — a flashcard failure must NOT flip it to failed.
+      try {
+        const { data: deck, error: deckErr } = await supabase
+          .from("flashcard_decks")
+          .insert({
+            user_id: user.id,
+            material_id: row.id,
+            title: opts.title,
+            subject: opts.subject,
+            total_cards: result.flashcards.length,
+          })
+          .select()
+          .single();
+        if (deckErr) throw deckErr;
+
+        const init = createNewCard();
+        const cardRows = result.flashcards.map((c) => ({
           user_id: user.id,
-          material_id: row.id,
-          title: opts.title,
-          subject: opts.subject,
-          total_cards: result.flashcards.length,
-        })
-        .select()
-        .single();
-      if (deckErr) throw deckErr;
+          deck_id: deck.id,
+          front: c.front,
+          back: c.back,
+          hint: c.hint,
+          bloom_level: c.bloom_level,
+          tags: c.tags,
+          fsrs_state: init.state,
+          fsrs_stability: init.stability,
+          fsrs_difficulty: init.difficulty,
+          fsrs_retrievability: init.retrievability,
+          fsrs_repetitions: init.repetitions,
+          fsrs_lapses: init.lapses,
+          next_review_date: init.nextReviewDate,
+        }));
+        const { error: cardsErr } = await supabase.from("flashcards").insert(cardRows);
+        if (cardsErr) throw cardsErr;
+        toast.success("Material ready · 15 flashcards generated");
+      } catch (deckError: any) {
+        console.error(deckError);
+        toast.warning("Material saved — flashcards failed. Generate a quiz from the material page instead.");
+      }
 
-      const init = createNewCard();
-      const cardRows = result.flashcards.map((c) => ({
-        user_id: user.id,
-        deck_id: deck.id,
-        front: c.front,
-        back: c.back,
-        hint: c.hint,
-        bloom_level: c.bloom_level,
-        tags: c.tags,
-        fsrs_state: init.state,
-        fsrs_stability: init.stability,
-        fsrs_difficulty: init.difficulty,
-        fsrs_retrievability: init.retrievability,
-        fsrs_repetitions: init.repetitions,
-        fsrs_lapses: init.lapses,
-        next_review_date: init.nextReviewDate,
-      }));
-      const { error: cardsErr } = await supabase.from("flashcards").insert(cardRows);
-      if (cardsErr) throw cardsErr;
-
-      await awardXp({ userId: user!.id, amount: 30, action: "material_uploaded", description: title });
-      toast.success("Material ready · 15 flashcards generated");
+      await awardXp({ userId: user!.id, amount: 30, action: "material_uploaded", description: opts.title });
       qc.invalidateQueries({ queryKey: ["materials"] });
       navigate({ to: "/materials/$id", params: { id: row.id } });
     } catch (e: any) {
@@ -235,6 +242,7 @@ export function MaterialsPage() {
         qc.invalidateQueries({ queryKey: ["materials"] });
       }
     } finally {
+      clearInterval(stepTimer);
       setUploading(false);
       setStepIdx(0);
       setTitle("");
@@ -272,6 +280,19 @@ export function MaterialsPage() {
       }
     }
     if (file.size > 120 * 1024 * 1024) return toast.error("Max 120MB");
+    // Duplicate guard — same file re-uploaded creates confusing twin rows
+    if (user && file.name) {
+      const { data: dup } = await supabase
+        .from("study_materials")
+        .select("id,title")
+        .eq("user_id", user.id)
+        .eq("file_name", file.name)
+        .limit(1)
+        .maybeSingle();
+      if (dup) {
+        return toast.error(`Already uploaded as “${dup.title}” — open it from your library, or rename the file to upload again.`);
+      }
+    }
     const lower = file.name.toLowerCase();
     const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);

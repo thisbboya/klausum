@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { generateWeeklyInsight } from "@/lib/insights.functions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { celebrateNewBadges } from "@/lib/badge-celebrate";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line } from "recharts";
 import { Flame, Trophy, Target, BookOpen, Sparkles, Lock } from "lucide-react";
@@ -154,6 +155,12 @@ function ProgressPage() {
     feynmanSessions: tutorSessions.filter((t: any) => t.mode === "socratic").length,
     xp: xpTotal,
   };
+
+  // Fire unlock toasts for any badge that became true since last visit
+  useEffect(() => {
+    if (data) celebrateNewBadges(badgeStats);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   async function runInsight() {
     if (!user) return;

@@ -137,14 +137,21 @@ const QuizInput = z.object({
   count: z.number().int().min(3).max(25),
   context: z.string().optional(),
   bloomDistribution: z.array(z.number()).length(6).optional(),
+  questionMix: z.enum(["mixed", "mcq"]).optional(),
 });
 const QuizSchema = z.object({
   questions: z
     .array(
       z.object({
+        // mcq: 4 options A-D · true_false: options A="True" B="False" ·
+        // fill_blank: no options, `answer` holds the expected 1-3 words
+        qtype: z.enum(["mcq", "true_false", "fill_blank"]).default("mcq"),
         question: z.string(),
-        options: z.object({ A: z.string(), B: z.string(), C: z.string(), D: z.string() }),
-        correct: z.enum(["A", "B", "C", "D"]),
+        options: z
+          .object({ A: z.string(), B: z.string(), C: z.string().optional(), D: z.string().optional() })
+          .optional(),
+        correct: z.enum(["A", "B", "C", "D"]).optional(),
+        answer: z.string().optional(),
         explanation: z.string(),
         topic: z.string(),
         difficulty: z.enum(["easy", "medium", "hard"]),
@@ -161,15 +168,22 @@ export const generateQuiz = createServerFn({ method: "POST" })
     const dist = data.bloomDistribution
       ? `Bloom distribution (% per level L1-L6): ${data.bloomDistribution.join(", ")}.`
       : `Spread across Bloom L1-L5 with at least 1 question per level when count>=5.`;
+    const mixed = data.questionMix !== "mcq";
+    const typeRules = mixed
+      ? `Mix the question types: ~60% qtype "mcq" (4 distinct plausible options A-D, one correct letter), ` +
+        `~20% qtype "true_false" (options A="True", B="False", correct is "A" or "B"), ` +
+        `~20% qtype "fill_blank" (a sentence with one blank written as "_____"; NO options; put the expected ` +
+        `1-3 word answer in the "answer" field — a single unambiguous term from the material). `
+      : `All questions are qtype "mcq" with 4 distinct plausible options and exactly one correct letter. `;
     const { object } = await generateObjectSafe({
 
       schema: QuizSchema,
       prompt:
-        `Generate exactly ${data.count} multiple-choice questions on "${data.topic}". ` +
+        `Generate exactly ${data.count} quiz questions on "${data.topic}". ` +
         `Subject: ${data.subject}. Level: ${data.level ?? "general"}. Difficulty: ${data.difficulty}. ` +
         `${dist} ` +
-        `Each question must include 4 distinct plausible options, exactly one correct answer, ` +
-        `a 1-2 sentence explanation, the topic, difficulty, and Bloom level (1-6). ` +
+        typeRules +
+        `Every question includes a 1-2 sentence explanation, the topic, difficulty, and Bloom level (1-6). ` +
         `${data.context ? `\n\n--- MATERIAL ---\n${data.context.slice(0, 30000)}` : ""}`,
     });
     return object;

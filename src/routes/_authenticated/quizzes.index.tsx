@@ -40,6 +40,7 @@ export function QuizzesPage() {
   const [bloom, setBloom] = useState<number[]>([20, 20, 20, 15, 15, 10]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [timer, setTimer] = useState(false);
+  const [questionMix, setQuestionMix] = useState<"mixed" | "mcq">("mixed");
   const [scope, setScope] = useState<"all" | "range" | "concepts">("all");
   const [pageFrom, setPageFrom] = useState(1);
   const [pageTo, setPageTo] = useState(10);
@@ -178,6 +179,7 @@ export function QuizzesPage() {
           count,
           context,
           bloomDistribution: showAdvanced ? bloom : undefined,
+          questionMix,
         },
       });
       if (!r?.questions || r.questions.length === 0) {
@@ -192,7 +194,7 @@ export function QuizzesPage() {
           title: useTopic,
           subject: useSubject,
           difficulty,
-          quiz_type: "mcq",
+          quiz_type: questionMix,
           questions: r.questions,
           question_count: r.questions.length,
         })
@@ -246,6 +248,12 @@ export function QuizzesPage() {
           <Field label="Question count">
             <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="input">
               {[3, 5, 10, 15, 20, 25].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </Field>
+          <Field label="Question types">
+            <select value={questionMix} onChange={(e) => setQuestionMix(e.target.value as any)} className="input">
+              <option value="mixed">Mixed — MCQ, True/False, Fill-in</option>
+              <option value="mcq">MCQs only</option>
             </select>
           </Field>
           <label className="flex items-end gap-2 pb-1">
