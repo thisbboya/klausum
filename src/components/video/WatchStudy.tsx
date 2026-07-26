@@ -10,6 +10,7 @@ import {
   Bookmark, BookmarkCheck, Loader2, Sparkles, ArrowLeft, Trash2, Clock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
@@ -22,6 +23,18 @@ export type Video = {
   publishedAt?: string;
   thumbnail?: string;
 };
+
+/** Turn a failed Response into a short human message. Never dumps raw HTML
+ *  error pages into the UI (which is what produced the wall-of-markup bug). */
+/** Reads a failed response, logs the real detail for admins, and returns a
+ *  calm user-facing sentence. Raw provider/server text is never surfaced. */
+async function readError(res: Response, context = "video"): Promise<string> {
+  let body = "";
+  try {
+    body = await res.text();
+  } catch {}
+  return reportError(context, body || `HTTP ${res.status}`, res.status);
+}
 type Chapter = { title: string; startSeconds: number; summary: string };
 type TranscriptLine = { start: number; text: string };
 type Question = {
@@ -204,7 +217,7 @@ export function WatchStudy({
             channel: video.channel,
           }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error(await readError(res));
         const data = (await res.json()) as {
           chapters: Chapter[];
           transcript: TranscriptLine[];
@@ -309,14 +322,41 @@ export function WatchStudy({
         </button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.85fr)_minmax(340px,1fr)]">
         {/* LEFT: Video + chapters + transcript */}
-        <div className={`space-y-3 ${mobileTab === "ai" ? "hidden lg:block" : ""}`}>
-          <div className="rounded-xl overflow-hidden border border-border bg-black aspect-video">
+        <div className={`min-w-0 space-y-3 ${mobileTab === "ai" ? "hidden lg:block" : ""}`}>
+          <div className="overflow-hidden rounded-2xl border-2 border-border bg-black shadow-lg aspect-video">
             <div ref={containerRef} className="w-full h-full" />
           </div>
-          <h2 className="font-display text-lg font-semibold leading-snug">{video.title}</h2>
-          <p className="text-xs text-muted-foreground">{video.channel}</p>
+          {/* Title + channel + progress meta */}
+          <div className="card-chunky bg-card p-4">
+            <h2 className="font-display text-xl font-extrabold leading-snug">{video.title}</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
+              {video.channel && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-3 px-2.5 py-1">
+                  <Play className="h-3 w-3" /> {video.channel}
+                </span>
+              )}
+              {duration > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-3 px-2.5 py-1">
+                  <Clock className="h-3 w-3" /> {fmt(currentTime)} / {fmt(duration)}
+                </span>
+              )}
+              {duration > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/12 px-2.5 py-1 text-primary">
+                  {Math.min(100, Math.round((currentTime / duration) * 100))}% watched
+                </span>
+              )}
+            </div>
+            {duration > 0 && (
+              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-500"
+                  style={{ width: `${Math.min(100, (currentTime / duration) * 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Chapter row */}
           <div className="card-chunky bg-card p-3">
@@ -416,7 +456,7 @@ export function WatchStudy({
 
         {/* RIGHT: AI panel */}
         <div className={`${mobileTab === "video" ? "hidden lg:block" : ""}`}>
-          <div className="card-chunky bg-card overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[400px] sticky top-4">
+          <div className="card-chunky bg-card overflow-hidden flex flex-col h-[calc(100dvh-140px)] min-h-[520px] sticky top-4">
             <div className="flex border-b border-border">
               {(
                 [
@@ -828,7 +868,7 @@ function VideoQuiz({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accessToken, videoId, videoTitle }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await readError(res));
       const data = (await res.json()) as { questions: Question[] };
       setQuestions(data.questions);
       setAnswers({});
@@ -1035,11 +1075,48 @@ const CHANNELS = [
   "Veritasium", "TED-Ed", "Numberphile", "MIT OpenCourseWare", "Professor Leonard",
 ];
 
+/** Pull the 11-char video id out of any YouTube URL/ID the user pastes. */
+function parseYoutubeId(input: string): string | null {
+  const s = input.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s; // bare id
+  const patterns = [
+    /(?:youtube\.com\/watch\?[^ ]*[?&]v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/(?:embed|shorts|live)\/)([a-zA-Z0-9_-]{11})/,
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const re of patterns) {
+    const m = s.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
   const [q, setQ] = useState("");
+  const [link, setLink] = useState("");
+  const [linkErr, setLinkErr] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  function openLink() {
+    const id = parseYoutubeId(link);
+    if (!id) {
+      setLinkErr("That doesn't look like a YouTube link. Paste a full youtube.com or youtu.be URL.");
+      return;
+    }
+    setLinkErr(null);
+    setLink("");
+    onPick({
+      id,
+      title: "Pasted video",
+      description: "",
+      channel: "",
+      publishedAt: "",
+      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    });
+  }
 
   async function search(query: string) {
     if (!query.trim()) return;
@@ -1053,7 +1130,7 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ q: query, maxResults: 12, accessToken }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await readError(res));
       const data = (await res.json()) as { videos: Video[] };
       setVideos(data.videos);
     } catch (e) {
@@ -1089,6 +1166,38 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
         </button>
       </form>
+
+      {/* Paste a YouTube link directly */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          openLink();
+        }}
+        className="flex gap-2"
+      >
+        <div className="relative flex-1">
+          <Play className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            value={link}
+            onChange={(e) => { setLink(e.target.value); setLinkErr(null); }}
+            placeholder="…or paste a YouTube link (youtube.com/watch?v=… or youtu.be/…)"
+            className="w-full rounded-xl border-2 border-border bg-background pl-9 pr-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={!link.trim()}
+          className="btn-3d rounded-xl bg-success px-4 py-2 text-sm font-semibold text-success-foreground disabled:opacity-40"
+        >
+          Open
+        </button>
+      </form>
+
+      {linkErr && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          {linkErr}
+        </div>
+      )}
 
       {err && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">

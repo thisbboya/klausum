@@ -76,7 +76,15 @@ export async function generateObjectSafe<T extends z.ZodTypeAny>(opts: {
         }
       }
       const result = opts.schema.safeParse(parsed);
-      if (!result.success) throw err instanceof Error ? err : new Error(String(err));
+      if (!result.success) {
+        // Surface WHICH field/bound failed — "response did not match schema"
+        // alone made these impossible to diagnose in production.
+        const detail = result.error.issues
+          .slice(0, 3)
+          .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+          .join("; ");
+        throw new Error(`AI response did not match the expected shape — ${detail}`);
+      }
       return { object: result.data as z.infer<T> };
     }
   })) as { object: z.infer<T> };

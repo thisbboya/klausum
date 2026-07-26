@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { Kumi } from "@/components/kumi";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -345,7 +346,7 @@ function WrappedPage() {
       URL.revokeObjectURL(url);
       toast.success("Wrapped image saved");
     } catch (e: any) {
-      if (e?.name !== "AbortError") toast.error(e?.message ?? "Could not share");
+      if (e?.name !== "AbortError") toast.error(reportError("wrapped", e));
     }
   }
 

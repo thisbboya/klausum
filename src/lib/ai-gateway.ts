@@ -5,18 +5,26 @@ import type { LanguageModel } from "ai";
 import { pickGeminiKey, blockGeminiKey, hasGeminiKeys } from "./gemini-keys.server";
 
 export const DEFAULT_MODEL = "google/gemini-3-flash-preview";
-export const PRO_MODEL = "google/gemini-3.1-pro-preview";
+// The 3.1-pro tier has no free-tier quota (429s immediately), so "pro" work
+// runs on the same verified-working flash model. Switch this back to
+// "google/gemini-3.1-pro-preview" once billing is enabled on the key's project.
+export const PRO_MODEL = "google/gemini-3-flash-preview";
 
+/** Stable siblings to fall back to when the primary model is 503-ing.
+ *  All verified available on the current keys. */
+const FALLBACK_MODELS = [
+  "google/gemini-flash-latest",
+  "google/gemini-3.1-flash-lite",
+];
+
+/** Strip the `google/` prefix and pass the model id through as-is.
+ *
+ *  We used to down-map these to the 2.5 family, but Google has retired those
+ *  for new projects — `gemini-2.5-flash` now returns
+ *  "no longer available to new users" (404). The 3.x ids are live and verified
+ *  working, so the mapping is gone. */
 function toGoogleModelId(modelId: string): string {
-  const id = modelId.startsWith("google/") ? modelId.slice("google/".length) : modelId;
-  const map: Record<string, string> = {
-    "gemini-3-flash-preview": "gemini-2.5-flash",
-    "gemini-3.1-flash-lite-preview": "gemini-2.5-flash-lite",
-    "gemini-3.1-pro-preview": "gemini-2.5-pro",
-    "gemini-3.1-flash-image-preview": "gemini-2.5-flash-image",
-    "gemini-3-pro-image-preview": "gemini-2.5-flash-image",
-  };
-  return map[id] ?? id;
+  return modelId.startsWith("google/") ? modelId.slice("google/".length) : modelId;
 }
 
 /**
@@ -54,8 +62,12 @@ export async function withGeminiRetry<T>(
   fn: (model: LanguageModel) => Promise<T>,
 ): Promise<T> {
   let lastErr: unknown;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const { model, geminiKey } = resolveModelWithKey(modelId);
+  // Preview models go 503 ("high demand") for minutes at a time. After a couple
+  // of failed attempts we swap to a stable sibling rather than failing the user.
+  const modelChain = [modelId, ...FALLBACK_MODELS.filter((m) => m !== modelId)];
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const activeModel = modelChain[Math.min(Math.floor(attempt / 2), modelChain.length - 1)];
+    const { model, geminiKey } = resolveModelWithKey(activeModel);
     try {
       return await fn(model);
     } catch (err: any) {
@@ -73,15 +85,25 @@ export async function withGeminiRetry<T>(
           `GEMINI_API_DISABLED${projMatch ? `:${projMatch[1]}` : ""} — Generative Language API is disabled in the Google Cloud project for this key.`,
         );
         // Try the next pooled key instead of failing outright.
-        if (attempt < 3) continue;
+        if (attempt < 5) continue;
         throw tagged;
       }
       const isRateLimit =
         status === 429 ||
         /429|quota|rate.?limit|resource.?exhausted/i.test(msg);
-      if (!isRateLimit) throw err;
-      blockGeminiKey(geminiKey, 60_000);
-      await new Promise((r) => setTimeout(r, 250 + attempt * 250));
+      // Google returns 503 UNAVAILABLE ("model is currently experiencing high
+      // demand") fairly often. It's transient and retryable — previously it
+      // threw straight through and surfaced as a hard failure to the user.
+      const isTransient =
+        status === 503 ||
+        status === 500 ||
+        /unavailable|high demand|overloaded|try again later|internal error/i.test(msg);
+      if (!isRateLimit && !isTransient) throw err;
+      // Only a rate limit means *this key* is spent; a 503 is server-side, so
+      // keep the key usable and just back off.
+      if (isRateLimit) blockGeminiKey(geminiKey, 60_000);
+      const backoff = isTransient && !isRateLimit ? 700 * (attempt + 1) : 250 + attempt * 250;
+      await new Promise((r) => setTimeout(r, backoff));
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));

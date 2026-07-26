@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,6 +17,54 @@ export const Route = createFileRoute("/_authenticated/quizzes/")({
   }),
   component: QuizzesPage,
 });
+
+/** True when a material's stored text is just a stand-in (office/large-file
+ *  uploads register as "[large file: x.ppt]") rather than real extracted text.
+ *  Feeding these to the AI produced quizzes unrelated to the material. */
+export function isPlaceholderContent(text: string | null | undefined): boolean {
+  const t = (text ?? "").trim();
+  if (t.length < 200) return true;
+  return /^\[(large|binary) file:/i.test(t);
+}
+
+/**
+ * Build a compressed "Study Kit" context instead of dumping raw source text.
+ *
+ * We already extract key concepts at upload time, then threw them away and sent
+ * 30k characters of raw text for every generation. That is both the main quota
+ * cost (a hard 20 requests/day on the free tier) and the reason questions drift
+ * off-topic — the model drowns in unranked text.
+ *
+ * The compressed form leads with the highest-signal atoms (summary + tagged
+ * concepts and their definitions) and keeps a bounded verbatim excerpt so
+ * questions stay traceable to the source.
+ */
+function buildStudyKitContext(material: any, fullText: string): string {
+  const parts: string[] = [];
+
+  const summary = (material?.ai_summary ?? "").trim();
+  if (summary) parts.push(`SUMMARY\n${summary.slice(0, 2000)}`);
+
+  const concepts: any[] = Array.isArray(material?.key_concepts) ? material.key_concepts : [];
+  if (concepts.length) {
+    const lines = concepts
+      .slice(0, 25)
+      .map((c: any) => {
+        const name = c?.concept ?? c?.term ?? c?.name;
+        const def = c?.definition ?? c?.description ?? "";
+        return name ? `- ${name}${def ? ` — ${String(def).slice(0, 260)}` : ""}` : "";
+      })
+      .filter(Boolean);
+    if (lines.length) parts.push(`KEY CONCEPTS (build questions around these)\n${lines.join("\n")}`);
+  }
+
+  // Verbatim excerpt keeps answers checkable against the real wording. Smaller
+  // when we already have good concepts to lean on.
+  const excerptBudget = concepts.length >= 5 ? 12000 : 24000;
+  parts.push(`SOURCE EXCERPT (verbatim)\n${fullText.slice(0, excerptBudget)}`);
+
+  return parts.join("\n\n");
+}
 
 const PRESETS: Record<string, number[]> = {
   Balanced: [20, 20, 20, 15, 15, 10],
@@ -40,7 +89,18 @@ export function QuizzesPage() {
   const [bloom, setBloom] = useState<number[]>([20, 20, 20, 15, 15, 10]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [timer, setTimer] = useState(false);
-  const [questionMix, setQuestionMix] = useState<"mixed" | "mcq">("mixed");
+  // Any combination of the three formats; at least one must stay selected.
+  type QType = "mcq" | "true_false" | "fill_blank";
+  const [qTypes, setQTypes] = useState<QType[]>(["mcq", "true_false", "fill_blank"]);
+  function toggleType(t: QType) {
+    setQTypes((cur) =>
+      cur.includes(t)
+        ? cur.length > 1
+          ? cur.filter((x) => x !== t) // never allow zero types
+          : cur
+        : [...cur, t],
+    );
+  }
   const [scope, setScope] = useState<"all" | "range" | "concepts">("all");
   const [pageFrom, setPageFrom] = useState(1);
   const [pageTo, setPageTo] = useState(10);
@@ -106,9 +166,14 @@ export function QuizzesPage() {
   // Slice the material text by scope: all / page range / chosen concepts.
   function buildContextFromMaterial(): string | undefined {
     if (!selectedMaterial) return undefined;
-    const fullText: string = selectedMaterial.original_content || selectedMaterial.ai_summary || "";
+    const raw: string = selectedMaterial.original_content || selectedMaterial.ai_summary || "";
+    // Office docs / >18MB uploads are stored with a placeholder like
+    // "[large file: Chap 1.ppt]" instead of real text. Passing that to the AI
+    // made it invent questions with no relation to the material, so treat any
+    // placeholder (or near-empty text) as "no usable content".
+    const fullText = isPlaceholderContent(raw) ? "" : raw;
     if (!fullText) return undefined;
-    if (scope === "all") return fullText.slice(0, 30000);
+    if (scope === "all") return buildStudyKitContext(selectedMaterial, fullText);
 
     if (scope === "range") {
       // Chunk by ~1800-char pages, similar to the text reader, and pick the range.
@@ -162,7 +227,11 @@ export function QuizzesPage() {
       useSubject = selectedMaterial.subject ?? subject;
       context = buildContextFromMaterial();
       if (!context) {
-        toast.error("This material has no extracted text yet. Open it once so AI can read it, then try again.");
+        toast.error(
+          `“${selectedMaterial.title}” has no readable text yet. Open it in the reader once — ` +
+            `Klausum will pull the text out — then come back and generate.`,
+          { duration: 7000 },
+        );
         return;
       }
     }
@@ -179,7 +248,7 @@ export function QuizzesPage() {
           count,
           context,
           bloomDistribution: showAdvanced ? bloom : undefined,
-          questionMix,
+          questionTypes: qTypes,
         },
       });
       if (!r?.questions || r.questions.length === 0) {
@@ -194,7 +263,7 @@ export function QuizzesPage() {
           title: useTopic,
           subject: useSubject,
           difficulty,
-          quiz_type: questionMix,
+          quiz_type: qTypes.join("+"), // e.g. "mcq+fill_blank"
           questions: r.questions,
           question_count: r.questions.length,
         })
@@ -205,7 +274,7 @@ export function QuizzesPage() {
       qc.invalidateQueries({ queryKey: ["quizzes", user.id] });
       navigate({ to: "/quizzes/$id/take", params: { id: quiz.id }, search: { timer: timer ? 30 : 0 } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to generate quiz");
+      toast.error(reportError("quizzes.index", e));
     } finally {
       setBusy(false);
     }
@@ -238,23 +307,84 @@ export function QuizzesPage() {
             <input value={subject} onChange={(e) => setSubject(e.target.value)} className="input" />
           </Field>
           <Field label="Difficulty">
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as any)} className="input">
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-              <option value="expert">Expert</option>
-            </select>
+            {/* Segmented buttons instead of a native <select>: readable in dark
+                mode, one tap instead of open-then-pick, and colour-coded. */}
+            <div className="flex gap-1.5">
+              {([
+                ["easy", "Easy", "border-success bg-success/12 text-success"],
+                ["medium", "Medium", "border-sky bg-sky/12 text-sky"],
+                ["hard", "Hard", "border-amber bg-amber/15 text-amber"],
+                ["expert", "Expert", "border-destructive bg-destructive/12 text-destructive"],
+              ] as const).map(([val, label, active]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setDifficulty(val)}
+                  className={`flex-1 rounded-xl border-2 px-2 py-2 text-xs font-extrabold transition ${
+                    difficulty === val ? active : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </Field>
           <Field label="Question count">
-            <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="input">
-              {[3, 5, 10, 15, 20, 25].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <div className="flex items-center gap-1.5">
+              {[5, 10, 20, 30].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setCount(n)}
+                  className={`h-9 w-9 shrink-0 rounded-lg border-2 text-xs font-extrabold transition ${
+                    count === n
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              {/* …or type any number, 1–50 */}
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={count}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(n)) setCount(Math.max(1, Math.min(50, n)));
+                }}
+                aria-label="Custom question count"
+                title="Or type any number (1–50)"
+                className="h-9 w-16 shrink-0 rounded-lg border-2 border-border bg-background px-2 text-center text-xs font-extrabold outline-none focus:border-primary"
+              />
+            </div>
           </Field>
           <Field label="Question types">
-            <select value={questionMix} onChange={(e) => setQuestionMix(e.target.value as any)} className="input">
-              <option value="mixed">Mixed — MCQ, True/False, Fill-in</option>
-              <option value="mcq">MCQs only</option>
-            </select>
+            {/* Independent toggles — combine any 1, 2 or all 3. */}
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ["mcq", "Multiple choice", "border-sky bg-sky/12 text-sky"],
+                ["true_false", "True / False", "border-success bg-success/12 text-success"],
+                ["fill_blank", "Fill in the gap", "border-amber bg-amber/15 text-amber"],
+              ] as const).map(([val, label, active]) => {
+                const on = qTypes.includes(val);
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => toggleType(val)}
+                    aria-pressed={on}
+                    className={`rounded-xl border-2 px-3 py-2 text-xs font-extrabold transition ${
+                      on ? active : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {on ? "✓ " : ""}{label}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
           <label className="flex items-end gap-2 pb-1">
             <input type="checkbox" checked={timer} onChange={(e) => setTimer(e.target.checked)} className="h-4 w-4" />

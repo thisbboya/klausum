@@ -40,6 +40,12 @@ export const Route = createFileRoute("/api/video-chat")({
         }
         if (!Array.isArray(body.messages) || !body.videoId)
           return new Response("Bad request", { status: 400 });
+        try {
+          const { consumeAiQuota } = await import("@/lib/rate-limit.server");
+          await consumeAiQuota(userId, "video_chat");
+        } catch (e) {
+          return new Response(e instanceof Error ? e.message : "RATE_LIMIT", { status: 429 });
+        }
         const videoId: string = body.videoId;
         const messagesIn: UIMessage[] = body.messages;
 

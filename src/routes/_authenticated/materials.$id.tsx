@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,15 +14,45 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { FocusTimer } from "@/components/focus-timer";
 import { PDFViewer } from "@/components/reader/PDFViewer";
+import { PdfTextIndexer } from "@/components/reader/PdfTextIndexer";
 import { MaterialAIChat } from "@/components/reader/MaterialAIChat";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { summarizeMaterial, appendMaterialNote, regenerateKeyConcepts, regenerateBloomQuestions, regenerateFormulas } from "@/lib/materials.functions";
+import { summarizeMaterial, appendMaterialNote, regenerateKeyConcepts, regenerateBloomQuestions, regenerateFormulas, extractMaterialText } from "@/lib/materials.functions";
 import { getAccessToken } from "@/lib/auth-helper";
 
 
 export const Route = createFileRoute("/_authenticated/materials/$id")({
   component: MaterialDetail,
 });
+
+/**
+ * Compress a freshly-extracted material into tagged key concepts.
+ *
+ * This is the "Study Kit" step: one AI pass turns the whole document into ~10
+ * concept/definition pairs. Every later quiz, flashcard and test generates from
+ * those instead of re-sending the full text, which is both dramatically cheaper
+ * (the free tier allows only 20 requests/day) and much better grounded.
+ *
+ * Best-effort: a failure here must never block reading the material.
+ */
+async function buildConcepts(
+  conceptsFn: (opts: { data: { accessToken: string; materialId: string } }) => Promise<any>,
+  materialId: string,
+  qc: ReturnType<typeof useQueryClient>,
+) {
+  try {
+    const accessToken = await getAccessToken();
+    const r = await conceptsFn({ data: { accessToken, materialId } });
+    const n = r?.key_concepts?.length ?? 0;
+    if (n > 0) {
+      toast.success(`Compressed into ${n} key concepts — quizzes will now stay on-topic`);
+      qc.invalidateQueries({ queryKey: ["material", materialId] });
+      qc.invalidateQueries({ queryKey: ["materials_for_quiz"] });
+    }
+  } catch {
+    /* non-fatal — the extracted text alone still works */
+  }
+}
 
 const TABS = [
   { key: "read", label: "Read", color: "text-foreground" },
@@ -71,21 +102,43 @@ function MaterialDetail() {
     },
   });
 
+  // Only surface tabs that actually have content — an empty tab is worse than
+  // no tab. Keeps the bar short instead of an 11-tab wall of dead ends.
   const visibleTabs = useMemo(() => {
     if (!material) return TABS;
+    const m = material as any;
     return TABS.filter((t) => {
       if (t.key === "read") return hasPdf || hasStoredFile || hasReadableText;
-      if (t.key === "formulas") return Array.isArray(material.formulas) && material.formulas.length > 0 || !!material.is_stem;
-      if (t.key === "graph") return Array.isArray(material.concept_graph) && (material.concept_graph as any[]).length > 0;
+      if (t.key === "summary") return !!m.ai_summary;
+      if (t.key === "original") return !!m.original_content;
+      if (t.key === "visual" || t.key === "auditory" || t.key === "reading" || t.key === "kinesthetic") {
+        return !!m[`adapted_${t.key}`];
+      }
+      if (t.key === "cornell") return !!m.cornell_notes;
+      if (t.key === "formulas") return Array.isArray(m.formulas) && m.formulas.length > 0;
+      if (t.key === "graph") return Array.isArray(m.concept_graph) && m.concept_graph.length > 0;
+      if (t.key === "questions") {
+        // bloom_questions is a { level: [...] } map, not an array
+        const bq = m.bloom_questions;
+        return !!bq && typeof bq === "object" && Object.values(bq).some((v: any) => Array.isArray(v) && v.length > 0);
+      }
       return true;
     });
   }, [material, hasPdf, hasStoredFile, hasReadableText]);
+
+  // Never sit on a tab that got hidden — fall back to the first available one.
+  useEffect(() => {
+    if (!material || visibleTabs.length === 0) return;
+    if (!visibleTabs.some((t) => t.key === tab)) {
+      setTab(visibleTabs[0].key);
+    }
+  }, [visibleTabs, tab, material]);
 
   async function handleDelete() {
     if (!material) return;
     if (!confirm(`Delete "${material.title}"? This also removes its flashcards and notes.`)) return;
     const { error } = await supabase.from("study_materials").delete().eq("id", material.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(reportError("materials.$id", error));
     else {
       toast.success("Material deleted");
       navigate({ to: "/materials" });
@@ -677,10 +730,53 @@ function isOfficeFile(material: any) {
  */
 function FileReaderTab({ material, userId }: { material: any; userId: string }) {
   const isMobile = useIsMobile();
+  const qc = useQueryClient();
+  const extractFn = useServerFn(extractMaterialText);
+  const conceptsFn = useServerFn(regenerateKeyConcepts);
   const [signedUrl, setSignedUrl] = useState("");
   const [signError, setSignError] = useState(false);
   const [mobileTab, setMobileTab] = useState<"read" | "chat">("read");
+  const [extracting, setExtracting] = useState(false);
   const image = isImageFile(material);
+
+  // The Office viewer is a cross-origin iframe, so the browser can never read
+  // its text — the material would stay "[large file: deck.pptx]" and the AI
+  // would only ever see the filename. Read it server-side once instead.
+  useEffect(() => {
+    if (image || !material.file_storage_path) return;
+    const stored = (material.original_content ?? "").trim();
+    const isPlaceholder = stored.length < 200 || /^\[(large|binary) file:/i.test(stored);
+    if (!isPlaceholder) return;
+
+    let alive = true;
+    (async () => {
+      setExtracting(true);
+      try {
+        const accessToken = await getAccessToken();
+        const r = await extractFn({ data: { accessToken, materialId: material.id } });
+        if (!alive) return;
+        if (r?.ok) {
+          toast.success(
+            `Read ${r.parts > 1 ? `${r.parts} slides` : "the document"} — quizzes, flashcards and chat can now use this material`,
+          );
+          qc.invalidateQueries({ queryKey: ["material", material.id] });
+          qc.invalidateQueries({ queryKey: ["materials_for_quiz"] });
+          // Compress into key concepts once. Every later quiz/flashcard run then
+          // generates from ~10 tagged concepts instead of re-sending the whole
+          // document, so it is both cheaper and far better grounded.
+          await buildConcepts(conceptsFn, material.id, qc);
+        }
+        // `unsupported` (legacy .ppt/.doc or image-only decks) stays silent —
+        // the document still renders, there is just no text to pull out.
+      } catch {
+        /* non-fatal: viewer still works */
+      } finally {
+        if (alive) setExtracting(false);
+      }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [material.id, material.file_storage_path, image]);
 
   useEffect(() => {
     if (!material.file_storage_path) { setSignError(true); return; }
@@ -757,6 +853,50 @@ function FileReaderTab({ material, userId }: { material: any; userId: string }) 
   );
 }
 
+/** Highlighter palette shared by the plain-text reader. */
+const TEXT_HL_COLORS: { id: string; bg: string; ring: string }[] = [
+  { id: "yellow", bg: "rgba(250,204,21,0.55)", ring: "#eab308" },
+  { id: "green", bg: "rgba(74,222,128,0.5)", ring: "#22c55e" },
+  { id: "blue", bg: "rgba(96,165,250,0.5)", ring: "#3b82f6" },
+  { id: "pink", bg: "rgba(244,114,182,0.5)", ring: "#ec4899" },
+  { id: "orange", bg: "rgba(251,146,60,0.55)", ring: "#f97316" },
+];
+
+/** Wrap every saved highlight occurrence in a coloured <mark>. */
+function renderWithHighlights(text: string, hls: { text: string; color: string }[]) {
+  if (!hls.length || !text) return text;
+  const ranges: { start: number; end: number; color: string }[] = [];
+  for (const h of hls) {
+    const needle = h.text;
+    if (!needle) continue;
+    let idx = text.indexOf(needle);
+    while (idx !== -1) {
+      ranges.push({ start: idx, end: idx + needle.length, color: h.color });
+      idx = text.indexOf(needle, idx + needle.length);
+    }
+  }
+  if (!ranges.length) return text;
+  ranges.sort((a, b) => a.start - b.start || b.end - a.end);
+  const out: React.ReactNode[] = [];
+  let cursor = 0;
+  for (const r of ranges) {
+    if (r.start < cursor) continue; // skip overlaps
+    if (r.start > cursor) out.push(text.slice(cursor, r.start));
+    const c = TEXT_HL_COLORS.find((x) => x.id === r.color) ?? TEXT_HL_COLORS[0];
+    out.push(
+      <mark
+        key={`${r.start}-${r.end}`}
+        style={{ background: c.bg, color: "inherit", borderRadius: 3, padding: "0 1px" }}
+      >
+        {text.slice(r.start, r.end)}
+      </mark>,
+    );
+    cursor = r.end;
+  }
+  if (cursor < text.length) out.push(text.slice(cursor));
+  return out;
+}
+
 function TextReaderTab({ material, userId }: { material: any; userId: string }) {
   const isMobile = useIsMobile();
   const sourceText = material.original_content || material.adapted_reading || material.ai_summary || "";
@@ -764,6 +904,63 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
   const [page, setPage] = useState(1);
   const [mobileTab, setMobileTab] = useState<"read" | "chat">("read");
   const [selection, setSelection] = useState<string | null>(null);
+  const [rawSelection, setRawSelection] = useState<string>("");
+  const [highlights, setHighlights] = useState<any[]>([]);
+
+  // Load saved highlights for this material
+  useEffect(() => {
+    let alive = true;
+    (supabase as any)
+      .from("material_highlights")
+      .select("id, page_number, text, color")
+      .eq("material_id", material.id)
+      .then(({ data }: { data: any }) => {
+        if (alive && data) setHighlights(data);
+      });
+    return () => { alive = false; };
+  }, [material.id]);
+
+  const pageHighlights = highlights.filter((h) => h.page_number === page);
+
+  async function saveHighlight(color: string) {
+    const text = rawSelection;
+    if (!text || text.length < 2) return;
+    window.getSelection()?.removeAllRanges();
+    setSelection(null);
+    setRawSelection("");
+    const tempId = `tmp-${Date.now()}`;
+    setHighlights((h) => [...h, { id: tempId, page_number: page, text, color }]);
+    const { data, error } = await (supabase as any)
+      .from("material_highlights")
+      .insert({ user_id: userId, material_id: material.id, page_number: page, text, color, rects: [] })
+      .select("id")
+      .single();
+    if (error) {
+      setHighlights((h) => h.filter((x) => x.id !== tempId));
+      return toast.error(reportError("materials.$id", error));
+    }
+    setHighlights((h) => h.map((x) => (x.id === tempId ? { ...x, id: data.id } : x)));
+  }
+
+  async function removeHighlight(id: string) {
+    setHighlights((h) => h.filter((x) => x.id !== id));
+    if (!String(id).startsWith("tmp-")) {
+      await (supabase as any).from("material_highlights").delete().eq("id", id);
+    }
+  }
+
+  async function saveNote() {
+    const content = selection;
+    if (!content) return;
+    const { error } = await supabase
+      .from("material_notes")
+      .insert({ user_id: userId, material_id: material.id, content, page_number: page } as any);
+    if (error) return toast.error(reportError("materials.$id", error));
+    toast.success("Saved to notes");
+    window.getSelection()?.removeAllRanges();
+    setSelection(null);
+    setRawSelection("");
+  }
   const totalPages = pages.length;
   const currentPageText = pages[page - 1] ?? "";
   const pageIndex = useMemo(
@@ -782,8 +979,11 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
   }, [page, totalPages, material.id, userId]);
 
   const captureSelection = () => {
-    const text = window.getSelection()?.toString().replace(/\s+/g, " ").trim() ?? "";
+    const raw = window.getSelection()?.toString() ?? "";
+    const text = raw.replace(/\s+/g, " ").trim();
     setSelection(text.length >= 3 ? text.slice(0, 1200) : null);
+    // keep the RAW text (newlines intact) so highlight matching works
+    setRawSelection(raw.trim().length >= 3 ? raw.trim() : "");
   };
 
   const reader = (
@@ -797,14 +997,53 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
       )}
       <div className="flex-1 overflow-auto p-4 md:p-6" onMouseUp={captureSelection} onTouchEnd={() => setTimeout(captureSelection, 50)}>
         {selection && (
-          <button onClick={() => isMobile && setMobileTab("chat")} className="btn-3d mb-3 rounded-full bg-primary px-3.5 py-1.5 text-xs font-extrabold text-primary-foreground">
-            Ask AI about selected text
-          </button>
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border-2 border-border bg-card p-2 shadow-sm">
+            <button onClick={() => isMobile && setMobileTab("chat")} className="btn-3d rounded-xl bg-primary px-3.5 py-1.5 text-xs font-extrabold text-primary-foreground">
+              Ask AI about selection
+            </button>
+            <button onClick={saveNote} className="rounded-xl border-2 border-border bg-muted px-3.5 py-1.5 text-xs font-extrabold hover:bg-accent">
+              Save to notes
+            </button>
+            <span className="ml-1 flex items-center gap-1 border-l-2 border-border pl-2">
+              {TEXT_HL_COLORS.map((c) => (
+                <button
+                  key={c.id}
+                  onMouseDown={(e) => { e.preventDefault(); saveHighlight(c.id); }}
+                  title={`Highlight ${c.id}`}
+                  aria-label={`Highlight ${c.id}`}
+                  className="h-6 w-6 rounded-full border-2 border-white shadow ring-1 ring-black/10 active:scale-90 transition"
+                  style={{ background: c.ring }}
+                />
+              ))}
+            </span>
+          </div>
+        )}
+        {/* Saved highlights on this page — click ✕ to remove */}
+        {pageHighlights.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {pageHighlights.map((h) => {
+              const c = TEXT_HL_COLORS.find((x) => x.id === h.color) ?? TEXT_HL_COLORS[0];
+              return (
+                <button
+                  key={h.id}
+                  onClick={() => removeHighlight(h.id)}
+                  title={`Remove highlight: ${String(h.text).slice(0, 80)}`}
+                  className="inline-flex max-w-[220px] items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-semibold hover:bg-destructive/10"
+                >
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.ring }} />
+                  <span className="truncate">{h.text}</span>
+                  <span className="text-destructive">✕</span>
+                </button>
+              );
+            })}
+          </div>
         )}
         {/* Document canvas — reads like paper, not a terminal */}
         <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm md:p-10">
           <article className="prose prose-sm md:prose-base max-w-none whitespace-pre-wrap leading-relaxed text-foreground/95 dark:prose-invert">
-            {currentPageText || "No readable text was extracted for this material."}
+            {currentPageText
+              ? renderWithHighlights(currentPageText, pageHighlights)
+              : "No readable text was extracted for this material."}
           </article>
         </div>
       </div>
@@ -860,12 +1099,47 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
   const [signedUrl, setSignedUrl] = useState<string>("");
   const [signError, setSignError] = useState(false);
   const [page, setPage] = useState(1);
+  const qc = useQueryClient();
+  const conceptsFn = useServerFn(regenerateKeyConcepts);
   const [pageText, setPageText] = useState("");
   const [totalPages, setTotalPages] = useState(0);
   const [mobileTab, setMobileTab] = useState<"read" | "chat">("read");
   const [initialReady, setInitialReady] = useState(false);
   const [pageIndex, setPageIndex] = useState<Record<number, string> | undefined>(undefined);
   const [selection, setSelection] = useState<string | null>(null);
+
+  // Office/large uploads are registered as "[large file: x.ppt]" with no real
+  // text, which made quizzes/flashcards fall back to inventing content. Once the
+  // reader has indexed the pages we own the real text — persist it so every
+  // downstream feature (quiz, tutor, flashcards) is grounded in the document.
+  useEffect(() => {
+    if (!pageIndex) return;
+    const stored = (material.original_content ?? "").trim();
+    const isPlaceholder = stored.length < 200 || /^\[(large|binary) file:/i.test(stored);
+    if (!isPlaceholder) return;
+    const full = Object.keys(pageIndex)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map((n) => pageIndex[n])
+      .filter(Boolean)
+      .join("\n\n")
+      .trim();
+    if (full.length < 200) return; // nothing worth saving (scanned images, etc.)
+    void supabase
+      .from("study_materials")
+      .update({ original_content: full.slice(0, 500_000) })
+      .eq("id", material.id)
+      .then(async () => {
+        toast.success("Text extracted — quizzes and flashcards can now use this material");
+        qc.invalidateQueries({ queryKey: ["material", material.id] });
+        qc.invalidateQueries({ queryKey: ["materials_for_quiz"] });
+        // Same Study Kit compression as the Office path.
+        await buildConcepts(conceptsFn, material.id, qc);
+      });
+    // material.original_content intentionally omitted: we only want this to run
+    // when a fresh index arrives, not after our own write.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, material.id]);
   const [autoSendOnSelection, setAutoSendOnSelection] = useState(false);
   // Native = browser PDF engine; highlight = pdf.js with select-to-ask-AI
   const [pdfMode, setPdfModeState] = useState<"native" | "highlight">(() => {
@@ -1083,6 +1357,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
                   onAllPagesIndexed={setPageIndex}
                   onAskAboutSelection={handleAskAboutSelection}
                   onAddNote={handleAddNote}
+                  materialId={material.id}
                 />
               </div>
             </>
@@ -1116,12 +1391,24 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
             /* Browser's own PDF engine — full toolbar, CourieX reading feel.
                Selection inside this iframe is invisible to the app (cross-origin),
                so highlight-AI lives in the "Highlight + AI" mode below. */
-            <iframe
-              key={page}
-              title={material.title}
-              src={`${signedUrl}#page=${page}&view=FitH`}
-              className="h-full w-full border-0 bg-white"
-            />
+            <>
+              {/* The iframe's text is invisible to us (cross-origin), so index
+                  it headlessly — otherwise the AI is told the page has no
+                  extractable text even when it's full of it. */}
+              <PdfTextIndexer
+                pdfUrl={signedUrl}
+                page={page}
+                onPageText={(_p, text) => setPageText(text)}
+                onTotalPages={setTotalPages}
+                onAllPagesIndexed={setPageIndex}
+              />
+              <iframe
+                key={page}
+                title={material.title}
+                src={`${signedUrl}#page=${page}&view=FitH`}
+                className="h-full w-full border-0 bg-white"
+              />
+            </>
           ) : (
             <PDFViewer
               pdfUrl={signedUrl}
@@ -1131,6 +1418,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
               onAllPagesIndexed={setPageIndex}
               onAskAboutSelection={handleAskAboutSelection}
               onAddNote={handleAddNote}
+              materialId={material.id}
             />
           )}
         </div>

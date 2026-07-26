@@ -42,12 +42,19 @@ export const Route = createFileRoute("/api/video-quiz")({
       POST: async ({ request }: { request: Request }) => {
         const body = (await request.json()) as Body;
         if (!body.accessToken) return new Response("Unauthorized", { status: 401 });
+        let vqUserId: string;
         try {
-          await getUserIdFromToken(body.accessToken);
+          vqUserId = await getUserIdFromToken(body.accessToken);
         } catch {
           return new Response("Unauthorized", { status: 401 });
         }
         if (!body.videoId) return new Response("Bad request", { status: 400 });
+        try {
+          const { consumeAiQuota } = await import("@/lib/rate-limit.server");
+          await consumeAiQuota(vqUserId, "video_quiz");
+        } catch (e) {
+          return new Response(e instanceof Error ? e.message : "RATE_LIMIT", { status: 429 });
+        }
 
         const { data: cache } = await supabaseAdmin
           .from("video_chapters")

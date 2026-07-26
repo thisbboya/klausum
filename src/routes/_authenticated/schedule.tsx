@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -80,7 +81,7 @@ function SchedulePage() {
       user_id: user!.id, title: form.title, subject: form.subject, block_type: form.block_type,
       starts_at: s.toISOString(), ends_at: e.toISOString(),
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("schedule", error));
     setAdding(false);
     setForm({ ...form, title: "" });
     qc.invalidateQueries({ queryKey: ["schedule", user?.id] });

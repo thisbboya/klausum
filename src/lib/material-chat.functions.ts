@@ -39,8 +39,10 @@ const STYLE_HINTS: Record<string, string> = {
 export const chatWithMaterial = createServerFn({ method: "POST" })
   .inputValidator((d) => ChatInput.parse(d))
   .handler(async ({ data }) => {
-    await getUserIdFromToken(data.accessToken);
-    
+    const chatUserId = await getUserIdFromToken(data.accessToken);
+    const { consumeAiQuota } = await import("./rate-limit.server");
+    await consumeAiQuota(chatUserId, "material_chat");
+
 
     const styleHint = STYLE_HINTS[data.userPrimaryStyle ?? "Reading"] ?? STYLE_HINTS.Reading;
 

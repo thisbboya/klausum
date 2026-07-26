@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -235,7 +236,7 @@ function ProfileTab() {
     const payload = { ...form, handle: cleanHandle || null };
     const { error } = await supabase.from("user_profiles").update(payload).eq("id", user!.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("settings", error));
     toast.success("Saved");
     refetch();
   }

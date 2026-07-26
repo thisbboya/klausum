@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Users,
-  GraduationCap, Youtube, Camera, Focus, Gem, type LucideIcon,
+  GraduationCap, Youtube, Camera, Focus, Gem, Gamepad2, type LucideIcon,
 } from "lucide-react";
 
 export type NavLink = { to: string; label: string; icon: LucideIcon };
@@ -22,6 +22,7 @@ export const PRIMARY_LINKS: NavLink[] = [
 ];
 
 export const MORE_LINKS: NavLink[] = [
+  { to: "/games", label: "Games", icon: Gamepad2 },
   { to: "/solve", label: "Snap & Solve", icon: Camera },
   { to: "/notes", label: "Notes", icon: NotebookPen },
   { to: "/mindmaps", label: "Mind Maps", icon: Network },

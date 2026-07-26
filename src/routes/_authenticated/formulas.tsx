@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -41,7 +42,7 @@ function FormulasPage() {
   async function add() {
     if (!form.name || !form.latex) return toast.error("Name and LaTeX required");
     const { error } = await supabase.from("formulas").insert({ ...form, user_id: user!.id });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("formulas", error));
     toast.success("Added");
     setForm({ name: "", latex: "", subject: "General", description: "" });
     setAdding(false);
@@ -73,7 +74,7 @@ function FormulasPage() {
       });
       toast.success("Exported");
     } catch (e: any) {
-      toast.error(e?.message ?? "Export failed");
+      toast.error(reportError("formulas", e));
     } finally {
       setExporting(false);
     }

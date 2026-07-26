@@ -397,9 +397,76 @@ function TestimonialsSection() {
 }
 
 /* ─────────────────── LANDING ─────────────────── */
+/* ─────────────────── ANIMATED PAGE BACKGROUND ───────────────────
+   Duolingo/CourieX-style living backdrop: soft colour glows, a faint dot
+   grid, and floating study glyphs. Purely decorative + reduced-motion aware. */
+function LandingBg() {
+  // Bold, playful glyphs in the brand palette — each gets its own tinted chip
+  // so they read clearly against the page (Duolingo-style confetti of icons).
+  const items: { Icon: any; tint: string; left: number; top: number; size: number }[] = [
+    { Icon: Brain, tint: "primary", left: 6, top: 16, size: 56 },
+    { Icon: Trophy, tint: "amber", left: 40, top: 8, size: 46 },
+    { Icon: Flame, tint: "destructive", left: 84, top: 14, size: 52 },
+    { Icon: BookOpen, tint: "sky", left: 14, top: 66, size: 50 },
+    { Icon: Star, tint: "amber", left: 70, top: 40, size: 44 },
+    { Icon: Zap, tint: "primary", left: 90, top: 62, size: 48 },
+    { Icon: Target, tint: "success", left: 30, top: 82, size: 46 },
+    { Icon: Users, tint: "sky", left: 58, top: 74, size: 44 },
+  ];
+  const tintBg: Record<string, string> = {
+    primary: "bg-primary/15 text-primary",
+    sky: "bg-sky/15 text-sky",
+    amber: "bg-amber/20 text-amber",
+    success: "bg-success/15 text-success",
+    destructive: "bg-destructive/12 text-destructive",
+  };
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-background">
+      {/* dot grid */}
+      <div
+        className="absolute inset-0 opacity-60"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, color-mix(in oklch, var(--color-border) 85%, transparent) 1.5px, transparent 1.5px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
+      {/* big soft colour glows */}
+      <motion.div
+        animate={{ x: [0, 50, 0], y: [0, -34, 0], scale: [1, 1.15, 1] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -left-28 -top-24 h-[460px] w-[460px] rounded-full bg-primary/30 blur-[80px]"
+      />
+      <motion.div
+        animate={{ x: [0, -60, 0], y: [0, 44, 0], scale: [1, 1.2, 1] }}
+        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-[-140px] top-1/4 h-[500px] w-[500px] rounded-full bg-sky/25 blur-[90px]"
+      />
+      <motion.div
+        animate={{ x: [0, 36, 0], y: [0, -22, 0] }}
+        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-[-120px] left-1/4 h-[440px] w-[440px] rounded-full bg-success/20 blur-[85px]"
+      />
+      {/* floating study glyph chips */}
+      {items.map(({ Icon, tint, left, top, size }, i) => (
+        <motion.div
+          key={i}
+          className={`absolute flex items-center justify-center rounded-3xl border-2 border-border/40 shadow-sm ${tintBg[tint]}`}
+          style={{ left: `${left}%`, top: `${top}%`, width: size, height: size }}
+          animate={{ y: [-14, 14, -14], rotate: [-10, 10, -10] }}
+          transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
+        >
+          <Icon style={{ width: size * 0.5, height: size * 0.5 }} strokeWidth={2.5} />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 function Landing() {
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground">
+    <div className="relative min-h-[100dvh] text-foreground">
+      <LandingBg />
       <Nav />
 
       {/* HERO — split, illustration left / copy right (Duolingo layout) */}

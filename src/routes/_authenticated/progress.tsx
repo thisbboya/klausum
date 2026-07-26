@@ -54,8 +54,24 @@ function ProgressPage() {
     },
   });
 
-  if (!data) return <KlausumLoading />;
-  const { profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions, cards } = data;
+  // NOTE: no early return here — every hook below must run on every render or
+  // React throws "Rendered more hooks than during the previous render".
+  // We fall back to empty data and bail out *after* the last hook instead.
+  const {
+    profile, attempts, reviews, materials, xp, gaps, voiceNotes, formulas, rooms, tutorSessions, cards,
+  } = data ?? {
+    profile: null as any,
+    attempts: [] as any[],
+    reviews: [] as any[],
+    materials: [] as any[],
+    xp: [] as any[],
+    gaps: [] as any[],
+    voiceNotes: [] as any[],
+    formulas: [] as any[],
+    rooms: [] as any[],
+    tutorSessions: [] as any[],
+    cards: [] as any[],
+  };
 
   // FSRS card health bins (by stability days)
   const healthBins = [
@@ -161,6 +177,9 @@ function ProgressPage() {
     if (data) celebrateNewBadges(badgeStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
+
+  // Safe to bail out now — all hooks above have run in a stable order.
+  if (!data) return <KlausumLoading />;
 
   async function runInsight() {
     if (!user) return;

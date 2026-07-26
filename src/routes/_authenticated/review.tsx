@@ -1,4 +1,5 @@
 import { awardXp } from "@/lib/xp";
+import { reportError } from "@/lib/report-error";
 import { KlausumLoading } from "@/components/loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
@@ -215,7 +216,7 @@ function ReviewPage() {
       setFeedback(result);
       if (user) await awardXp({ userId: user.id, amount: 15, action: "feynman_session", description: current.front });
     } catch (e: any) {
-      toast.error(e?.message ?? "Evaluation failed");
+      toast.error(reportError("review", e));
     } finally {
       setEvaluating(false);
     }

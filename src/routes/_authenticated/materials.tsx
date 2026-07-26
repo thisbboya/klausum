@@ -1,4 +1,5 @@
 import { awardXp } from "@/lib/xp";
+import { reportError } from "@/lib/report-error";
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -450,7 +451,7 @@ export function MaterialsPage() {
                   onClick={async () => {
                     if (!confirm(`Delete "${m.title}"?`)) return;
                     const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
-                    if (error) toast.error(error.message);
+                    if (error) toast.error(reportError("materials", error));
                     else {
                       toast.success("Material deleted");
                       qc.invalidateQueries({ queryKey: ["materials"] });

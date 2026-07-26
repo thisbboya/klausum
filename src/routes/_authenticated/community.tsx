@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -114,7 +115,7 @@ function FriendsTab() {
     const { error } = await supabase.from("friendships").insert({
       requester_id: user!.id, addressee_id, status: "pending",
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("community", error));
     toast.success("Friend request sent");
     qc.invalidateQueries({ queryKey: ["friendships", user?.id] });
   }
@@ -585,7 +586,7 @@ function NewDuelModal({
       challengerId: user.id, opponentId: friendId, quizId, timeLimitSeconds: timeLimit, expiryHours,
     });
     setSubmitting(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("community", error));
     toast.success("Duel issued!");
     onCreated();
   }
@@ -709,10 +710,19 @@ function ChallengesTab() {
 
   async function claim(c: Challenge) {
     if (isComplete(c)) return;
-    const { error } = await supabase.from("challenge_completions").insert({
-      user_id: user!.id, challenge_key: c.key, xp_awarded: c.xp,
+    // Scope the row to this challenge's period so daily/weekly ones can be
+    // claimed again next period (unique is user+key+period_start).
+    const { start } = challengeWindow(c.cadence);
+    const periodStart = new Date(start.getTime() - start.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+    const { error } = await (supabase as any).from("challenge_completions").insert({
+      user_id: user!.id, challenge_key: c.key, xp_awarded: c.xp, period_start: periodStart,
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.code === "23505") return toast.error("Already claimed for this period.");
+      return toast.error(reportError("community", error));
+    }
     await awardXp({ userId: user!.id, amount: c.xp, action: "challenge_completed", description: c.title });
     toast.success(`+${c.xp} XP — ${c.title}`);
     qc.invalidateQueries({ queryKey: ["challenge_completions", user?.id] });
@@ -789,7 +799,7 @@ function GroupsTab() {
     const { data, error } = await supabase.from("study_groups").insert({
       creator_id: user!.id, name: form.name.trim(), subject: form.subject, description: form.description,
     }).select().single();
-    if (error || !data) return toast.error(error?.message ?? "Failed");
+    if (error || !data) return toast.error(reportError("community", error));
     // creator is auto-added as admin via DB trigger
     setCreating(false);
     setForm({ name: "", subject: "General", description: "" });
@@ -800,7 +810,7 @@ function GroupsTab() {
   async function joinGroup() {
     if (!joinCode.trim()) return;
     const { error } = await supabase.rpc("join_study_group", { p_invite_code: joinCode.trim().toUpperCase() });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("community", error));
     setJoinCode(""); setJoining(false);
     qc.invalidateQueries({ queryKey: ["study_groups", user?.id] });
     toast.success("Joined group");

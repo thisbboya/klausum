@@ -3,9 +3,21 @@ import * as pdfjsLib from "pdfjs-dist";
 // Vite-native worker URL — resolves to a hashed asset URL that always works in dev + prod.
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { Search, StickyNote } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
+// Highlighter palette — value is the stored id, bg is the painted colour.
+const HIGHLIGHT_COLORS: { id: string; bg: string; ring: string }[] = [
+  { id: "yellow", bg: "rgba(250,204,21,0.45)", ring: "#eab308" },
+  { id: "green", bg: "rgba(74,222,128,0.42)", ring: "#22c55e" },
+  { id: "blue", bg: "rgba(96,165,250,0.42)", ring: "#3b82f6" },
+  { id: "pink", bg: "rgba(244,114,182,0.42)", ring: "#ec4899" },
+  { id: "orange", bg: "rgba(251,146,60,0.45)", ring: "#f97316" },
+];
+type NRect = { x: number; y: number; w: number; h: number };
+type Highlight = { id: string; page_number: number; text: string; color: string; rects: NRect[] };
 
 interface PDFViewerProps {
   pdfUrl: string;
@@ -15,6 +27,7 @@ interface PDFViewerProps {
   onAllPagesIndexed?: (index: Record<number, string>) => void;
   onAskAboutSelection?: (text: string) => void;
   onAddNote?: (text: string, page: number) => void;
+  materialId?: string;
 }
 
 export function PDFViewer({
@@ -25,7 +38,24 @@ export function PDFViewer({
   onAllPagesIndexed,
   onAskAboutSelection,
   onAddNote,
+  materialId,
 }: PDFViewerProps) {
+  const { user } = useAuth();
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+
+  // Load saved highlights for this material
+  useEffect(() => {
+    if (!materialId || !user) return;
+    let alive = true;
+    (supabase as any)
+      .from("material_highlights")
+      .select("id, page_number, text, color, rects")
+      .eq("material_id", materialId)
+      .then(({ data }: { data: any }) => {
+        if (alive && data) setHighlights(data as any);
+      });
+    return () => { alive = false; };
+  }, [materialId, user]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -281,6 +311,49 @@ export function PDFViewer({
     return () => document.removeEventListener("selectionchange", handler);
   }, [checkSelection]);
 
+  // Persist the current text selection as a colour highlight. Rects are stored
+  // normalised (fractions of the canvas) so they repaint correctly at any zoom.
+  async function saveHighlight(color: string) {
+    const sel = window.getSelection();
+    const canvas = canvasRef.current;
+    if (!sel || sel.rangeCount === 0 || !canvas) return;
+    const text = sel.toString().replace(/\s+/g, " ").trim();
+    if (text.length < 2) return;
+    const cRect = canvas.getBoundingClientRect();
+    if (!cRect.width || !cRect.height) return;
+    const rects: NRect[] = Array.from(sel.getRangeAt(0).getClientRects())
+      .filter((r) => r.width > 1 && r.height > 1)
+      .map((r) => ({
+        x: (r.left - cRect.left) / cRect.width,
+        y: (r.top - cRect.top) / cRect.height,
+        w: r.width / cRect.width,
+        h: r.height / cRect.height,
+      }));
+    if (rects.length === 0) return;
+    window.getSelection()?.removeAllRanges();
+    setSelection(null);
+    if (!materialId || !user) return;
+    // optimistic paint
+    const tempId = `tmp-${Date.now()}`;
+    const optimistic: Highlight = { id: tempId, page_number: page, text, color, rects };
+    setHighlights((h) => [...h, optimistic]);
+    const { data, error } = await (supabase as any)
+      .from("material_highlights")
+      .insert({ user_id: user.id, material_id: materialId, page_number: page, text, color, rects })
+      .select("id")
+      .single();
+    if (error) {
+      setHighlights((h) => h.filter((x) => x.id !== tempId)); // roll back
+      return;
+    }
+    setHighlights((h) => h.map((x) => (x.id === tempId ? { ...x, id: data.id } : x)));
+  }
+
+  async function deleteHighlight(id: string) {
+    setHighlights((h) => h.filter((x) => x.id !== id));
+    if (!id.startsWith("tmp-")) await (supabase as any).from("material_highlights").delete().eq("id", id);
+  }
+
   const goTo = useCallback(
     (n: number) => {
       const target = Math.max(1, Math.min(n, totalPages || 1));
@@ -335,6 +408,51 @@ export function PDFViewer({
               className="rounded-lg shadow-2xl max-w-full block bg-white"
               style={{ opacity: isRendering ? 0.6 : 1, transition: "opacity 0.15s" }}
             />
+            {/* Colour highlight overlay — sits between canvas and text layer.
+                pointer-events-none so it never blocks text selection. */}
+            <div className="absolute inset-0 pointer-events-none">
+              {highlights
+                .filter((h) => h.page_number === page)
+                .flatMap((h) => {
+                  const c = HIGHLIGHT_COLORS.find((x) => x.id === h.color) ?? HIGHLIGHT_COLORS[0];
+                  return h.rects.map((r, i) => (
+                    <div
+                      key={`${h.id}-${i}`}
+                      className="absolute rounded-[2px]"
+                      style={{
+                        left: `${r.x * 100}%`,
+                        top: `${r.y * 100}%`,
+                        width: `${r.w * 100}%`,
+                        height: `${r.h * 100}%`,
+                        background: c.bg,
+                        mixBlendMode: "multiply",
+                      }}
+                    />
+                  ));
+                })}
+            </div>
+            {/* Per-page highlight manager */}
+            {highlights.some((h) => h.page_number === page) && (
+              <div className="absolute right-2 top-2 z-30 flex flex-wrap justify-end gap-1 max-w-[60%]">
+                {highlights
+                  .filter((h) => h.page_number === page)
+                  .map((h) => {
+                    const c = HIGHLIGHT_COLORS.find((x) => x.id === h.color) ?? HIGHLIGHT_COLORS[0];
+                    return (
+                      <button
+                        key={h.id}
+                        onClick={() => deleteHighlight(h.id)}
+                        title={`Remove: ${h.text.slice(0, 60)}`}
+                        className="inline-flex max-w-[160px] items-center gap-1 rounded-full border border-black/10 bg-card/90 px-2 py-0.5 text-[10px] font-semibold shadow-sm hover:bg-destructive/10"
+                      >
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.ring }} />
+                        <span className="truncate">{h.text}</span>
+                        <span className="text-destructive">✕</span>
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
             <div
               ref={textLayerRef}
               className="textLayer"
@@ -356,7 +474,7 @@ export function PDFViewer({
               top: `${Math.max(8, selection.y)}px`,
               transform: "translate(-50%, -100%)",
             }}
-            className="z-20 flex items-center gap-1 rounded-full bg-card border border-border shadow-lg p-1"
+            className="z-20 flex items-center gap-1.5 rounded-2xl bg-card border-2 border-border shadow-xl p-1.5"
           >
             {onAskAboutSelection && (
               <button
@@ -365,9 +483,9 @@ export function PDFViewer({
                   window.getSelection()?.removeAllRanges();
                   setSelection(null);
                 }}
-                className="inline-flex items-center gap-1.5 btn-3d rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90 active:scale-95 transition"
+                className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary text-primary-foreground text-sm font-bold px-4 py-2 hover:opacity-90 active:scale-95 transition"
               >
-                <Search className="h-3 w-3" /> Explain this
+                <Search className="h-4 w-4" /> Explain this
               </button>
             )}
             {onAddNote && (
@@ -377,10 +495,25 @@ export function PDFViewer({
                   window.getSelection()?.removeAllRanges();
                   setSelection(null);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-muted text-foreground text-xs font-semibold px-3 py-1.5 hover:bg-accent active:scale-95 transition border border-border"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-muted text-foreground text-sm font-bold px-4 py-2 hover:bg-accent active:scale-95 transition border-2 border-border"
               >
-                <StickyNote className="h-3 w-3" /> Add to notes
+                <StickyNote className="h-4 w-4" /> Add to notes
               </button>
+            )}
+            {/* Colour highlighter swatches */}
+            {materialId && (
+              <div className="flex items-center gap-1 pl-1 ml-1 border-l-2 border-border">
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    onMouseDown={(e) => { e.preventDefault(); saveHighlight(c.id); }}
+                    title={`Highlight ${c.id}`}
+                    aria-label={`Highlight ${c.id}`}
+                    className="h-6 w-6 rounded-full border-2 border-white shadow ring-1 ring-black/10 active:scale-90 transition"
+                    style={{ background: c.ring }}
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}

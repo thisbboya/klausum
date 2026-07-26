@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -182,7 +183,7 @@ function GapsPage() {
       ends_at: end.toISOString(),
       notes: `Auto-scheduled from knowledge gap (${g.severity}).`,
     });
-    if (error) toast.error(error.message);
+    if (error) toast.error(reportError("gaps", error));
     else toast.success("Added to tomorrow 9:00 AM");
   }
 

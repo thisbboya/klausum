@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { reportError } from "@/lib/report-error";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles, X } from "lucide-react";
@@ -43,7 +44,7 @@ export function ReferenceSheetDialog({
       setItems(r.formulas);
       setPicked(Object.fromEntries(r.formulas.map((_: unknown, i: number) => [i, true])));
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to generate");
+      toast.error(reportError("ReferenceSheetDialog", e));
     } finally {
       setBusy(false);
     }
@@ -64,7 +65,7 @@ export function ReferenceSheetDialog({
       }));
     if (rows.length === 0) return toast.error("Pick at least one");
     const { error } = await supabase.from("formulas").insert(rows);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("ReferenceSheetDialog", error));
     toast.success(`Added ${rows.length} formulas`);
     qc.invalidateQueries({ queryKey: ["formulas", user.id] });
     onClose();

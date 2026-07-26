@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +27,7 @@ function ExamsPage() {
   async function add() {
     if (!form.exam_name || !form.exam_date) return toast.error("Name and date required");
     const { error } = await supabase.from("exam_countdowns").insert({ ...form, user_id: user!.id });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("exams", error));
     toast.success("Exam added");
     setOpen(false);
     setForm({ exam_name: "", subject: "", exam_date: "", target_grade: "", current_readiness: 0, notes: "" });

@@ -636,3 +636,12 @@ body.landing::before {
   .kumi-bounce, .loader-dot, .kumi-shadow, .loader-shimmer,
   .kumi-wing-l, .kumi-wing-r, .kumi-poke { animation: none; }
 }
+
+/* Native <select> dropdowns paint their popup with the OS palette, which in
+   dark mode gave near-invisible light-grey text on a white sheet. Force the
+   theme's own colours so every option stays readable. */
+select option,
+select optgroup {
+  background-color: var(--popover);
+  color: var(--foreground);
+}

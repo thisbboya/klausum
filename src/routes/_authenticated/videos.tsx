@@ -6,13 +6,22 @@ import { getAccessToken } from "@/lib/auth-helper";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/_authenticated/videos")({ component: VideosPage });
+export const Route = createFileRoute("/_authenticated/videos")({
+  // ?v=<youtubeId>&t=<seconds> lets the dashboard's "Continue watching" card
+  // deep-link straight back into Watch & study.
+  validateSearch: (s: Record<string, unknown>): { v?: string; t?: number } => ({
+    v: typeof s.v === "string" && /^[a-zA-Z0-9_-]{6,20}$/.test(s.v) ? s.v : undefined,
+    t: Number.isFinite(Number(s.t)) && Number(s.t) > 0 ? Math.floor(Number(s.t)) : undefined,
+  }),
+  component: VideosPage,
+});
 
 type Tab = "discover" | "library" | "watch";
 
 function VideosPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>("discover");
+  const { v: deepLinkId } = Route.useSearch();
+  const [tab, setTab] = useState<Tab>(deepLinkId ? "watch" : "discover");
   const [active, setActive] = useState<Video | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [primaryStyle, setPrimaryStyle] = useState<string>("Reading");
@@ -32,6 +41,30 @@ function VideosPage() {
         if (data?.primary_style) setPrimaryStyle(data.primary_style);
       });
   }, [user]);
+
+  // Resume a deep-linked video (?v=…), pulling its saved title/thumbnail when
+  // we have them so the header isn't blank.
+  useEffect(() => {
+    if (!deepLinkId || !user || active?.id === deepLinkId) return;
+    let alive = true;
+    (supabase as any)
+      .from("saved_videos")
+      .select("title,channel,thumbnail_url")
+      .eq("user_id", user.id)
+      .eq("youtube_video_id", deepLinkId)
+      .maybeSingle()
+      .then(({ data }: { data: any }) => {
+        if (!alive) return;
+        setActive({
+          id: deepLinkId,
+          title: data?.title ?? "Your video",
+          channel: data?.channel ?? "",
+          thumbnail: data?.thumbnail_url ?? `https://i.ytimg.com/vi/${deepLinkId}/hqdefault.jpg`,
+        });
+        setTab("watch");
+      });
+    return () => { alive = false; };
+  }, [deepLinkId, user, active?.id]);
 
   function pick(v: Video) {
     setActive(v);

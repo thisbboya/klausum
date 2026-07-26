@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -61,7 +62,7 @@ export function AvailabilityGrid() {
       .update({ available_hours: arr, study_intensity: intensity })
       .eq("id", user.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("availability-grid", error));
     toast.success("Availability saved");
     setDirty(false);
   }

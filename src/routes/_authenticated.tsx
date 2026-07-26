@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { KlausumLogo } from "@/components/klausum-mark";
+import { KlausumLoading } from "@/components/loading";
 import { getCompanion } from "@/components/companion-svg";
 import { LogOut, Shield, ChevronDown } from "lucide-react";
 import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK } from "@/lib/nav";
@@ -54,8 +55,13 @@ function AuthLayout() {
     }
     let doneLocally = false;
     try { doneLocally = localStorage.getItem("klausum:onboarded") === "1"; } catch {}
-    if (doneLocally) {
+    // A returning user who already picked a pilot AND set a level has clearly
+    // finished before — never re-run VARK/pilot just because the flag write was
+    // lost. Treat either signal (local flag OR existing profile data) as done.
+    const looksOnboarded = doneLocally || (!!profile.companion_id && !!profile.level);
+    if (looksOnboarded) {
       // Repair the missing flag instead of re-running onboarding
+      try { localStorage.setItem("klausum:onboarded", "1"); } catch {}
       supabase.from("user_profiles").update({ onboarding_completed: true }).eq("id", profile.id).then(() => {});
       return;
     }
@@ -82,11 +88,9 @@ function AuthLayout() {
   }, [profile?.companion_id]);
 
   if (loading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground text-sm">Loading…</div>
-      </div>
-    );
+    // Full interactive Kumi loader (poke-able mascot, tips, progress) instead
+    // of a bare "Loading…" string.
+    return <KlausumLoading label="Warming up your vault…" />;
   }
 
   return (
@@ -136,7 +140,9 @@ function AuthLayout() {
         />
         <div
           className={`mx-auto space-y-4 px-4 ${
-            /^\/materials\/[^/]+$/.test(location.pathname)
+            // Wide canvas for the split-pane screens (reader + video/AI panel);
+            // max-w-5xl squeezes those two columns far too narrow.
+            /^\/materials\/[^/]+$/.test(location.pathname) || location.pathname === "/videos"
               ? "max-w-[1500px] py-4 md:px-5 md:py-5" // CourieX-wide reading canvas
               : "max-w-5xl py-6 md:px-8 md:py-10"
           }`}

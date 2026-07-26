@@ -46,9 +46,11 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
+      // Legacy accounts created while email confirmation was still on. There is
+      // no OTP screen anymore, so don't bounce them to /signup — this clears
+      // itself once "Confirm email" is switched off in Supabase.
       if (error.message.toLowerCase().includes("email not confirmed")) {
-        toast.error("Please verify your email first");
-        return navigate({ to: "/signup" });
+        return toast.error("This account is pending confirmation. Try again in a minute or use Google sign-in.");
       }
       return toast.error(error.message);
     }

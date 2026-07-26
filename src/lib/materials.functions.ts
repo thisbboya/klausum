@@ -12,6 +12,8 @@ const ProcessInput = z.object({
   subject: z.string().max(200).optional(),
   fieldCategory: z.string().max(100).optional(),
   isStem: z.boolean().optional(),
+  // Learner's VARK primary style — when set, only that adaptation is generated.
+  primaryStyle: z.string().max(32).optional(),
   text: z.string().max(2_000_000).optional(),
   // base64 of ~20 MB ≈ 27 MB; cap at 28 MB to block payload abuse
   fileBase64: z.string().max(28_000_000).optional(),
@@ -233,7 +235,9 @@ function normalizeProcessed(raw: any, sourceText: string, title: string): Proces
 export const processMaterial = createServerFn({ method: "POST" })
   .inputValidator((d) => ProcessInput.parse(d))
   .handler(async ({ data }) => {
-    await getUserIdFromToken(data.accessToken);
+    const procUserId = await getUserIdFromToken(data.accessToken);
+    const { consumeAiQuota } = await import("./rate-limit.server");
+    await consumeAiQuota(procUserId, "material_process");
 
     const stem = data.isStem ?? false;
     let sourceText = data.text?.slice(0, 60000) ?? "";
@@ -264,10 +268,20 @@ export const processMaterial = createServerFn({ method: "POST" })
       throw new Error("Provide text or file");
     }
 
+    // Only generate the learner's OWN VARK adaptation instead of all four.
+    // That is the single biggest cost here: it roughly halves the output
+    // tokens, so uploads finish much faster and burn far less quota. The other
+    // three stay available on demand via the regenerate buttons.
+    const ALL_STYLES = ["visual", "auditory", "reading", "kinesthetic"] as const;
+    const wanted = (data.primaryStyle ?? "").toLowerCase();
+    const styleKeys = (ALL_STYLES as readonly string[]).includes(wanted)
+      ? [wanted]
+      : [...ALL_STYLES];
+
     const prompt =
       `You are Klausum, an adaptive learning engine. Return one valid JSON object only. ` +
       `Title: "${data.title}". Subject: ${data.subject ?? "General"}. Field: ${data.fieldCategory ?? "General"}. ${stem ? "STEM material — extract every mathematical formula, equation and constant. Each formula MUST have a field named exactly \"latex\" (not \"formula\", \"expression\" or \"equation\") containing the LaTeX source." : "Non-STEM — formulas array should be empty."} ` +
-      `Keys required: extracted_text, summary, key_concepts, concept_graph, visual, auditory, reading, kinesthetic, cornell, flashcards, formulas, bloom_questions, word_count, estimated_read_minutes. ` +
+      `Keys required: extracted_text, summary, key_concepts, concept_graph, ${styleKeys.join(", ")}, cornell, flashcards, formulas, bloom_questions, word_count, estimated_read_minutes. ` +
       `Each key_concept MUST have a SPECIFIC, distinct definition drawn from the material — never reuse the summary text. ` +
       `Each bloom_questions[Lx] item MUST be specific to the material — never write generic placeholders like "What should you understand about ${data.title}?". ` +
       `Create 8-15 key concepts, 6-15 useful flashcards, Cornell notes, and Bloom questions for L1-L6.\n\n--- MATERIAL ---\n${sourceText}`;
@@ -433,6 +447,9 @@ const RegenInput = z.object({ accessToken: z.string(), materialId: z.string().uu
 
 async function loadMaterialForOwner(token: string, materialId: string) {
   const userId = await getUserIdFromToken(token);
+  // Every regenerate-* feature funnels through here — one shared daily cap.
+  const { consumeAiQuota } = await import("./rate-limit.server");
+  await consumeAiQuota(userId, "regenerate");
   const sa = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const { data: mat, error } = await sa
     .from("study_materials")
@@ -443,6 +460,49 @@ async function loadMaterialForOwner(token: string, materialId: string) {
   if (mat.user_id !== userId) throw new Error("Forbidden");
   return { sa, mat };
 }
+
+/**
+ * Pull real text out of a stored Office file and save it to the material.
+ *
+ * Office docs render in a cross-origin viewer, so the browser can never read
+ * them — they stay as "[large file: deck.pptx]" and every AI feature ends up
+ * talking about the filename. This reads the file server-side instead.
+ */
+export const extractMaterialText = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ accessToken: z.string(), materialId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    const sa = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { data: mat, error } = await sa
+      .from("study_materials")
+      .select("id, user_id, file_name, file_storage_path, original_content")
+      .eq("id", data.materialId)
+      .maybeSingle();
+    if (error || !mat) throw new Error("Material not found");
+    if (mat.user_id !== userId) throw new Error("Forbidden");
+    if (!mat.file_storage_path) throw new Error("No stored file for this material");
+
+    const dl = await sa.storage.from("materials").download(mat.file_storage_path);
+    if (dl.error || !dl.data) throw new Error("Could not read the stored file");
+
+    const bytes = new Uint8Array(await dl.data.arrayBuffer());
+    const { extractOfficeText } = await import("./office-extract.server");
+    const result = await extractOfficeText(bytes, mat.file_name ?? mat.file_storage_path);
+
+    if (!result || result.text.length < 50) {
+      // Legacy .ppt/.doc, or a deck of pure images — nothing readable inside.
+      return { ok: false as const, reason: "unsupported" };
+    }
+
+    const text = result.text.slice(0, 500_000);
+    const { error: upErr } = await sa
+      .from("study_materials")
+      .update({ original_content: text })
+      .eq("id", mat.id);
+    if (upErr) throw new Error("Could not save the extracted text");
+
+    return { ok: true as const, kind: result.kind, parts: result.parts, chars: text.length };
+  });
 
 const KeyConceptsSchema = z.object({
   key_concepts: z.array(

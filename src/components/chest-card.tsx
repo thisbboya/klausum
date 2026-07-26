@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { reportError } from "@/lib/report-error";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Sparkles, Gem } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +27,7 @@ export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: stri
     const { data, error } = await supabase.rpc("open_chest", { _tier: tier });
     if (error) {
       setOpening(false);
-      toast.error(error.message);
+      toast.error(reportError("chest-card", error));
       return;
     }
     const row = Array.isArray(data) ? data[0] : data;

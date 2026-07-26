@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { KlausumLoading } from "@/components/loading";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,7 +51,7 @@ function NotesList() {
       .insert({ user_id: user.id, title: "Untitled note", subject: "General" })
       .select("id")
       .single();
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("notes", error));
     qc.invalidateQueries({ queryKey: ["cornell_notes", user.id] });
     navigate({ search: { id: data.id } });
   }
@@ -135,7 +136,7 @@ function NoteEditor({ id }: { id: string }) {
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.from("cornell_notes").select("*").eq("id", id).maybeSingle();
-      if (error) toast.error(error.message);
+      if (error) toast.error(reportError("notes", error));
       if (data) {
         setTitle(data.title);
         setSubject(data.subject ?? "General");
@@ -159,7 +160,7 @@ function NoteEditor({ id }: { id: string }) {
         .update({ title, subject, cue_column: cue, notes_column: notes, summary, updated_at: new Date().toISOString() })
         .eq("id", id);
       setSaving(false);
-      if (error) toast.error(error.message);
+      if (error) toast.error(reportError("notes", error));
     }, 1500);
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); };
   }, [title, subject, cue, notes, summary, id, loading]);
@@ -173,7 +174,7 @@ function NoteEditor({ id }: { id: string }) {
       setCue((c) => (c ? c + "\n" : "") + r.cues.map((q) => "• " + q).join("\n"));
       toast.success("Cues generated");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to generate cues");
+      toast.error(reportError("notes", e));
     } finally {
       setBusy(null);
     }
@@ -188,7 +189,7 @@ function NoteEditor({ id }: { id: string }) {
       setSummary(r.summary);
       toast.success("Summary written");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to summarize");
+      toast.error(reportError("notes", e));
     } finally {
       setBusy(null);
     }
@@ -219,7 +220,7 @@ function NoteEditor({ id }: { id: string }) {
       if (cErr) throw cErr;
       toast.success(`Created ${r.cards.length} flashcards from this note.`);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to convert");
+      toast.error(reportError("notes", e));
     } finally {
       setBusy(null);
     }
@@ -238,7 +239,7 @@ function NoteEditor({ id }: { id: string }) {
       });
       toast.success("Exported");
     } catch (e: any) {
-      toast.error(e?.message ?? "Export failed");
+      toast.error(reportError("notes", e));
     } finally {
       setExporting(false);
     }

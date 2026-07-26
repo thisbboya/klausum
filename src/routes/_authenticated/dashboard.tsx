@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen, Brain, MessagesSquare, Plus, CalendarClock,
   Frown, Meh, Smile, Laugh, Flame, Sparkles, X, Play, ChevronRight, ListChecks,
+  Zap, Gem,
 } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
@@ -44,7 +46,7 @@ function Dashboard() {
     enabled: !!user,
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const [profileRes, materialsRes, cardsRes, checkinRes, examsRes, questsRes, chestRes] = await Promise.all([
+      const [profileRes, materialsRes, cardsRes, checkinRes, examsRes, questsRes, chestRes, videoRes] = await Promise.all([
         supabase.from("user_profiles").select("*").eq("id", user!.id).maybeSingle(),
         supabase
           .from("study_materials")
@@ -76,6 +78,14 @@ function Dashboard() {
           .eq("user_id", user!.id)
           .gte("opened_at", today + "T00:00:00")
           .maybeSingle(),
+        // Most recently watched video — powers "Continue watching"
+        (supabase as any)
+          .from("video_watch_progress")
+          .select("youtube_video_id,watch_seconds,total_seconds,percent_watched,last_watched_at")
+          .eq("user_id", user!.id)
+          .order("last_watched_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
       const dueCount = (cardsRes.data ?? []).filter((c) => c.next_review_date && isDue(c.next_review_date)).length;
       const allQuestsDone = (questsRes ?? []).length > 0 && (questsRes ?? []).every((q) => q.claimed);
@@ -87,9 +97,31 @@ function Dashboard() {
         seen.add(key);
         return true;
       }).slice(0, 5);
+      // Enrich the last-watched video with its title/thumbnail (saved_videos is
+      // separate, and the video may never have been explicitly saved).
+      let lastVideo: any = null;
+      const vp = (videoRes as any)?.data;
+      if (vp?.youtube_video_id) {
+        const { data: sv } = await (supabase as any)
+          .from("saved_videos")
+          .select("title,channel,thumbnail_url")
+          .eq("user_id", user!.id)
+          .eq("youtube_video_id", vp.youtube_video_id)
+          .maybeSingle();
+        lastVideo = {
+          id: vp.youtube_video_id,
+          title: sv?.title ?? "Continue your video",
+          channel: sv?.channel ?? "",
+          thumbnail: sv?.thumbnail_url ?? `https://i.ytimg.com/vi/${vp.youtube_video_id}/mqdefault.jpg`,
+          percent: Math.min(100, Math.round(Number(vp.percent_watched) || 0)),
+          watchSeconds: Math.floor(Number(vp.watch_seconds) || 0),
+        };
+      }
+
       return {
         profile: profileRes.data,
         materials: uniqueMaterials,
+        lastVideo,
         totalCards: (cardsRes.data ?? []).length,
         dueCount,
         checkin: checkinRes.data,
@@ -160,6 +192,60 @@ function Dashboard() {
         </div>
       )}
 
+      {/* Duolingo-style stat strip — the four numbers that drive daily return */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {[
+          {
+            to: "/progress" as const,
+            icon: Flame,
+            label: "Day streak",
+            value: profile?.streak_days ?? 0,
+            tone: "text-amber",
+            chip: "bg-amber/15",
+          },
+          {
+            to: "/progress" as const,
+            icon: Zap,
+            label: "Total XP",
+            value: (profile?.xp_total ?? 0).toLocaleString(),
+            tone: "text-primary",
+            chip: "bg-primary/15",
+          },
+          {
+            to: "/shop" as const,
+            icon: Gem,
+            label: "Gems",
+            value: profile?.gems ?? 0,
+            tone: "text-sky",
+            chip: "bg-sky/15",
+          },
+          {
+            to: "/review" as const,
+            icon: Brain,
+            label: "Cards due",
+            value: data?.dueCount ?? 0,
+            tone: (data?.dueCount ?? 0) > 0 ? "text-success" : "text-muted-foreground",
+            chip: (data?.dueCount ?? 0) > 0 ? "bg-success/15" : "bg-surface-2",
+          },
+        ].map(({ to, icon: Icon, label, value, tone, chip }) => (
+          <Link
+            key={label}
+            to={to}
+            className="card-chunky card-chunky-hover flex items-center gap-2.5 bg-card px-3 py-3"
+          >
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${chip}`}>
+              <Icon className={`h-4.5 w-4.5 ${tone}`} />
+            </span>
+            <div className="min-w-0">
+              <div className={`font-display text-xl font-extrabold leading-none ${tone}`}>{value}</div>
+              <div className="mt-1 truncate text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                {label}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
       {/* CourieX-style two-column layout: content left, status rail right */}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -184,6 +270,40 @@ function Dashboard() {
                     </div>
                     <div className="truncate font-display text-sm font-extrabold">
                       {data.materials[0].title}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Link>
+              )}
+              {data?.lastVideo && (
+                <Link
+                  to="/videos"
+                  search={{ v: data.lastVideo.id, t: data.lastVideo.watchSeconds }}
+                  className="card-chunky card-chunky-hover flex items-center gap-3 overflow-hidden bg-card p-4"
+                >
+                  <span className="relative h-12 w-[68px] shrink-0 overflow-hidden rounded-xl bg-surface-3">
+                    <img
+                      src={data.lastVideo.thumbnail}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/35">
+                      <Play className="h-4 w-4 fill-white text-white" />
+                    </span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                      Continue watching
+                    </div>
+                    <div className="truncate font-display text-sm font-extrabold">
+                      {data.lastVideo.title}
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                      <div
+                        className="h-full rounded-full bg-destructive"
+                        style={{ width: `${Math.max(3, data.lastVideo.percent)}%` }}
+                      />
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -471,7 +591,7 @@ function DailyCheckin({ existing, userId, onSaved }: { existing: any; userId?: s
       .from("daily_checkins")
       .upsert({ user_id: userId, check_date: today, mood: m, energy: en }, { onConflict: "user_id,check_date" } as any);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("dashboard", error));
     toast.success("Checked in for today ✦");
     onSaved();
   }

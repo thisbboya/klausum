@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { KlausumLoading } from "@/components/loading";
 import { useEffect, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -69,7 +70,7 @@ function MapList() {
       })
       .select("id")
       .single();
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("mindmaps", error));
     qc.invalidateQueries({ queryKey: ["mind_maps", user.id] });
     navigate({ search: { id: data.id } });
   }
@@ -135,7 +136,7 @@ function MapEditor({ id }: { id: string }) {
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.from("mind_maps").select("*").eq("id", id).maybeSingle();
-      if (error) toast.error(error.message);
+      if (error) toast.error(reportError("mindmaps", error));
       if (data) {
         setTitle(data.title);
         setSubject(data.subject ?? "General");
@@ -234,7 +235,7 @@ function MapEditor({ id }: { id: string }) {
       a.download = `${title || "mindmap"}.png`;
       a.click();
     } catch (e: any) {
-      toast.error(e?.message ?? "Export failed");
+      toast.error(reportError("mindmaps", e));
     }
   }
 
@@ -250,7 +251,7 @@ function MapEditor({ id }: { id: string }) {
       setEdges(newEdges);
       toast.success(`Generated ${r.nodes.length} concepts`);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to generate");
+      toast.error(reportError("mindmaps", e));
     } finally {
       setBusy(null);
     }
@@ -276,7 +277,7 @@ function MapEditor({ id }: { id: string }) {
       setNodes((ns) => [...ns, ...newNodes]);
       setEdges((es) => [...es, ...newEdges]);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to expand");
+      toast.error(reportError("mindmaps", e));
     } finally {
       setBusy(null);
     }

@@ -1,11 +1,12 @@
 import { awardXp } from "@/lib/xp";
+import { reportError } from "@/lib/report-error";
 import { KlausumLoading } from "@/components/loading";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Flag, ChevronRight, Loader2, Timer, Check, X } from "lucide-react";
+import { Flag, ChevronRight, Loader2, Timer, Check, X, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sounds } from "@/lib/sounds";
 import { submitDuelScore } from "@/lib/duels";
@@ -56,6 +57,7 @@ function TakeQuiz() {
   const [questions, setQuestions] = useState<Q[]>([]);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
+  const [materialId, setMaterialId] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [flags, setFlags] = useState<Set<number>>(new Set());
@@ -71,6 +73,13 @@ function TakeQuiz() {
   const [blankText, setBlankText] = useState("");
   useEffect(() => { setBlankText(""); }, [idx]);
 
+  // Land at the top of every new question instead of keeping the previous
+  // scroll offset, which dumped you into the middle of the next one.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [idx]);
+
+
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.from("quizzes").select("*").eq("id", id).maybeSingle();
@@ -81,6 +90,7 @@ function TakeQuiz() {
       }
       setQuestions((data.questions as any) ?? []);
       setTitle(data.title);
+      setMaterialId((data as any).material_id ?? null);
       setSubject(data.subject ?? "General");
       setLoading(false);
     })();
@@ -133,6 +143,47 @@ function TakeQuiz() {
     setTimeout(() => setFlash(null), 500);
   }
 
+  // Keyboard play: A-D / 1-4 to answer, T/F for true-false, Enter or → to
+  // advance, ← to go back. Keeps you off the mouse for a whole quiz.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toUpperCase();
+      const type = qtypeOf(q);
+
+      if (k === "ENTER" || k === "ARROWRIGHT") {
+        e.preventDefault();
+        if (idx < total - 1) setIdx(idx + 1);
+        return;
+      }
+      if (k === "ARROWLEFT") {
+        e.preventDefault();
+        if (idx > 0) setIdx(idx - 1);
+        return;
+      }
+      if (checked[idx] || type === "fill_blank") return;
+
+      if (type === "true_false") {
+        if (k === "T") { e.preventDefault(); pick("A"); }
+        if (k === "F") { e.preventDefault(); pick("B"); }
+        return;
+      }
+      const letters = ["A", "B", "C", "D"];
+      const byLetter = letters.indexOf(k);
+      const byNumber = "1234".indexOf(e.key);
+      const i = byLetter >= 0 ? byLetter : byNumber;
+      if (i >= 0 && (q.options as any)?.[letters[i]]) {
+        e.preventDefault();
+        pick(letters[i]);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, total, q, checked]);
+
   async function finish() {
     if (!user) return;
     setSubmitting(true);
@@ -168,7 +219,7 @@ function TakeQuiz() {
       .select("id")
       .single();
     if (error) {
-      toast.error(error.message);
+      toast.error(reportError("quizzes.$id.take", error));
       setSubmitting(false);
       return;
     }
@@ -281,7 +332,7 @@ function TakeQuiz() {
           toast.success("Score submitted — waiting on your opponent.");
         }
       } catch (e: any) {
-        toast.error(e?.message ?? "Failed to submit duel score");
+        toast.error(reportError("quizzes.$id.take", e));
         setSubmitting(false);
       }
       navigate({ to: "/community" });
@@ -303,8 +354,9 @@ function TakeQuiz() {
   const isCorrect = isChecked && isRightAnswer(q, userAnswer);
 
   return (
-    <div className={`space-y-6 max-w-2xl mx-auto transition ${flash === "green" ? "flash-green" : flash === "red" ? "flash-red" : ""}`}>
-      <header>
+    <div className={`mx-auto flex min-h-[calc(100dvh-8rem)] max-w-3xl flex-col gap-4 transition ${flash === "green" ? "flash-green" : flash === "red" ? "flash-red" : ""}`}>
+      {/* Sticky so the counter, timer and progress never scroll out of view */}
+      <header className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-1 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">{subject} · {idx + 1} / {total}</p>
           {timerSec && timerSec > 0 ? (
@@ -317,6 +369,11 @@ function TakeQuiz() {
         <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
           <div className="h-full bg-primary xp-bar-fill" style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
+        <p className="mt-1.5 hidden text-[10px] font-bold text-muted-foreground md:block">
+          Keyboard: <kbd className="rounded bg-surface-3 px-1">A</kbd>–<kbd className="rounded bg-surface-3 px-1">D</kbd> or{" "}
+          <kbd className="rounded bg-surface-3 px-1">1</kbd>–<kbd className="rounded bg-surface-3 px-1">4</kbd> to answer ·{" "}
+          <kbd className="rounded bg-surface-3 px-1">Enter</kbd> for next
+        </p>
         {flags.size > 0 && (
           <div className="mt-2 flex items-center gap-2 text-[11px] text-primary">
             <Flag className="h-3 w-3" /> {flags.size} flagged
@@ -396,7 +453,7 @@ function TakeQuiz() {
                       key={letter}
                       onClick={() => pick(letter)}
                       disabled={isChecked}
-                      className={`w-full text-left rounded-xl border-2 px-5 py-4 min-h-[56px] text-base md:text-lg transition flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-primary/40 ${cls}`}
+                      className={`w-full text-left rounded-xl border-2 px-4 py-3 min-h-[52px] text-base transition flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-primary/40 ${cls}`}
                     >
                       <span className="flex items-center gap-3">
                         <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-current/30 font-mono text-sm font-bold shrink-0">
@@ -411,9 +468,23 @@ function TakeQuiz() {
                 })}
             </div>
           )}
-          <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>Bloom L{q.bloom_level} · {q.difficulty}</span>
-            <span className="truncate ml-2">{q.topic}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              {/* Where this came from — lets you open the slide/page and look at
+                  the diagram the question is describing. */}
+              {(q as any).source_ref && materialId && (
+                <Link
+                  to="/materials/$id"
+                  params={{ id: materialId }}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface-3 px-2 py-0.5 font-bold hover:text-foreground"
+                  title="Open the material to view this part"
+                >
+                  <BookOpen className="h-3 w-3" /> {(q as any).source_ref}
+                </Link>
+              )}
+              <span className="truncate">{q.topic}</span>
+            </span>
           </div>
         </motion.div>
       </AnimatePresence>
@@ -455,18 +526,22 @@ function TakeQuiz() {
       </AnimatePresence>
 
 
-      <div className="flex items-center justify-between gap-3">
+      {/* Pinned action bar — reaching Next must never require scrolling */}
+      <div className="sticky bottom-0 z-20 -mx-4 mt-auto flex items-center justify-between gap-3 border-t-2 border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <button
           onClick={() => setIdx(Math.max(0, idx - 1))}
           disabled={idx === 0}
-          className="rounded-xl border-2 border-border px-4 py-2 text-sm disabled:opacity-30"
+          className="rounded-xl border-2 border-border px-4 py-2.5 text-sm font-bold disabled:opacity-30"
         >
           ← Back
         </button>
+        <span className="text-xs font-extrabold text-muted-foreground">
+          {answered}/{total} answered
+        </span>
         {idx < total - 1 ? (
           <button
             onClick={() => setIdx(idx + 1)}
-            className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground hover:opacity-90"
           >
             Next <ChevronRight className="h-4 w-4" />
           </button>
@@ -474,7 +549,7 @@ function TakeQuiz() {
           <button
             onClick={finish}
             disabled={!allAnswered || submitting}
-            className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 btn-3d rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {allAnswered ? "Finish quiz" : `Answer all (${answered}/${total})`}

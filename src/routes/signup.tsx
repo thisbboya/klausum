@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { motion, MotionConfig } from "framer-motion";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { KlausumLogo, AnimatedKlausumMark } from "@/components/klausum-mark";
 import { AuthBg } from "@/components/auth-bg";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({ component: SignupPage });
@@ -58,68 +57,45 @@ function Item({ children, className }: { children: React.ReactNode; className?: 
 
 function SignupPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<"form" | "otp">("form");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [shake, setShake] = useState(0);
 
+  // Simple email signup — no OTP, no verification step. Requires "Confirm
+  // email" to be OFF in Supabase (Auth → Sign In/Up), otherwise signUp returns
+  // no session and we fall back to pointing the user at login.
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: fullName },
-      },
+      options: { data: { full_name: fullName } },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("We sent a 6-digit code to your email");
-    setStep("otp");
-  }
-
-  async function handleVerify(e: React.FormEvent) {
-    e.preventDefault();
-    if (otp.length !== 6) return toast.error("Enter the 6-digit code");
-    setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: "signup",
-    });
-    setLoading(false);
-    if (error) {
-      setShake((s) => s + 1); // wrong code — shake the OTP row
-      setOtp("");
-      return toast.error(error.message);
+    if (!data.session) {
+      // Confirmations still enabled server-side — don't strand the user.
+      toast.success("Account created — you can log in now");
+      navigate({ to: "/login" });
+      return;
     }
     const reduce = typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!reduce) {
       confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
     }
-    toast.success("Email verified — welcome!");
+    toast.success("Welcome to Klausum!");
     setTimeout(() => navigate({ to: "/onboarding" }), reduce ? 0 : 650);
   }
 
-  async function handleResend() {
-    setResending(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    setResending(false);
-    if (error) return toast.error(error.message);
-    toast.success("New code sent");
-  }
-
   async function handleGoogle() {
+    // Land on /dashboard and let the _authenticated guard decide: brand-new
+    // users get sent to /onboarding, returning users never re-run it.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin + "/onboarding" },
+      options: { redirectTo: window.location.origin + "/dashboard" },
     });
     if (error) return toast.error(error.message ?? "Google sign-in failed");
   }
@@ -153,30 +129,12 @@ function SignupPage() {
           <div className="mb-5 flex justify-center">
             <AnimatedKlausumMark size={72} />
           </div>
-          {/* Step progress — fills as you move form → otp */}
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            key="form"
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={spring}
-            className="mb-8 h-2.5 overflow-hidden rounded-full bg-surface-3"
           >
-            <motion.div
-              className="h-full rounded-full bg-success"
-              initial={false}
-              animate={{ width: step === "form" ? "50%" : "100%" }}
-              transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-            />
-          </motion.div>
-
-          <AnimatePresence mode="wait" initial={false}>
-            {step === "form" ? (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0, x: -32 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -32, transition: { duration: 0.18 } }}
-                transition={spring}
-              >
                 <Stagger>
                   <Item>
                     <h1 className="text-center font-display text-2xl font-extrabold tracking-tight">
@@ -226,7 +184,7 @@ function SignupPage() {
                         type="submit" disabled={loading}
                         className="btn-3d btn-3d-success mt-2 w-full rounded-2xl bg-success py-3 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
                       >
-                        {loading ? "Sending code…" : "Create account"}
+                        {loading ? "Creating account…" : "Create account"}
                       </button>
                     </Item>
                   </form>
@@ -252,75 +210,7 @@ function SignupPage() {
                     </p>
                   </Item>
                 </Stagger>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="otp"
-                initial={{ opacity: 0, x: 32 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 32, transition: { duration: 0.18 } }}
-                transition={spring}
-              >
-                <Stagger>
-                  <Item>
-                    <motion.div
-                      className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky/15"
-                      animate={{ y: [0, -6, 0] }}
-                      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-sky" aria-hidden>
-                        <rect x="2" y="4" width="20" height="16" rx="3" />
-                        <path d="m2 7 10 6 10-6" />
-                      </svg>
-                    </motion.div>
-                    <h1 className="mt-4 text-center font-display text-2xl font-extrabold tracking-tight">
-                      Check your email
-                    </h1>
-                    <p className="mt-2 text-center text-sm font-semibold text-muted-foreground">
-                      Enter the 6-digit code we sent to{" "}
-                      <span className="font-extrabold text-foreground">{email}</span>
-                    </p>
-                  </Item>
-                  <form onSubmit={handleVerify} className="mt-8 space-y-4">
-                    <Item>
-                      {/* key bump re-triggers the shake on each wrong code */}
-                      <motion.div
-                        key={shake}
-                        initial={false}
-                        animate={shake > 0 ? { x: [0, -10, 10, -7, 7, 0] } : {}}
-                        transition={{ duration: 0.4 }}
-                        className="flex justify-center"
-                      >
-                        <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                          <InputOTPGroup>
-                            {[0, 1, 2, 3, 4, 5].map((i) => (
-                              <InputOTPSlot key={i} index={i} />
-                            ))}
-                          </InputOTPGroup>
-                        </InputOTP>
-                      </motion.div>
-                    </Item>
-                    <Item>
-                      <button
-                        type="submit" disabled={loading || otp.length !== 6}
-                        className="btn-3d btn-3d-success w-full rounded-2xl bg-success py-3 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
-                      >
-                        {loading ? "Verifying…" : "Verify & continue"}
-                      </button>
-                      <div className="mt-4 flex items-center justify-between text-xs font-extrabold text-muted-foreground">
-                        <button type="button" onClick={() => setStep("form")} className="hover:text-foreground">
-                          Change email
-                        </button>
-                        <button type="button" onClick={handleResend} disabled={resending} className="text-sky hover:underline disabled:opacity-50">
-                          {resending ? "Resending…" : "Resend code"}
-                        </button>
-                      </div>
-                    </Item>
-                  </form>
-                </Stagger>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </motion.div>
         </div>
       </main>
 

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { reportError } from "@/lib/report-error";
 import { useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { snapAndSolve, solveFollowup, type SolveResult } from "@/lib/solve.functions";
@@ -48,7 +49,7 @@ function SolvePage() {
         });
         setResult(r);
       } catch (e: any) {
-        toast.error(e?.message ?? "Could not read that image");
+        toast.error(reportError("solve", e));
       } finally {
         setLoading(null);
       }
@@ -72,7 +73,7 @@ function SolvePage() {
       setFollowups((prev) => [...prev, { q: followupQ, a: r.reply }]);
       setFollowupQ("");
     } catch (e: any) {
-      toast.error(e?.message ?? "Follow-up failed");
+      toast.error(reportError("solve", e));
     } finally {
       setFollowupBusy(false);
     }

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Shield, Users, BarChart3, BookOpen, Megaphone, KeyRound, SlidersHorizontal, Trash2, Brain } from "lucide-react";
+import { Loader2, Shield, Users, BarChart3, BookOpen, Megaphone, KeyRound, SlidersHorizontal, Trash2, Brain, AlertTriangle, Gauge } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 // Admin data comes from SECURITY DEFINER RPCs (admin_list_users, admin_stats,
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const { isAdmin, isLoading } = useIsAdmin();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"users" | "insights" | "stats" | "materials" | "updates" | "apis" | "algorithm">("users");
+  const [tab, setTab] = useState<"users" | "insights" | "stats" | "materials" | "updates" | "apis" | "algorithm" | "errors" | "limits">("users");
 
   if (isLoading) {
     return (
@@ -74,6 +74,12 @@ function AdminPage() {
         <TabBtn active={tab === "algorithm"} onClick={() => setTab("algorithm")} icon={SlidersHorizontal}>
           Algorithm
         </TabBtn>
+        <TabBtn active={tab === "errors"} onClick={() => setTab("errors")} icon={AlertTriangle}>
+          Errors
+        </TabBtn>
+        <TabBtn active={tab === "limits"} onClick={() => setTab("limits")} icon={Gauge}>
+          Limits
+        </TabBtn>
       </div>
 
       {tab === "users" && <UsersTab />}
@@ -83,6 +89,199 @@ function AdminPage() {
       {tab === "updates" && <UpdatesAdminTab />}
       {tab === "apis" && <ProvidersTab />}
       {tab === "algorithm" && <AlgorithmTab />}
+      {tab === "errors" && <ErrorsTab />}
+      {tab === "limits" && <LimitsTab />}
+    </div>
+  );
+}
+
+// ── Limits (per-feature daily AI quotas, same for every user) ──────────────
+const FEATURE_META: Record<string, { label: string; hint: string }> = {
+  quiz_generate: { label: "Quiz generation", hint: "New quizzes per user per day" },
+  material_process: { label: "Material uploads (AI)", hint: "AI processing runs at upload" },
+  tutor_chat: { label: "AI Tutor messages", hint: "Messages sent to the tutor" },
+  material_chat: { label: "Document chat", hint: "Ask-about-this-page messages" },
+  video_analyze: { label: "Video analyses", hint: "New videos analyzed (cache hits are free)" },
+  video_chat: { label: "Video chat", hint: "Messages in Watch & Study" },
+  video_quiz: { label: "Video quizzes", hint: "Quizzes generated from videos" },
+  regenerate: { label: "Regenerations", hint: "Concepts / Bloom / formula rebuilds" },
+};
+
+function LimitsTab() {
+  const qc = useQueryClient();
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
+
+  const { data: rules = [], isLoading } = useQuery({
+    queryKey: ["admin_limits"],
+    queryFn: async () => {
+      const { data } = await (sb as any)
+        .from("ai_rate_limits")
+        .select("feature, daily_limit, enabled")
+        .order("feature");
+      return data ?? [];
+    },
+  });
+
+  const { data: usage = {} } = useQuery({
+    queryKey: ["admin_ai_usage"],
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data } = await (sb as any).rpc("admin_ai_usage_today");
+      return (data ?? {}) as Record<string, number>;
+    },
+  });
+
+  async function save(feature: string, patch: { daily_limit?: number; enabled?: boolean }) {
+    const { error } = await (sb as any)
+      .from("ai_rate_limits")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("feature", feature);
+    if (error) return toast.error(error.message);
+    toast.success("Limit updated");
+    qc.invalidateQueries({ queryKey: ["admin_limits"] });
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="card-chunky border-sky/40 bg-sky/5 p-4 text-xs font-semibold text-muted-foreground">
+        <strong className="text-foreground">How it works:</strong> each limit is a per-user daily cap
+        on that AI feature, counted per UTC day and applied to everyone — including you, so you can
+        test it. When a user hits a cap they see “You've used all N of today's free …, resets at
+        midnight.” Disable a row to make that feature unlimited.
+      </div>
+
+      {isLoading ? (
+        <div className="text-sm font-semibold text-muted-foreground">Loading…</div>
+      ) : (
+        <ul className="space-y-2">
+          {rules.map((r: any) => {
+            const meta = FEATURE_META[r.feature] ?? { label: r.feature, hint: "" };
+            const draft = drafts[r.feature] ?? r.daily_limit;
+            const used = usage[r.feature] ?? 0;
+            return (
+              <li key={r.feature} className="card-chunky flex flex-wrap items-center gap-3 bg-card p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-sm font-extrabold">{meta.label}</div>
+                  <div className="text-[11px] font-semibold text-muted-foreground">{meta.hint}</div>
+                </div>
+                <span
+                  className="rounded-full bg-surface-3 px-2.5 py-1 text-[10px] font-extrabold"
+                  title="All users combined, today (UTC)"
+                >
+                  {used} used today
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={0}
+                    max={10000}
+                    value={draft}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      if (!Number.isNaN(n)) setDrafts((d) => ({ ...d, [r.feature]: Math.max(0, n) }));
+                    }}
+                    className="h-9 w-20 rounded-lg border-2 border-border bg-background px-2 text-center text-sm font-extrabold outline-none focus:border-primary"
+                    aria-label={`Daily limit for ${meta.label}`}
+                  />
+                  <span className="text-[10px] font-bold text-muted-foreground">/day</span>
+                  {draft !== r.daily_limit && (
+                    <button
+                      onClick={() => save(r.feature, { daily_limit: draft })}
+                      className="btn-3d rounded-lg bg-primary px-2.5 py-1.5 text-xs font-extrabold text-primary-foreground"
+                    >
+                      Save
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => save(r.feature, { enabled: !r.enabled })}
+                  className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide ${
+                    r.enabled ? "bg-success/15 text-success" : "bg-surface-3 text-muted-foreground"
+                  }`}
+                  title={r.enabled ? "Click to disable (feature becomes unlimited)" : "Click to enable the cap"}
+                >
+                  {r.enabled ? "Enforced" : "Off (unlimited)"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ── Errors (admin-only; users only ever see friendly messages) ─────────────
+function ErrorsTab() {
+  const qc = useQueryClient();
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["admin_errors"],
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data } = await (sb as any)
+        .from("app_error_logs")
+        .select("id, context, message, status_code, created_at, user_id")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      return data ?? [];
+    },
+  });
+
+  async function clearAll() {
+    await (sb as any).from("app_error_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    qc.invalidateQueries({ queryKey: ["admin_errors"] });
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="card-chunky border-sky/40 bg-sky/5 p-4 text-xs font-semibold text-muted-foreground">
+        <strong className="text-foreground">Why this exists:</strong> users never see raw failures —
+        they get a calm message like “Klausum is a bit busy right now.” The real error lands here.
+        Only admins can read this table.
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold">
+          {isLoading ? "Loading…" : `${rows.length} recent error${rows.length === 1 ? "" : "s"}`}
+        </p>
+        {rows.length > 0 && (
+          <button
+            onClick={clearAll}
+            className="rounded-lg border-2 border-border px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-muted-foreground hover:text-destructive"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {!isLoading && rows.length === 0 ? (
+        <div className="card-chunky border-dashed p-8 text-center text-sm font-semibold text-muted-foreground">
+          No errors logged. 🎉
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((r: any) => (
+            <li key={r.id} className="card-chunky bg-card p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-destructive/12 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-destructive">
+                  {r.context}
+                </span>
+                {r.status_code && (
+                  <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[10px] font-extrabold">
+                    {r.status_code}
+                  </span>
+                )}
+                <span className="text-[10px] font-bold text-muted-foreground">
+                  {new Date(r.created_at).toLocaleString()}
+                </span>
+              </div>
+              <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words text-[11px] font-medium text-muted-foreground">
+                {r.message}
+              </pre>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -482,7 +681,7 @@ function UpdatesAdminTab() {
 
 // ── AI Providers (keys that rotate or race in parallel) ────────────────────
 
-const PROVIDER_OPTIONS = ["gemini", "groq", "openrouter", "cerebras"];
+const PROVIDER_OPTIONS = ["gemini", "youtube", "groq", "openrouter", "cerebras"];
 
 function ProvidersTab() {
   const qc = useQueryClient();

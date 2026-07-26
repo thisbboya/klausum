@@ -1,4 +1,5 @@
 import { awardXp } from "@/lib/xp";
+import { reportError } from "@/lib/report-error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,17 +30,12 @@ const STEM_FIELDS = new Set(["Sciences","Engineering","Medicine"]);
 // Course-card tints, hashed from the subject name (CourieX-style folders)
 const COURSE_COLORS = ["#1CB0F6", "#58CC02", "#FFC800", "#A570FF", "#FF4B4B", "#F97316", "#0D9488", "#8B5CF6"];
 
+// Honest phases for the one AI pass that actually runs (plus file extraction).
 const STEPS = [
-  "Content received",
-  "Extracting key concepts & graph",
-  "Creating visual version",
-  "Creating auditory version",
-  "Creating reading version",
-  "Creating kinesthetic version",
-  "Generating Cornell Notes",
-  "Building 15 flashcards (Bloom L1–L6)",
-  "Extracting formulas",
-  "Building Bloom question bank",
+  "Reading your file",
+  "Understanding the content",
+  "Building your study set",
+  "Almost done",
 ];
 
 export function MaterialsPage() {
@@ -155,6 +151,9 @@ export function MaterialsPage() {
           subject: opts.subject,
           fieldCategory: opts.fieldCategory,
           isStem: opts.isStem,
+          // Generate only this learner's VARK adaptation — much faster upload
+          // and far less AI quota than producing all four.
+          primaryStyle: (profile as any)?.primary_style ?? undefined,
           text: opts.text,
           fileBase64: opts.fileBase64,
           mimeType: opts.mimeType,
@@ -355,7 +354,7 @@ export function MaterialsPage() {
           } as any)
           .select("id")
           .single();
-        if (error) return toast.error(error.message);
+        if (error) return toast.error(reportError("materials.index", error));
         toast.success(
           isOffice
             ? "Uploaded — opens in the document viewer with AI chat"
@@ -380,7 +379,7 @@ export function MaterialsPage() {
   async function joinCourse(code: string) {
     if (!code.trim()) return;
     const { data, error } = await (supabase as any).rpc("join_course_by_code", { p_code: code.trim() });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("materials.index", error));
     setJoinOpen(false);
     setJoinCode("");
     toast.success(`Joined "${data.name}" — its materials are now in your library`);
@@ -398,14 +397,14 @@ export function MaterialsPage() {
         .insert({ user_id: user.id, name: subjectName })
         .select("*")
         .single();
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(reportError("materials.index", error));
       course = data;
     }
     let code = course.share_code;
     if (!code) {
       code = Array.from({ length: 6 }, () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 31)]).join("");
       const { error } = await (supabase as any).from("courses").update({ share_code: code }).eq("id", course.id);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(reportError("materials.index", error));
     }
     qc.invalidateQueries({ queryKey: ["courses"] });
     setShareInfo({ name: subjectName, code });
@@ -505,7 +504,7 @@ export function MaterialsPage() {
         />
       )}
 
-      {showUploadForm && !activeSubject && !uploading && (
+      {showUploadForm && !uploading && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => setShowUploadForm(false)}
@@ -626,37 +625,21 @@ export function MaterialsPage() {
           : stepIdx < 7 ? `Rewriting it for the way YOU learn…`
           : `Almost there — final polish on your flashcards…`;
         return (
-        <div className="rounded-xl border border-primary/40 bg-primary/5 p-6">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="shrink-0">
-              <CompanionSVG id={c.id} size={64} />
+        // Compact CourieX-style strip: one line, one bar, current step only.
+        <div className="card-chunky flex items-center gap-3 bg-card px-4 py-3">
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="truncate text-sm font-bold">{STEPS[stepIdx] ?? phase}</span>
+              <span className="shrink-0 font-mono text-xs font-extrabold text-primary tabular-nums">{pct}%</span>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-display font-extrabold">{pilotName} is on it</div>
-              <div className="text-xs font-semibold text-muted-foreground">{phase}</div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
+                style={{ width: `${pct}%` }}
+              />
             </div>
-            <div className="font-display text-2xl font-extrabold text-primary tabular-nums">{pct}%</div>
           </div>
-          <div className="mb-4 h-3 overflow-hidden rounded-full bg-surface-3">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <ul className="space-y-1.5 text-sm">
-            {STEPS.map((s, i) => (
-              <li key={s} className="flex items-center gap-2">
-                {i < stepIdx ? (
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                ) : i === stepIdx ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                ) : (
-                  <span className="h-4 w-4 rounded-full border border-border inline-block" />
-                )}
-                <span className={i <= stepIdx ? "" : "text-muted-foreground"}>{s}</span>
-              </li>
-            ))}
-          </ul>
         </div>
         );
       })()}
@@ -732,6 +715,15 @@ export function MaterialsPage() {
             {(!courseByName[activeSubject] || courseByName[activeSubject].user_id === user?.id) && (
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => {
+                    setSubject(activeSubject); // upload straight into this course
+                    setShowUploadForm(true);
+                  }}
+                  className="btn-3d rounded-xl bg-primary px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-wide text-primary-foreground"
+                >
+                  + Upload here
+                </button>
+                <button
                   onClick={() => shareCourse(activeSubject)}
                   className="rounded-xl border-2 border-border bg-card px-3.5 py-1.5 text-xs font-extrabold text-muted-foreground hover:text-foreground"
                 >
@@ -744,7 +736,7 @@ export function MaterialsPage() {
                     onClick={async () => {
                       if (!confirm(`Delete the course "${activeSubject}"? Materials inside stay in your library.`)) return;
                       const { error } = await (supabase as any).from("courses").delete().eq("id", courseByName[activeSubject].id);
-                      if (error) return toast.error(error.message);
+                      if (error) return toast.error(reportError("materials.index", error));
                       toast.success("Course deleted");
                       setActiveSubject(null);
                       qc.invalidateQueries({ queryKey: ["courses"] });
@@ -796,7 +788,7 @@ export function MaterialsPage() {
                   onClick={async () => {
                     if (!confirm(`Delete "${m.title}"?`)) return;
                     const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
-                    if (error) toast.error(error.message);
+                    if (error) toast.error(reportError("materials.index", error));
                     else {
                       toast.success("Material deleted");
                       qc.invalidateQueries({ queryKey: ["materials"] });
@@ -845,7 +837,7 @@ function CourseModal({ userId, onClose, onCreated }: { userId?: string; onClose:
       user_id: userId, name: name.trim(), description: description.trim() || null, icon, color,
     });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(reportError("materials.index", error));
     toast.success(`Course "${name.trim()}" created`);
     onCreated();
   }

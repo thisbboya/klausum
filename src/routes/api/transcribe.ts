@@ -41,7 +41,7 @@ export const Route = createFileRoute("/api/transcribe")({
             return new Response(JSON.stringify({ error: "Transcription requires GEMINI_API_KEY" }), { status: 500 });
           }
 
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gemKey}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gemKey}`;
           const r = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
