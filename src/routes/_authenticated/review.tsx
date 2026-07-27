@@ -292,14 +292,14 @@ function ReviewPage() {
     <div className={`space-y-5 transition ${flash === "green" ? "flash-green" : flash === "red" ? "flash-red" : ""}`}>
       <XPBurst state={xpBurst} />
 
-      <header className="flex items-center justify-between">
-        <div>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" /> Review
           </h1>
           <p className="text-xs text-muted-foreground mt-1">{cards.length} due · {reviewedToday} reviewed</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Hearts count={hearts} />
           {hotStreak >= 2 && (
             <div className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full streak-bounce" key={hotStreak}>

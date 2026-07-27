@@ -413,28 +413,30 @@ export function MaterialsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start justify-between">
-        <div>
+      {/* Stacks on phones: side-by-side flex crushed the subtitle into a
+          3-line sliver next to three shrink-0 buttons. */}
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h1 className="font-display text-2xl font-bold">Materials</h1>
           <p className="text-sm text-muted-foreground mt-1">Upload anything — AI rewrites it for your style.</p>
         </div>
         {!activeSubject && (
-          <div className="flex shrink-0 gap-2">
+          <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
               onClick={() => setJoinOpen(true)}
-              className="rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
+              className="flex-1 whitespace-nowrap rounded-xl border-2 border-border bg-card px-4 py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground sm:flex-none"
             >
               Join course
             </button>
             <button
               onClick={() => setShowCourseModal(true)}
-              className="rounded-xl border-2 border-border bg-card px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground"
+              className="flex-1 whitespace-nowrap rounded-xl border-2 border-border bg-card px-4 py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground sm:flex-none"
             >
               + New course
             </button>
             <button
               onClick={() => setShowUploadForm(!showUploadForm)}
-              className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              className="btn-3d w-full whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 sm:w-auto"
             >
               {showUploadForm ? "Cancel" : "+ Upload Material"}
             </button>

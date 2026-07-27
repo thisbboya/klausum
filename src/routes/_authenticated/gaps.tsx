@@ -202,14 +202,19 @@ function GapsPage() {
 
   return (
     <div className="space-y-8">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-bold">Knowledge Gaps</h1>
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">Knowledge Gaps</h1>
           <p className="text-sm text-muted-foreground">Topics your quizzes flagged as weak. Close them one by one.</p>
         </div>
-        <div className="text-right text-xs text-muted-foreground">
-          <div><span className="text-foreground font-semibold">{open.length}</span> open</div>
-          <div><span className="text-foreground font-semibold">{resolved.length}</span> closed</div>
+        {/* Inline chips on phones — a right-aligned stack wasted a whole column */}
+        <div className="flex shrink-0 gap-2 text-xs text-muted-foreground sm:block sm:text-right">
+          <div className="rounded-full bg-surface-3 px-2.5 py-1 sm:bg-transparent sm:px-0 sm:py-0">
+            <span className="text-foreground font-semibold">{open.length}</span> open
+          </div>
+          <div className="rounded-full bg-surface-3 px-2.5 py-1 sm:bg-transparent sm:px-0 sm:py-0">
+            <span className="text-foreground font-semibold">{resolved.length}</span> closed
+          </div>
         </div>
       </header>
 
