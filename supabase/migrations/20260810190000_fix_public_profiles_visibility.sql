@@ -1,0 +1,41 @@
+-- Fix: every social feature was broken because "public" profiles were private.
+--
+-- ROOT CAUSE
+-- public.public_profiles is a view over user_profiles exposing only safe,
+-- shareable columns. It was declared with security_invoker = true, which makes
+-- it run with the *querying user's* permissions, so it inherited the single
+-- SELECT policy on user_profiles:
+--
+--     "Users view own profile"  USING (auth.uid() = id)
+--
+-- Result: any signed-in user selecting from public_profiles got exactly one
+-- row — their own. Verified against production: the service role sees every
+-- profile, a signed-in user sees 1.
+--
+-- SYMPTOMS THIS EXPLAINS
+--   * weekly leaderboard rendered every other player as "Anonymous" with a "?"
+--     avatar (leaderboard_weekly rows ARE readable; the name lookup was not)
+--   * friend search returned nobody, so friends could never be added
+--   * duels and study groups could not display an opponent's name
+--   * the public /u/<handle> page could not render for anyone but yourself
+--
+-- FIX
+-- Make the view a security-definer boundary so its COLUMN LIST is the privacy
+-- contract, rather than the underlying table's row policy.
+--
+-- Chosen deliberately over the alternative — adding a "read all rows" SELECT
+-- policy to user_profiles — because that would expose *every* column of the
+-- table (VARK scores, daily_goal_minutes, available_hours, session prefs) to
+-- any signed-in user. This way user_profiles itself stays owner-only.
+--
+-- The view exposes only: id, handle, full_name, avatar_url, level, school,
+-- country, field_of_study, companion_id, companion_name, xp_total,
+-- streak_days, longest_streak, is_day1_pioneer, cohort_units, created_at.
+-- No email address, no assessment scores, no private preferences.
+alter view public.public_profiles set (security_invoker = false);
+
+-- anon is granted on purpose: /u/<handle> is an unauthenticated route, so a
+-- shared profile link has to render for logged-out visitors. If you would
+-- rather profiles be visible only to signed-in students, drop `anon` here and
+-- move the /u/$handle route behind auth.
+grant select on public.public_profiles to anon, authenticated;

@@ -10,6 +10,9 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { Send, MessagesSquare, Sparkles, Square, RotateCcw, Lightbulb, ListOrdered, HelpCircle, Baby } from "lucide-react";
+import { CompanionSVG } from "@/components/companion-svg";
+import { awardXp } from "@/lib/xp";
+import { toast } from "@/lib/notify";
 
 export const Route = createFileRoute("/_authenticated/tutor")({
   component: Tutor,
@@ -33,6 +36,19 @@ const QUICK_ACTIONS = [
 
 function Tutor() {
   const { user } = useAuth();
+  // The chosen pilot fronts the tutor, so the page feels like talking to
+  // someone rather than to a text box.
+  const [profile, setProfile] = useState<{ companion_id: number | null; companion_name: string | null } | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_profiles")
+      .select("companion_id, companion_name")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setProfile(data as any));
+  }, [user]);
+  const tutorName = profile?.companion_name || "your pilot";
   const [mode, setMode] = useState<"standard" | "socratic">("standard");
   const [input, setInput] = useState("");
   const [token, setToken] = useState<string | null>(null);
@@ -85,8 +101,23 @@ function Tutor() {
     transport,
     onError: (e) => console.error(e),
     onFinish: () => {
-      if (user) {
-        supabase.rpc("increment_ai_messages", { p_user_id: user.id }).then(() => refreshUsage());
+      if (!user) return;
+      supabase.rpc("increment_ai_messages", { p_user_id: user.id }).then(() => refreshUsage());
+      // Asking your tutor a question is studying, so it earns XP like every
+      // other study action. Once per day only — this rewards showing up, not
+      // spamming the send button, and it keeps the daily quest honest.
+      const today = new Date().toISOString().slice(0, 10);
+      let claimed = "";
+      try { claimed = localStorage.getItem("klausum:tutorXpDate") ?? ""; } catch {}
+      if (claimed !== today) {
+        try { localStorage.setItem("klausum:tutorXpDate", today); } catch {}
+        void awardXp({
+          userId: user.id,
+          amount: 10,
+          action: "tutor_session",
+          description: "Asked the AI tutor a question",
+        });
+        toast.success("+10 XP — good question", { description: "First tutor session today" });
       }
     },
   });
@@ -160,11 +191,20 @@ function Tutor() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto card-chunky bg-card/30 p-4 space-y-4">
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground py-12">
-            <Sparkles className="h-8 w-8 text-primary mb-2" />
-            <p className="text-sm">Ask a question to begin.</p>
-            {mode === "socratic" && (
-              <p className="text-xs mt-1">Socratic mode: I'll only ask questions back.</p>
-            )}
+            {/* The pilot the student already chose is the tutor's face. A
+                generic sparkle icon made this the one screen in the app with no
+                personality at all. */}
+            <div className="pilot-float">
+              <CompanionSVG id={profile?.companion_id ?? 1} size={84} />
+            </div>
+            <div className="relative mt-3 max-w-xs rounded-2xl border-2 border-border bg-card px-4 py-2.5">
+              <p className="text-sm font-extrabold text-foreground">
+                {mode === "socratic"
+                  ? `${tutorName} will only ask questions back — you do the thinking.`
+                  : `Ask ${tutorName} anything. No question is too small.`}
+              </p>
+            </div>
+            <p className="mt-2 text-xs font-bold text-primary">+10 XP for your first question today</p>
             <div className="mt-6 grid grid-cols-2 gap-2 max-w-md w-full px-4">
               {QUICK_ACTIONS.map((a) => (
                 <button
