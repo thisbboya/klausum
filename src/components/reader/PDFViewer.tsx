@@ -78,6 +78,50 @@ export function PDFViewer({
   const [selection, setSelection] = useState<{ text: string; x: number; y: number } | null>(null);
   const pageTextCache = useRef<Record<number, string>>({});
 
+  // ── Pinch to zoom ─────────────────────────────────────────────────────────
+  // The reader had zoom buttons but no pinch, which is the gesture everyone
+  // actually reaches for on a phone — and the main reason this felt unusable
+  // next to Adobe. Re-rendering the PDF on every touchmove would be far too
+  // slow, so the live gesture scales the canvas with a CSS transform and the
+  // real re-render happens once, on release, at the final scale.
+  const pinch = useRef<{ startDist: number; startScale: number } | null>(null);
+  const [pinchScale, setPinchScale] = useState(1);
+
+  const touchDistance = (t: React.TouchList) =>
+    Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  function onPinchStart(e: React.TouchEvent) {
+    if (e.touches.length !== 2) return;
+    // Freeze whatever the fit-to-width pass computed, so pinching starts from
+    // what the reader is actually showing rather than the stored manual scale.
+    const shown = canvasRef.current && wrapRef.current
+      ? canvasRef.current.width / (wrapRef.current.clientWidth || 1)
+      : 1;
+    pinch.current = {
+      startDist: touchDistance(e.touches),
+      startScale: fitMode === "width" ? Math.max(0.6, shown) * scale : scale,
+    };
+  }
+
+  function onPinchMove(e: React.TouchEvent) {
+    if (e.touches.length !== 2 || !pinch.current) return;
+    e.preventDefault();
+    const ratio = touchDistance(e.touches) / pinch.current.startDist;
+    setPinchScale(Math.min(4, Math.max(0.4, ratio)));
+  }
+
+  function onPinchEnd() {
+    if (!pinch.current) return;
+    const next = Math.min(4, Math.max(0.5, pinch.current.startScale * pinchScale));
+    pinch.current = null;
+    setPinchScale(1);
+    setFitMode("manual");
+    setScale(next);
+    try {
+      localStorage.setItem("klausum:pdfScale", String(next));
+    } catch {}
+  }
+
   // Load PDF (try direct URL, then fall back to fetch → blob for CORS / range-request issues)
   useEffect(() => {
     let cancelled = false;
@@ -200,7 +244,11 @@ export function PDFViewer({
         let effectiveScale = scale;
         if (fitMode === "width" && wrapRef.current) {
           const baseViewport = pageObj.getViewport({ scale: 1 });
-          const containerWidth = wrapRef.current.clientWidth - 32; // padding
+          // Phones get the full width; only desktop keeps the 32px reading gutter.
+        // Losing 32 of 375px to padding was a meaningful chunk of the reason the
+        // page rendered too small to read.
+        const gutter = wrapRef.current.clientWidth < 640 ? 4 : 32;
+        const containerWidth = wrapRef.current.clientWidth - gutter;
           if (containerWidth > 0) {
             effectiveScale = Math.min(3, Math.max(0.6, containerWidth / baseViewport.width));
           }
@@ -372,7 +420,13 @@ export function PDFViewer({
     <div className="flex flex-col h-full bg-background">
       <div
         ref={wrapRef}
-        className="flex-1 overflow-auto flex justify-center items-start p-4 relative"
+        onTouchStart={onPinchStart}
+        onTouchMove={onPinchMove}
+        onTouchEnd={onPinchEnd}
+        // touch-action pan-x pan-y: keep one-finger scroll native, but stop the
+        // browser swallowing two-finger gestures so pinch-to-zoom reaches us.
+        style={{ touchAction: "pan-x pan-y" }}
+        className="flex-1 overflow-auto flex justify-center items-start p-1 sm:p-4 relative"
       >
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -401,7 +455,14 @@ export function PDFViewer({
                 </a>
               </div>
             </div>
-          ) : <div className="relative">
+          ) : <div
+              className="relative"
+              style={
+                pinchScale === 1
+                  ? undefined
+                  : { transform: `scale(${pinchScale})`, transformOrigin: "center top" }
+              }
+            >
 
             <canvas
               ref={canvasRef}

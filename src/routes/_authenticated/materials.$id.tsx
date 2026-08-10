@@ -54,6 +54,22 @@ async function buildConcepts(
   }
 }
 
+/**
+ * The mobile reader shell, shared by all three reader branches (rich text,
+ * office/plain, and PDF). Each used to roll its own and each was wrong in the
+ * same ways: boxed inside the page's 16px gutters so a 375px phone read the
+ * document in ~335px, and pinned to a min-height that exceeded what was left of
+ * the viewport, so the bottom ran under the tab bar.
+ *
+ * -mx-4 cancels the layout gutter for full width. No min-height — the height is
+ * whatever the viewport actually has. dvh not vh, so mobile browser chrome
+ * collapsing doesn't hide the last inch of the page.
+ */
+const MOBILE_READER_SHELL =
+  "-mx-4 flex flex-col overflow-hidden border-y-2 border-border bg-card";
+/** Top bar + page padding + bottom tab bar + safe area. */
+const MOBILE_READER_HEIGHT = "calc(100dvh - 11.5rem)";
+
 const TABS = [
   { key: "read", label: "Read", color: "text-foreground" },
   { key: "summary", label: "Summary", color: "text-foreground" },
@@ -831,7 +847,7 @@ function FileReaderTab({ material, userId }: { material: any; userId: string }) 
 
   if (isMobile) {
     return (
-      <div className="flex h-[calc(100dvh-5rem)] min-h-[560px] flex-col overflow-hidden card-chunky">
+      <div className={MOBILE_READER_SHELL} style={{ height: MOBILE_READER_HEIGHT }}>
         <div className="flex shrink-0 border-b border-border bg-card">
           {(["read", "chat"] as const).map((t) => (
             <button key={t} onClick={() => setMobileTab(t)}
@@ -1073,7 +1089,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
 
   if (isMobile) {
     return (
-      <div className="flex h-[calc(100vh-7rem)] min-h-[520px] flex-col overflow-hidden card-chunky">
+      <div className={MOBILE_READER_SHELL} style={{ height: MOBILE_READER_HEIGHT }}>
         <div className="flex shrink-0 border-b border-border bg-card">
           {(["read", "chat"] as const).map((t) => (
             <button key={t} onClick={() => setMobileTab(t)} className={`flex-1 py-2.5 text-xs font-semibold ${mobileTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}>
@@ -1328,13 +1344,13 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col h-[calc(100dvh-5rem)] min-h-[560px] card-chunky overflow-hidden">
+      <div className={MOBILE_READER_SHELL} style={{ height: MOBILE_READER_HEIGHT }}>
         <div className="flex bg-card border-b border-border shrink-0">
           {(["read", "chat"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setMobileTab(t)}
-              className={`flex-1 py-2.5 text-xs font-semibold transition ${
+              className={`flex-1 py-2.5 text-xs font-extrabold transition ${
                 mobileTab === t
                   ? "text-primary border-b-2 border-primary"
                   : "text-muted-foreground"

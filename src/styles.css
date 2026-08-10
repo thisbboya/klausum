@@ -60,6 +60,8 @@
   --color-sky-foreground: var(--sky-foreground);
   --color-grape: var(--grape);
   --color-grape-foreground: var(--grape-foreground);
+  --color-amber: var(--amber);
+  --color-amber-foreground: var(--amber-foreground);
 
   /* VARK */
   --color-visual: var(--visual);
@@ -103,6 +105,11 @@
   --sky-foreground: oklch(1 0 0);
   --grape: oklch(0.51 0.196 267.5);         /* CEG Indigo #3657D4 */
   --grape-foreground: oklch(1 0 0);
+  /* Reward gold — chests, leagues, streaks. Sits between CEG's orange and
+     yellow. Seven files were already using -amber classes against a token that
+     never existed, so all of it rendered colourless. */
+  --amber: oklch(0.72 0.15 70);
+  --amber-foreground: oklch(1 0 0);
 
   /* Light theme (default) — CEG off-white page, navy ink, warm orange brand */
   --background: oklch(0.985 0 0);           /* #FAFAFA */
@@ -168,6 +175,8 @@
   --sky-foreground: oklch(0.17 0.04 268);
   --grape: oklch(0.62 0.19 267.5);
   --grape-foreground: oklch(1 0 0);
+  --amber: oklch(0.78 0.15 70);
+  --amber-foreground: oklch(0.17 0.04 268);
   --background: oklch(0.17 0.04 268);
   --foreground: oklch(0.97 0.005 268);
 

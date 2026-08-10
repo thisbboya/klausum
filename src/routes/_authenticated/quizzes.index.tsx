@@ -84,6 +84,7 @@ export function QuizzesPage() {
   const [subject, setSubject] = useState("General");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | "expert">("medium");
   const [count, setCount] = useState(5);
+  const [custom, setCustom] = useState(false);
   const [materialId, setMaterialId] = useState<string>(from ?? "");
   const [busy, setBusy] = useState(false);
   const [bloom, setBloom] = useState<number[]>([20, 20, 20, 15, 15, 10]);
@@ -335,7 +336,7 @@ export function QuizzesPage() {
                 <button
                   key={n}
                   type="button"
-                  onClick={() => setCount(n)}
+                  onClick={() => { setCount(n); setCustom(false); }}
                   className={`h-9 w-9 shrink-0 rounded-lg border-2 text-xs font-extrabold transition ${
                     count === n
                       ? "border-primary bg-primary/10 text-primary"
@@ -345,20 +346,33 @@ export function QuizzesPage() {
                   {n}
                 </button>
               ))}
-              {/* …or type any number, 1–50 */}
-              <input
-                type="number"
-                min={1}
-                max={50}
-                value={count}
-                onChange={(e) => {
-                  const n = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(n)) setCount(Math.max(1, Math.min(50, n)));
-                }}
-                aria-label="Custom question count"
-                title="Or type any number (1–50)"
-                className="h-9 w-16 shrink-0 rounded-lg border-2 border-border bg-background px-2 text-center text-xs font-extrabold outline-none focus:border-primary"
-              />
+              {/* The custom box used to sit here always, echoing the current
+                  value — so picking 5 rendered "5 10 20 30 5" and read like a
+                  duplicate preset. It now only appears once you're off-preset,
+                  behind an explicit toggle. */}
+              {custom || ![5, 10, 20, 30].includes(count) ? (
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={count}
+                  autoFocus={custom}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(n)) setCount(Math.max(1, Math.min(50, n)));
+                  }}
+                  aria-label="Custom question count"
+                  className="h-9 w-16 shrink-0 rounded-lg border-2 border-primary bg-background px-2 text-center text-xs font-extrabold outline-none"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCustom(true)}
+                  className="h-9 shrink-0 rounded-lg border-2 border-border px-2.5 text-xs font-extrabold text-muted-foreground transition hover:text-foreground"
+                >
+                  Custom
+                </button>
+              )}
             </div>
           </Field>
           <Field label="Question types">
@@ -367,7 +381,9 @@ export function QuizzesPage() {
               {([
                 ["mcq", "Multiple choice", "border-sky bg-sky/12 text-sky"],
                 ["true_false", "True / False", "border-success bg-success/12 text-success"],
-                ["fill_blank", "Fill in the gap", "border-amber bg-amber/15 text-amber"],
+                // grape, not "amber" — there is no amber token, so this pill was
+                // rendering colourless next to the blue and green ones.
+                ["fill_blank", "Fill in the gap", "border-grape bg-grape/12 text-grape"],
               ] as const).map(([val, label, active]) => {
                 const on = qTypes.includes(val);
                 return (

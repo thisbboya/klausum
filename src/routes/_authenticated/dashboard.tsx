@@ -192,24 +192,29 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Duolingo-style stat strip — the four numbers that drive daily return */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {/* Duolingo-style stat strip — the four numbers that drive daily return.
+          One row on phones, not a 2x2 grid of tall cards: that grid burned about
+          160px of a 812px screen to show four numbers, which is most of why the
+          dashboard felt long and empty. */}
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
         {[
           {
             to: "/progress" as const,
             icon: Flame,
             label: "Day streak",
             value: profile?.streak_days ?? 0,
-            tone: "text-amber",
-            chip: "bg-amber/15",
+            // was text-amber/bg-amber — no such token, so this rendered
+            // colourless while its three neighbours were tinted.
+            tone: "text-primary",
+            chip: "bg-primary/15",
           },
           {
             to: "/progress" as const,
             icon: Zap,
             label: "Total XP",
             value: (profile?.xp_total ?? 0).toLocaleString(),
-            tone: "text-primary",
-            chip: "bg-primary/15",
+            tone: "text-success",
+            chip: "bg-success/15",
           },
           {
             to: "/shop" as const,
@@ -224,21 +229,23 @@ function Dashboard() {
             icon: Brain,
             label: "Cards due",
             value: data?.dueCount ?? 0,
-            tone: (data?.dueCount ?? 0) > 0 ? "text-success" : "text-muted-foreground",
-            chip: (data?.dueCount ?? 0) > 0 ? "bg-success/15" : "bg-surface-2",
+            tone: (data?.dueCount ?? 0) > 0 ? "text-grape" : "text-muted-foreground",
+            chip: (data?.dueCount ?? 0) > 0 ? "bg-grape/15" : "bg-surface-2",
           },
         ].map(({ to, icon: Icon, label, value, tone, chip }) => (
           <Link
             key={label}
             to={to}
-            className="card-chunky card-chunky-hover flex items-center gap-2.5 bg-card px-3 py-3"
+            className="card-chunky card-chunky-hover flex flex-col items-center gap-1 bg-card px-1 py-2.5 sm:flex-row sm:gap-2.5 sm:px-3 sm:py-3"
           >
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${chip}`}>
-              <Icon className={`h-4.5 w-4.5 ${tone}`} />
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-9 sm:w-9 ${chip}`}>
+              <Icon className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${tone}`} />
             </span>
-            <div className="min-w-0">
-              <div className={`font-display text-xl font-extrabold leading-none ${tone}`}>{value}</div>
-              <div className="mt-1 truncate text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+            <div className="min-w-0 text-center sm:text-left">
+              <div className={`font-display text-base font-extrabold leading-none sm:text-xl ${tone}`}>
+                {value}
+              </div>
+              <div className="mt-1 truncate text-[9px] font-extrabold uppercase tracking-wide text-muted-foreground sm:text-[10px] sm:tracking-widest">
                 {label}
               </div>
             </div>
