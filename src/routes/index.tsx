@@ -350,7 +350,9 @@ function TestimonialsSection() {
         <div
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          className="mt-10 max-w-2xl"
+          // overflow-hidden: the slide-in animates from x:40, and without a clip
+          // that translate widens the page and makes phones scroll sideways.
+          className="mt-10 max-w-2xl overflow-hidden"
         >
           <AnimatePresence mode="wait">
             <motion.div

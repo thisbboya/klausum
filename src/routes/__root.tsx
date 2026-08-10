@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Adaptive AI study companion: VARK-personalised content, FSRS-5 spaced repetition flashcards, and a Socratic AI tutor. From JHS to professional study.",
       },
-      { name: "theme-color", content: "#0F172A" },
+      { name: "theme-color", content: "#2B3A67" },
       { property: "og:title", content: "Klausum — Your private vault for everything you study" },
       {
         property: "og:description",
@@ -108,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Raleway:wght@600;700;800;900&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap",
       },
     ],
   }),

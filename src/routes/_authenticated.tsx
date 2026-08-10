@@ -132,6 +132,9 @@ function AuthLayout() {
           userLabel={profile?.full_name || user.email || ""}
           level={profile?.level}
           isAdmin={isAdmin}
+          streak={(profile as any)?.streak_days}
+          gems={(profile as any)?.gems}
+          hearts={(profile as any)?.hearts}
           onSignOut={async () => {
             await supabase.auth.signOut();
             toast.success("Signed out");

@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import { KlausumMark } from "@/components/klausum-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StudentBadge } from "@/components/student-badge";
+import { StatStrip } from "@/components/stat-strip";
 import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK, BOTTOM_TAB_LINKS } from "@/lib/nav";
 
 export function MobileNav({
@@ -12,11 +13,17 @@ export function MobileNav({
   userLabel,
   isAdmin,
   level,
+  streak,
+  gems,
+  hearts,
 }: {
   onSignOut: () => void;
   userLabel: string;
   isAdmin: boolean;
   level?: string | null;
+  streak?: number | null;
+  gems?: number | null;
+  hearts?: number | null;
 }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -61,7 +68,7 @@ export function MobileNav({
           <span className="font-display text-base font-extrabold text-primary">klausum</span>
         </Link>
         <div className="flex items-center gap-2">
-          <StudentBadge level={level} />
+          <StatStrip streak={streak} gems={gems} hearts={hearts} />
           <ThemeToggle />
         </div>
       </div>
@@ -126,6 +133,7 @@ export function MobileNav({
             </nav>
             <div className="border-t-2 border-border px-4 py-3 text-xs font-bold text-muted-foreground space-y-2">
               <div className="truncate">{userLabel}</div>
+              <StudentBadge level={level} />
               <button
                 onClick={() => {
                   setOpen(false);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Kumi } from "@/components/kumi";
 import { Sounds } from "@/lib/sounds";
 
@@ -41,7 +41,14 @@ export function KlausumLoading({ label }: { label?: string }) {
   const [pokes, setPokes] = useState(0);
   const [poking, setPoking] = useState(false);
   const pokeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const tip = useMemo(() => TIPS[Math.floor(Math.random() * TIPS.length)], []);
+  // Picked after mount, not during render. Math.random() during render makes the
+  // server and client disagree, and React responds by throwing away the whole
+  // server-rendered tree and re-rendering on the client — a real cost on every
+  // authenticated page load, since this loader sits in the auth layout.
+  const [tip, setTip] = useState(TIPS[0]);
+  useEffect(() => {
+    setTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setI((x) => (x + 1) % LINES.length), 2200);
