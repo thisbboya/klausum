@@ -7,7 +7,7 @@ import { KlausumLogo } from "@/components/klausum-mark";
 import { KlausumLoading } from "@/components/loading";
 import { getCompanion } from "@/components/companion-svg";
 import { LogOut, Shield, ChevronDown } from "lucide-react";
-import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK } from "@/lib/nav";
+import { PRIMARY_LINKS, MORE_LINKS, MORE_GROUPS, SETTINGS_LINK } from "@/lib/nav";
 import { hasUnseenUpdates } from "@/lib/updates";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -182,8 +182,15 @@ function MoreTools() {
       </button>
       {open && (
         <div className="mt-1 flex flex-col gap-1 border-l-2 border-border pl-2 ml-3">
-          {MORE_LINKS.map((l) => (
-            <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} />
+          {MORE_GROUPS.map((g) => (
+            <div key={g.title}>
+              <div className="px-3 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70">
+                {g.title}
+              </div>
+              {g.links.map((l) => (
+                <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} />
+              ))}
+            </div>
           ))}
         </div>
       )}

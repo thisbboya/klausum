@@ -21,18 +21,46 @@ export const PRIMARY_LINKS: NavLink[] = [
   { to: "/shop", label: "Gem Shop", icon: Gem },
 ];
 
-export const MORE_LINKS: NavLink[] = [
-  { to: "/games", label: "Games", icon: Gamepad2 },
-  { to: "/solve", label: "Snap & Solve", icon: Camera },
-  { to: "/notes", label: "Notes", icon: NotebookPen },
-  { to: "/mindmaps", label: "Mind Maps", icon: Network },
-  { to: "/gaps", label: "Gaps", icon: Target },
-  { to: "/progress", label: "Progress", icon: TrendingUp },
-  { to: "/formulas", label: "Formulas", icon: Sigma },
-  { to: "/videos", label: "Videos", icon: Youtube },
-  { to: "/exams", label: "Exams", icon: GraduationCap },
-  { to: "/focus", label: "Focus Mode", icon: Focus },
+/**
+ * Ten undifferentiated links in one "More tools" list is what made the app feel
+ * sprawling — not the number of features, which are individually cheap. Grouped
+ * under headings they read as three short lists instead of one long one.
+ *
+ * Order within each group follows measured usage on production rather than
+ * taste: gaps (93 rows) and formulas (14) sit above mind maps (3) and notes (0).
+ */
+export type NavGroup = { title: string; links: NavLink[] };
+
+export const MORE_GROUPS: NavGroup[] = [
+  {
+    title: "Study tools",
+    links: [
+      { to: "/gaps", label: "Gaps", icon: Target },
+      { to: "/formulas", label: "Formulas", icon: Sigma },
+      { to: "/videos", label: "Videos", icon: Youtube },
+      { to: "/solve", label: "Snap & Solve", icon: Camera },
+      { to: "/notes", label: "Notes", icon: NotebookPen },
+      { to: "/mindmaps", label: "Mind Maps", icon: Network },
+    ],
+  },
+  {
+    title: "Progress",
+    links: [
+      { to: "/progress", label: "Progress", icon: TrendingUp },
+      { to: "/exams", label: "Exams", icon: GraduationCap },
+    ],
+  },
+  {
+    title: "Focus & fun",
+    links: [
+      { to: "/focus", label: "Focus Mode", icon: Focus },
+      { to: "/games", label: "Games", icon: Gamepad2 },
+    ],
+  },
 ];
+
+/** Flat list, kept for callers that just need every secondary destination. */
+export const MORE_LINKS: NavLink[] = MORE_GROUPS.flatMap((g) => g.links);
 
 export const SETTINGS_LINK: NavLink = { to: "/settings", label: "Settings", icon: Settings };
 

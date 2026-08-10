@@ -6,7 +6,7 @@ import { KlausumMark } from "@/components/klausum-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StudentBadge } from "@/components/student-badge";
 import { StatStrip } from "@/components/stat-strip";
-import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK, BOTTOM_TAB_LINKS } from "@/lib/nav";
+import { PRIMARY_LINKS, MORE_LINKS, MORE_GROUPS, SETTINGS_LINK, BOTTOM_TAB_LINKS } from "@/lib/nav";
 
 export function MobileNav({
   onSignOut,
@@ -33,9 +33,17 @@ export function MobileNav({
   const [moreOpen, setMoreOpen] = useState(containsActive);
 
   const primary = [...PRIMARY_LINKS];
-  const secondary = isAdmin
-    ? [...MORE_LINKS, SETTINGS_LINK, { to: "/admin", label: "Admin", icon: Shield }]
-    : [...MORE_LINKS, SETTINGS_LINK];
+  // Grouped, so the drawer reads as three short lists rather than one scroll of
+  // twelve. Settings and Admin get their own trailing group.
+  const secondaryGroups = [
+    ...MORE_GROUPS,
+    {
+      title: "Account",
+      links: isAdmin
+        ? [SETTINGS_LINK, { to: "/admin", label: "Admin", icon: Shield }]
+        : [SETTINGS_LINK],
+    },
+  ];
 
   const renderLink = ({ to, label, icon: Icon }: { to: string; label: string; icon: any }) => {
     const active = location.pathname === to || location.pathname.startsWith(to + "/");
@@ -126,7 +134,14 @@ export function MobileNav({
               </button>
               {moreOpen && (
                 <div className="ml-3 space-y-0.5 border-l-2 border-border pl-2">
-                  {secondary.map(renderLink)}
+                  {secondaryGroups.map((g) => (
+                    <div key={g.title}>
+                      <div className="px-3 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70">
+                        {g.title}
+                      </div>
+                      {g.links.map(renderLink)}
+                    </div>
+                  ))}
                 </div>
               )}
               {!moreOpen && renderLink(SETTINGS_LINK)}
