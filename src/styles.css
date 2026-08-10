@@ -11,6 +11,28 @@
  * All colors in oklch.
  */
 
+/* Toast motion. Hand-written so the notification system — which lives in the
+   root layout and therefore loads on every single page — does not drag
+   framer-motion (124 kB) into the eager graph just to slide a card in. */
+@keyframes klausumToastIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes klausumToastBar {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+.klausum-toast {
+  animation: klausumToastIn 260ms cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
+.klausum-toast-bar {
+  transform-origin: left;
+  animation: klausumToastBar linear forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .klausum-toast { animation-duration: 1ms; }
+}
+
 @keyframes klausumSlowRotate {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }

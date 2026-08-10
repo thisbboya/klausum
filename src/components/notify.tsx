@@ -5,8 +5,7 @@
 //     3D bottom edge, coloured icon tile, hairline countdown).
 //  2. Errors are sanitised at the *renderer*, not at each call site — a raw
 //     stack trace physically cannot reach a student's screen.
-import { AnimatePresence, motion } from "framer-motion";
-import { useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from "lucide-react";
 
 export type NotifyVariant = "success" | "error" | "info" | "warning";
@@ -100,22 +99,37 @@ const VARIANTS: Record<
 function Card({ item }: { item: NotifyItem }) {
   const v = VARIANTS[item.variant];
   const Icon = v.icon;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const startX = useRef<number | null>(null);
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 14, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.15 } }}
-      transition={{ type: "spring", stiffness: 420, damping: 30 }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.35}
-      onDragEnd={(_, info) => {
-        if (Math.abs(info.offset.x) > 90) dismissNotification(item.id);
+    <div
+      // Swipe-to-dismiss by hand. framer-motion's drag would have been fewer
+      // lines, but this component ships on every page and the library is not
+      // worth 124 kB for one gesture and one slide-in.
+      onTouchStart={(e) => {
+        startX.current = e.touches[0].clientX;
       }}
+      onTouchMove={(e) => {
+        if (startX.current == null) return;
+        const dx = e.touches[0].clientX - startX.current;
+        if (cardRef.current) {
+          cardRef.current.style.transform = `translateX(${dx}px)`;
+          cardRef.current.style.opacity = String(Math.max(0, 1 - Math.abs(dx) / 220));
+        }
+      }}
+      onTouchEnd={(e) => {
+        const dx = startX.current == null ? 0 : e.changedTouches[0].clientX - startX.current;
+        startX.current = null;
+        if (Math.abs(dx) > 90) return dismissNotification(item.id);
+        if (cardRef.current) {
+          cardRef.current.style.transform = "";
+          cardRef.current.style.opacity = "";
+        }
+      }}
+      ref={cardRef}
       role="status"
       aria-live={item.variant === "error" ? "assertive" : "polite"}
-      className={`pointer-events-auto relative w-full overflow-hidden rounded-2xl border-2 border-border bg-card ${v.edge}`}
+      className={`klausum-toast pointer-events-auto relative w-full overflow-hidden rounded-2xl border-2 border-border bg-card ${v.edge}`}
     >
       <div className="flex items-start gap-3 px-3 py-3 pr-9">
         <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${v.tile}`}>
@@ -140,14 +154,12 @@ function Card({ item }: { item: NotifyItem }) {
         <X className="h-3.5 w-3.5" />
       </button>
       {item.duration > 0 && (
-        <motion.div
-          initial={{ scaleX: 1 }}
-          animate={{ scaleX: 0 }}
-          transition={{ duration: item.duration / 1000, ease: "linear" }}
-          className={`absolute bottom-0 left-0 h-[3px] w-full origin-left ${v.bar}`}
+        <div
+          className={`klausum-toast-bar absolute bottom-0 left-0 h-[3px] w-full ${v.bar}`}
+          style={{ animationDuration: `${item.duration}ms` }}
         />
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -159,11 +171,9 @@ export function Notifications() {
                  bottom-[calc(env(safe-area-inset-bottom,0px)+5.25rem)]
                  sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-4 sm:w-[368px] sm:flex-col"
     >
-      <AnimatePresence initial={false}>
-        {list.map((item) => (
-          <Card key={item.id} item={item} />
-        ))}
-      </AnimatePresence>
+      {list.map((item) => (
+        <Card key={item.id} item={item} />
+      ))}
     </div>
   );
 }
