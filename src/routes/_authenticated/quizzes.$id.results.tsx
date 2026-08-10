@@ -3,7 +3,7 @@ import { KlausumLoading } from "@/components/loading";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Trophy, RefreshCcw, MessagesSquare, Layers, Loader2 } from "lucide-react";
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { motion } from "framer-motion";

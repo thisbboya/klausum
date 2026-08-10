@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck, Bell, Sparkles, Crown, Users, Megaphone, LifeBuoy, Mail } from "lucide-react";
 import { SecurityTab } from "@/components/settings/SecurityTab";
 import { useTheme } from "@/components/theme-provider";

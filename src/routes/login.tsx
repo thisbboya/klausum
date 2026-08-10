@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { KlausumLogo, AnimatedKlausumMark } from "@/components/klausum-mark";
 import { AuthBg } from "@/components/auth-bg";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 
 function safeNext(next: unknown): string {
   if (typeof next !== "string") return "/dashboard";

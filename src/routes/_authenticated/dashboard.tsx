@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { checkAndApplyStreakFreeze } from "@/lib/streak-freeze";
 import { StreakCelebration } from "@/components/streak-celebration";
 import { refillHeartsIfDue } from "@/lib/hearts";

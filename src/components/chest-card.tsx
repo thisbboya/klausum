@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Sparkles, Gem } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sounds as sounds } from "@/lib/sounds";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 
 type Tier = "bronze" | "silver" | "gold";
 const TIER_REWARDS: Record<Tier, { xp: [number, number]; gems: [number, number]; color: string }> = {

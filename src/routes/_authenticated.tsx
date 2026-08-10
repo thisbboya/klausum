@@ -15,7 +15,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { StudentBadge } from "@/components/student-badge";
 import { FloatingCompanion } from "@/components/floating-companion";
 import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -139,7 +139,9 @@ function AuthLayout() {
           }}
         />
         <div
-          className={`mx-auto space-y-4 px-4 ${
+          // pb-* clears the fixed mobile thumb row; md: resets it since the bar
+          // is hidden there.
+          className={`mx-auto space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0 ${
             // Wide canvas for the split-pane screens (reader + video/AI panel);
             // max-w-5xl squeezes those two columns far too narrow.
             /^\/materials\/[^/]+$/.test(location.pathname) || location.pathname === "/videos"

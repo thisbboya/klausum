@@ -5,7 +5,7 @@ import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { KlausumLogo, AnimatedKlausumMark } from "@/components/klausum-mark";
 import { AuthBg } from "@/components/auth-bg";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 
 export const Route = createFileRoute("/signup")({ component: SignupPage });
 

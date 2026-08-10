@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Plus, Sparkles, Wand2, Layers, NotebookPen, ArrowLeft, Loader2, Eye, Pencil, Download } from "lucide-react";
 import { generateCornellCues, generateCornellSummary, notesToFlashcards } from "@/lib/study.functions";
 import { MarkdownMath } from "@/components/notes/MarkdownMath";

@@ -7,7 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateWeeklyInsight } from "@/lib/insights.functions";
 import { useEffect, useState } from "react";
 import { celebrateNewBadges } from "@/lib/badge-celebrate";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line } from "recharts";
 import { Flame, Trophy, Target, BookOpen, Sparkles, Lock } from "lucide-react";
 import { LEVELS, levelFor, BADGES, type BadgeStats } from "@/lib/gamification";

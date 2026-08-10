@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { COMPANIONS, CompanionSVG } from "@/components/companion-svg";
 import { Check } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { KlausumLogo } from "@/components/klausum-mark";
 
 export const Route = createFileRoute("/companion-select")({

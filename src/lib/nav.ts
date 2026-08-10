@@ -35,3 +35,15 @@ export const MORE_LINKS: NavLink[] = [
 ];
 
 export const SETTINGS_LINK: NavLink = { to: "/settings", label: "Settings", icon: Settings };
+
+/**
+ * The phone's thumb row. Four destinations plus a "More" button — any more and
+ * the labels stop being readable at 375px. These are the four screens the daily
+ * loop actually needs; everything else is one tap away behind More.
+ */
+export const BOTTOM_TAB_LINKS: NavLink[] = [
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/materials", label: "Study", icon: BookOpen },
+  { to: "/review", label: "Review", icon: Brain },
+  { to: "/quizzes", label: "Quiz", icon: ListChecks },
+];

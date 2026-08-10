@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import { KlausumMark } from "@/components/klausum-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StudentBadge } from "@/components/student-badge";
-import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK } from "@/lib/nav";
+import { PRIMARY_LINKS, MORE_LINKS, SETTINGS_LINK, BOTTOM_TAB_LINKS } from "@/lib/nav";
 
 export function MobileNav({
   onSignOut,
@@ -49,22 +49,56 @@ export function MobileNav({
     );
   };
 
+  const tabActive = (to: string) =>
+    location.pathname === to || location.pathname.startsWith(to + "/");
+
   return (
-    <div className="md:hidden flex items-center justify-between border-b-2 border-border px-4 py-3 bg-background">
-      <Link to="/dashboard" className="flex items-center gap-2">
-        <KlausumMark size={22} />
-        <span className="font-display text-base font-extrabold text-primary">klausum</span>
-      </Link>
-      <div className="flex items-center gap-2">
-        <StudentBadge level={level} />
-        <ThemeToggle />
+    <>
+      {/* Slim top bar — identity only. Navigation lives in the thumb row. */}
+      <div className="md:hidden sticky top-0 z-40 flex items-center justify-between border-b-2 border-border px-4 py-2.5 bg-background">
+        <Link to="/dashboard" className="flex items-center gap-2">
+          <KlausumMark size={22} />
+          <span className="font-display text-base font-extrabold text-primary">klausum</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <StudentBadge level={level} />
+          <ThemeToggle />
+        </div>
+      </div>
+
+      {/* Thumb row. Fixed so it survives long pages; safe-area aware so it
+          clears the iOS home indicator instead of hiding under it. */}
+      <nav
+        className="md:hidden fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t-2 border-border bg-background
+                   pb-[env(safe-area-inset-bottom,0px)]"
+        aria-label="Primary"
+      >
+        {BOTTOM_TAB_LINKS.map(({ to, label, icon: Icon }) => {
+          const active = tabActive(to);
+          return (
+            <Link
+              key={to}
+              to={to as any}
+              aria-current={active ? "page" : undefined}
+              className={`flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition ${
+                active ? "text-sky" : "text-muted-foreground"
+              }`}
+            >
+              <Icon className={`h-5 w-5 ${active ? "stroke-[2.5]" : ""}`} />
+              <span className="text-[10px] font-extrabold leading-none">{label}</span>
+            </Link>
+          );
+        })}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <button
-              aria-label="Open menu"
-              className="inline-flex items-center justify-center rounded-xl border-2 border-border bg-background p-1.5 text-muted-foreground hover:text-foreground"
+              aria-label="More"
+              className={`flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition ${
+                open ? "text-sky" : "text-muted-foreground"
+              }`}
             >
               <Menu className="h-5 w-5" />
+              <span className="text-[10px] font-extrabold leading-none">More</span>
             </button>
           </SheetTrigger>
           <SheetContent side="right" className="w-72 p-0 flex flex-col">
@@ -104,7 +138,7 @@ export function MobileNav({
             </div>
           </SheetContent>
         </Sheet>
-      </div>
-    </div>
+      </nav>
+    </>
   );
 }

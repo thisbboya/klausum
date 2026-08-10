@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { CalendarClock, Plus, Trash2, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/exams")({ component: ExamsPage });

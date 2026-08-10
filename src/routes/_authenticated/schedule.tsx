@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { generatePlan } from "@/lib/coach.functions";
 import { getAccessToken } from "@/lib/auth-helper";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Sparkles, Plus, Play, Pause, RotateCcw, Trash2, CheckCircle2, ChevronLeft, ChevronRight, Maximize2, Minimize2, X } from "lucide-react";
 import { AvailabilityGrid } from "@/components/availability-grid";
 

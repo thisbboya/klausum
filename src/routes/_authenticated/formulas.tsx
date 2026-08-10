@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Plus, Search, Star, Trash2, Download, Sparkles } from "lucide-react";
 import { ReferenceSheetDialog } from "@/components/formulas/ReferenceSheetDialog";
 import { exportNodeToPdf, withPrintableContainer } from "@/lib/pdf-export";

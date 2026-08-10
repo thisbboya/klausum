@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { ListChecks, Sparkles, Loader2, Play, RotateCcw } from "lucide-react";
 import { AiProgress } from "@/components/ai-progress";
 import { generateQuiz } from "@/lib/study.functions";

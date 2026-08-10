@@ -3,7 +3,7 @@ import { reportError } from "@/lib/report-error";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { BlockMath } from "react-katex";
 import { generateReferenceSheet } from "@/lib/formulas.functions";
 import { supabase } from "@/integrations/supabase/client";

@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Sounds } from "@/lib/sounds";
 import { BADGES, type BadgeStats } from "@/lib/gamification";
 

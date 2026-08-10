@@ -7,7 +7,7 @@ import { getAccessToken } from "@/lib/auth-helper";
 import { AiProgress } from "@/components/ai-progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Camera, Upload, Loader2, Send, Bookmark, RefreshCw, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";

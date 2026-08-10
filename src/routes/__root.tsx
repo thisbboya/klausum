@@ -7,7 +7,7 @@ import {
   Scripts,
   Link,
 } from "@tanstack/react-router";
-import { Toaster } from "@/components/ui/sonner";
+import { Notifications } from "@/components/notify";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TactileLayer } from "@/components/tactile";
@@ -143,7 +143,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <Outlet />
-        <Toaster richColors position="top-right" />
+        <Notifications />
         <InstallPrompt />
         <TactileLayer />
       </ThemeProvider>

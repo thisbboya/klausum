@@ -5,7 +5,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Flag, ChevronRight, Loader2, Timer, Check, X, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sounds } from "@/lib/sounds";

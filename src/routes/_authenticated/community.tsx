@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { awardXp } from "@/lib/xp";
 import { CHALLENGES, challengeWindow, type Challenge } from "@/lib/challenges";
 import { createDuel, TIME_LIMIT_OPTIONS, EXPIRY_OPTIONS, type Duel } from "@/lib/duels";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import {
   Users, Trophy, Target, UsersRound, Search, UserPlus, Check, X, Crown,
   Plus, LogIn, Copy, Sparkles, CheckCircle2, Swords, Clock, Hourglass,

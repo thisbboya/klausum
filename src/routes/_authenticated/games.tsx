@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { awardXp } from "@/lib/xp";
 import { Sounds } from "@/lib/sounds";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import confetti from "canvas-confetti";
 import { Gamepad2, Shuffle, Lightbulb, Timer, RotateCcw, Trophy, ArrowLeft, BookOpen } from "lucide-react";
 

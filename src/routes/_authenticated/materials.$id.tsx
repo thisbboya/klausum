@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List, ListChecks, Layers, MessagesSquare } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";

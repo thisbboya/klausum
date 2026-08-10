@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { reviewCard, isDue, type Rating, type FSRSState } from "@/lib/fsrs";
 import { CheckCircle2, RotateCcw, Brain, Lightbulb, Sparkles, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { evaluateFeynman } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";

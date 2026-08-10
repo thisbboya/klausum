@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { awardXp } from "@/lib/xp";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Play, Pause, RotateCcw, SkipForward, Focus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/focus")({ component: FocusMode });

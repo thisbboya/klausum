@@ -12,7 +12,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 
 // Types
 export type Video = {

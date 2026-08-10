@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Gem, Sparkles, Target, Check } from "lucide-react";
 import { ensureTodayQuests, claimQuest, type Quest } from "@/lib/quests";
 import { Sounds as sounds } from "@/lib/sounds";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 
 export function DailyQuests({ userId }: { userId?: string }) {
   const [quests, setQuests] = useState<Quest[]>([]);

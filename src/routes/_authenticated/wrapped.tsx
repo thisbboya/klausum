@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateWrapped, saveWrappedSnapshot, type WrappedData } from "@/lib/wrapped";
 import { X, Download, Share2 } from "lucide-react";
 import { toBlob } from "html-to-image";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { CompanionSVG, getCompanion } from "@/components/companion-svg";
 import { VarkRadar } from "@/components/wrapped/VarkRadar";
 

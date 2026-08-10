@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Check } from "lucide-react";
 import { KlausumLogo } from "@/components/klausum-mark";
 import { COMPANIONS, CompanionSVG } from "@/components/companion-svg";

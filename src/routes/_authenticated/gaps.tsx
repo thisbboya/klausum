@@ -8,7 +8,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { explainGap, generateGapCards } from "@/lib/coach.functions";
 import { generateQuiz } from "@/lib/study.functions";
 import { getAccessToken } from "@/lib/auth-helper";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Sparkles, CheckCircle2, AlertTriangle, MessagesSquare, Layers, ListChecks, CalendarPlus, PartyPopper } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/gaps")({ component: GapsPage });

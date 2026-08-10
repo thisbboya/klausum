@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Upload, FileText, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { processMaterial } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
