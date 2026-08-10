@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "@/lib/notify";
-import { Upload, FileText, Loader2, CheckCircle2, Trash2 } from "lucide-react";
+import { Upload, FileText, Loader2, CheckCircle2, Trash2, Layers } from "lucide-react";
 import { processMaterial } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";
@@ -91,6 +91,41 @@ export function MaterialsPage() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Per-material study signals, so each row can show real progress rather than
+  // a title and a date. Both are genuine: reading_progress is written by the
+  // reader as you turn pages, and decks are linked to the material that made
+  // them. Nothing here is a decorative bar.
+  const { data: signals } = useQuery({
+    queryKey: ["material-signals", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [progressRes, decksRes] = await Promise.all([
+        supabase
+          .from("reading_progress")
+          .select("material_id,last_page,total_pages")
+          .eq("user_id", user!.id),
+        supabase
+          .from("flashcard_decks")
+          .select("material_id,total_cards")
+          .eq("user_id", user!.id),
+      ]);
+      const read: Record<string, number> = {};
+      for (const r of progressRes.data ?? []) {
+        const total = (r as any).total_pages ?? 0;
+        const last = (r as any).last_page ?? 0;
+        if (total > 0 && (r as any).material_id) {
+          read[(r as any).material_id] = Math.min(100, Math.round((last / total) * 100));
+        }
+      }
+      const cards: Record<string, number> = {};
+      for (const d of decksRes.data ?? []) {
+        const mid = (d as any).material_id;
+        if (mid) cards[mid] = (cards[mid] ?? 0) + ((d as any).total_cards ?? 0);
+      }
+      return { read, cards };
     },
   });
 
@@ -756,34 +791,60 @@ export function MaterialsPage() {
             const hasPdf = !!(m as any).pdf_storage_path;
             const isReady = m.processing_status === "ready";
             const isFailed = m.processing_status === "failed";
+            const pctRead = signals?.read?.[m.id] ?? 0;
+            const cardCount = signals?.cards?.[m.id] ?? 0;
             return (
-              <li key={m.id} className="flex items-center gap-2 px-3 py-2.5">
+              <li key={m.id} className="flex items-center gap-2 px-3 py-3">
                 <Link
                   to="/materials/$id" params={{ id: m.id }}
                   className="flex items-center gap-3 flex-1 min-w-0 py-1"
                 >
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  {/* Progress ring instead of a flat file icon — the row now
+                      says how far through you are at a glance. */}
+                  <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+                    <svg viewBox="0 0 36 36" className="absolute inset-0 h-10 w-10 -rotate-90">
+                      <circle cx="18" cy="18" r="16" fill="none" stroke="var(--surface-3)" strokeWidth="3" />
+                      {pctRead > 0 && (
+                        <circle
+                          cx="18" cy="18" r="16" fill="none"
+                          stroke={pctRead >= 100 ? "var(--success)" : "var(--primary)"}
+                          strokeWidth="3" strokeLinecap="round"
+                          strokeDasharray={`${(pctRead / 100) * 100.5} 100.5`}
+                        />
+                      )}
+                    </svg>
+                    {pctRead >= 100 ? (
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                    ) : pctRead > 0 ? (
+                      <span className="text-[10px] font-extrabold tabular-nums text-primary">{pctRead}</span>
+                    ) : (
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{m.title}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                      <span>{m.subject}</span>
-                      <span>·</span>
-                      <span>{new Date(m.created_at!).toLocaleDateString()}</span>
-                      {hasPdf && <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold">PDF</span>}
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] capitalize ${
-                        isReady ? "bg-success/15 text-success" :
-                        isFailed ? "bg-destructive/15 text-destructive" :
-                        "bg-muted text-muted-foreground"
-                      }`}>{m.processing_status}</span>
+                    <div className="truncate text-sm font-extrabold">{m.title}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold">{m.subject}</span>
+                      {cardCount > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-grape/12 px-1.5 py-0.5 text-[10px] font-extrabold text-grape">
+                          <Layers className="h-3 w-3" />{cardCount}
+                        </span>
+                      )}
+                      {hasPdf && <span className="px-1.5 py-0.5 rounded-full bg-sky/12 text-sky text-[10px] font-extrabold">PDF</span>}
+                      {!isReady && (
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold capitalize ${
+                          isFailed ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground"
+                        }`}>{m.processing_status}</span>
+                      )}
                     </div>
                   </div>
                 </Link>
                 {isReady && (
                   <Link
                     to="/materials/$id" params={{ id: m.id }}
-                    className="shrink-0 inline-flex items-center gap-1 btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 active:scale-95 transition"
+                    className="shrink-0 inline-flex items-center gap-1 btn-3d btn-3d-success rounded-xl bg-success px-3.5 py-2 text-xs font-extrabold uppercase tracking-wide text-success-foreground transition active:scale-95"
                   >
-                    {hasPdf ? "Read" : "Open"}
+                    {pctRead > 0 && pctRead < 100 ? "Resume" : hasPdf ? "Read" : "Open"}
                   </Link>
                 )}
                 <button

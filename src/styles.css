@@ -11,6 +11,21 @@
  * All colors in oklch.
  */
 
+/*
+ * Mobile density. Every size in this app is rem-based, so dialling the root
+ * font size down compacts type, padding, gaps and radii together — which is the
+ * difference between Duolingo's tight phone layout and a desktop design merely
+ * squeezed into 375px. Two steps so small phones get the most relief.
+ *
+ * Deliberately NOT applied above 640px: desktop sizing was never the problem.
+ */
+@media (max-width: 640px) {
+  html { font-size: 15px; }
+}
+@media (max-width: 380px) {
+  html { font-size: 14px; }
+}
+
 /* Toast motion. Hand-written so the notification system — which lives in the
    root layout and therefore loads on every single page — does not drag
    framer-motion (124 kB) into the eager graph just to slide a card in. */

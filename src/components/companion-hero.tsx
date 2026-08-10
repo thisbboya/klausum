@@ -109,15 +109,17 @@ export function CompanionHero({
       <div className="relative flex items-center gap-4">
         {/* Left: greeting */}
         <div className="flex-1 min-w-0">
-          <h1 className="break-words font-display text-3xl md:text-4xl font-extrabold leading-tight text-foreground">
+          {/* text-xl on phones: at text-3xl a long handle wrapped onto two
+              lines and the greeting alone owned a fifth of the screen. */}
+          <h1 className="break-words font-display text-xl sm:text-2xl md:text-4xl font-extrabold leading-tight text-foreground">
             Hey {firstName || "there"}!
           </h1>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
+          <p className="mt-0.5 text-xs font-semibold text-muted-foreground sm:text-sm">
             Good {greeting()} — your pilot's warmed up!
           </p>
 
           {/* Streak pill */}
-          <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border-2 border-border bg-card px-4 py-2">
+          <div className="mt-2.5 inline-flex items-center gap-2.5 rounded-2xl border-2 border-border bg-card px-3 py-1.5 sm:mt-4 sm:gap-3 sm:px-4 sm:py-2">
             {isCentury ? (
               <Crown className="h-5 w-5 fill-primary text-primary" />
             ) : (

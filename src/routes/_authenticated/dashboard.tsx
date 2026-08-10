@@ -352,7 +352,11 @@ function Dashboard() {
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </Link>
               )}
-              <Link to="/review" className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4">
+              {/* Review and Quiz are hidden on phones: Today's session already
+                  states both, with real counts and a Start button, so repeating
+                  them here was pure length on the screen that can least
+                  afford it. Desktop has the room, so it keeps them. */}
+              <Link to="/review" className="card-chunky card-chunky-hover hidden items-center gap-3 bg-card p-4 sm:flex">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15">
                   <Brain className="h-5 w-5 text-primary" />
                 </span>
@@ -366,7 +370,7 @@ function Dashboard() {
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </Link>
-              <Link to="/quizzes" className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4">
+              <Link to="/quizzes" className="card-chunky card-chunky-hover hidden items-center gap-3 bg-card p-4 sm:flex">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky/15">
                   <ListChecks className="h-5 w-5 text-sky" />
                 </span>
@@ -505,7 +509,10 @@ function QuizPerformance({ userId }: { userId?: string }) {
   const totalQ = data.reduce((s, a) => s + (a.total ?? 0), 0);
   const acc = totalQ ? Math.round((correct / totalQ) * 100) : 0;
   return (
-    <section className="card-chunky bg-card p-4">
+    // Desktop only. This is a review-your-history panel, not a what-do-I-do-now
+    // panel — on a phone it sat between the student and their materials. It
+    // lives on /progress, which the stat strip links to.
+    <section className="card-chunky hidden bg-card p-4 sm:block">
       <h2 className="font-display text-lg font-extrabold">Quiz performance</h2>
       <div className="mt-3 grid grid-cols-3 gap-3">
         {[
