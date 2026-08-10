@@ -20,6 +20,7 @@ import { CompanionHero } from "@/components/companion-hero";
 import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { HeartsRow } from "@/components/hearts-row";
+import { TodaySession, buildSessionTasks } from "@/components/today-session";
 import { ensureTodayQuests } from "@/lib/quests";
 import { BADGES } from "@/lib/gamification";
 
@@ -46,7 +47,7 @@ function Dashboard() {
     enabled: !!user,
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const [profileRes, materialsRes, cardsRes, checkinRes, examsRes, questsRes, chestRes, videoRes] = await Promise.all([
+      const [profileRes, materialsRes, cardsRes, checkinRes, examsRes, questsRes, chestRes, gapRes, quizTodayRes, videoRes] = await Promise.all([
         supabase.from("user_profiles").select("*").eq("id", user!.id).maybeSingle(),
         supabase
           .from("study_materials")
@@ -77,6 +78,24 @@ function Dashboard() {
           .select("id")
           .eq("user_id", user!.id)
           .gte("opened_at", today + "T00:00:00")
+          .maybeSingle(),
+        // Highest-severity open gap — the drill step of Today's session.
+        supabase
+          .from("knowledge_gaps")
+          .select("id,topic,subject,severity")
+          .eq("user_id", user!.id)
+          .eq("status", "open")
+          .order("severity", { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        // Has a quiz been attempted today? Decides whether the session's final
+        // check is already ticked.
+        supabase
+          .from("quiz_attempts")
+          .select("id")
+          .eq("user_id", user!.id)
+          .gte("completed_at", today + "T00:00:00")
+          .limit(1)
           .maybeSingle(),
         // Most recently watched video — powers "Continue watching"
         (supabase as any)
@@ -127,6 +146,8 @@ function Dashboard() {
         checkin: checkinRes.data,
         exams: examsRes.data ?? [],
         chestUnlocked: allQuestsDone && !chestRes.data,
+        topGap: gapRes.data ?? null,
+        quizzedToday: !!quizTodayRes.data,
       };
     },
   });
@@ -257,6 +278,21 @@ function Dashboard() {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <WeeklyConsistency userId={user?.id} streak={profile?.streak_days} />
+
+          {/* Today's session — the plan comes before the shortcuts, because a
+              student who opens the app should be told what to do, not handed a
+              menu and left to decide. */}
+          <TodaySession
+            tasks={buildSessionTasks({
+              dueCount: data?.dueCount ?? 0,
+              topGap: data?.topGap,
+              material: data?.materials?.[0]
+                ? { id: data.materials[0].id, title: data.materials[0].title }
+                : null,
+              quizzedToday: data?.quizzedToday ?? false,
+            })}
+            exam={data?.exams?.[0] ?? null}
+          />
 
           {/* Jump back in — CourieX card row */}
           <section>
