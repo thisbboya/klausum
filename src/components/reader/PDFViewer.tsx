@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 // Vite-native worker URL — resolves to a hashed asset URL that always works in dev + prod.
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { Search, StickyNote } from "lucide-react";
+import { AlignLeft, FileText, Search, StickyNote } from "lucide-react";
+import { reflowPage, type ReflowBlock } from "./reflow";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -77,6 +78,37 @@ export function PDFViewer({
   const [indexProgress, setIndexProgress] = useState({ done: 0, total: 0 });
   const [selection, setSelection] = useState<{ text: string; x: number; y: number } | null>(null);
   const pageTextCache = useRef<Record<number, string>>({});
+
+  // ── Reflow ("Text") mode ──────────────────────────────────────────────────
+  // Defaults on where the canvas view is genuinely unusable: a fixed A4 page
+  // scaled to a 375px screen. Desktop keeps the real page, because there the
+  // page IS readable and layout fidelity is worth more.
+  const [viewMode, setViewMode] = useState<"page" | "text">(() =>
+    typeof window !== "undefined" && window.innerWidth < 640 ? "text" : "page",
+  );
+  const [blocks, setBlocks] = useState<ReflowBlock[] | null>(null);
+  const [reflowing, setReflowing] = useState(false);
+
+  useEffect(() => {
+    if (viewMode !== "text" || !pdf) return;
+    let cancelled = false;
+    setReflowing(true);
+    (async () => {
+      try {
+        const p = await pdf.getPage(page);
+        const tc = await p.getTextContent();
+        if (cancelled) return;
+        setBlocks(reflowPage(tc.items as any));
+      } catch {
+        if (!cancelled) setBlocks([]);
+      } finally {
+        if (!cancelled) setReflowing(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pdf, page, viewMode]);
 
   // ── Pinch to zoom ─────────────────────────────────────────────────────────
   // The reader had zoom buttons but no pinch, which is the gesture everyone
@@ -426,9 +458,56 @@ export function PDFViewer({
         // touch-action pan-x pan-y: keep one-finger scroll native, but stop the
         // browser swallowing two-finger gestures so pinch-to-zoom reaches us.
         style={{ touchAction: "pan-x pan-y" }}
-        className="flex-1 overflow-auto flex justify-center items-start p-1 sm:p-4 relative"
+        className={`flex-1 overflow-auto relative ${
+          viewMode === "text" ? "block" : "flex justify-center items-start p-1 sm:p-4"
+        }`}
       >
-        {isLoading ? (
+        {viewMode === "text" && !isLoading && !loadError ? (
+          // Reflowed reading view. Measure capped at ~64 characters and set at
+          // 18px/1.7 — the same typography rules the rest of the app's prose
+          // uses, applied to text pulled out of the page geometry. Selection
+          // still works, so highlight-to-ask keeps functioning here.
+          <div className="mx-auto w-full max-w-[68ch] px-4 py-5 sm:px-6">
+            {reflowing && !blocks ? (
+              <div className="space-y-3">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-4 w-full animate-pulse rounded bg-surface-2" />
+                ))}
+              </div>
+            ) : blocks && blocks.length > 0 ? (
+              <article className="space-y-4">
+                {blocks.map((b, i) =>
+                  b.type === "heading" ? (
+                    <h3
+                      key={i}
+                      className="font-display text-[1.35rem] font-extrabold leading-snug text-foreground"
+                    >
+                      {b.text}
+                    </h3>
+                  ) : (
+                    <p
+                      key={i}
+                      className="text-[1.05rem] leading-[1.7] text-foreground/90"
+                    >
+                      {b.text}
+                    </p>
+                  ),
+                )}
+              </article>
+            ) : (
+              <div className="py-10 text-center text-sm font-semibold text-muted-foreground">
+                <p>This page has no selectable text.</p>
+                <p className="mt-1">It's probably a scan or a diagram —</p>
+                <button
+                  onClick={() => setViewMode("page")}
+                  className="mt-3 btn-3d rounded-xl bg-primary px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-primary-foreground"
+                >
+                  Show the page
+                </button>
+              </div>
+            )}
+          </div>
+        ) : isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-muted-foreground text-sm">Loading document…</p>
@@ -580,7 +659,31 @@ export function PDFViewer({
         )}
       </div>
 
-      <div className="flex items-center justify-between px-3 py-2 bg-card border-t border-border gap-2">
+      <div className="flex items-center justify-between px-2 py-2 bg-card border-t border-border gap-1.5 sm:px-3 sm:gap-2">
+        {/* Text / Page. On a phone Text is the readable one; Page is there for
+            diagrams, formulae and scanned pages where layout carries meaning. */}
+        <div className="flex shrink-0 overflow-hidden rounded-lg border-2 border-border">
+          {([
+            ["text", "Text", AlignLeft],
+            ["page", "Page", FileText],
+          ] as const).map(([m, label, Icon]) => (
+            <button
+              key={m}
+              onClick={() => setViewMode(m)}
+              aria-pressed={viewMode === m}
+              title={m === "text" ? "Reflow to fit the screen" : "Show the original page"}
+              className={`inline-flex items-center gap-1 px-2 py-1.5 text-[10px] font-extrabold uppercase tracking-wide transition ${
+                viewMode === m
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => goTo(page - 1)}
           disabled={page <= 1 || isLoading}
