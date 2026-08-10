@@ -290,6 +290,7 @@ function Dashboard() {
                 ? { id: data.materials[0].id, title: data.materials[0].title }
                 : null,
               quizzedToday: data?.quizzedToday ?? false,
+              dailyMinutes: (profile as any)?.daily_goal_minutes ?? undefined,
             })}
             exam={data?.exams?.[0] ?? null}
           />

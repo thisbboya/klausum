@@ -40,6 +40,8 @@ export function buildSessionTasks(input: {
   topGap?: { id: string; topic?: string | null; subject?: string | null } | null;
   material?: { id: string; title: string } | null;
   quizzedToday: boolean;
+  /** From onboarding. The plan is trimmed to roughly fit it. */
+  dailyMinutes?: number;
 }): SessionTask[] {
   const tasks: SessionTask[] = [];
 
@@ -85,6 +87,24 @@ export function buildSessionTasks(input: {
     done: input.quizzedToday,
     to: "/quizzes",
   });
+
+  // Honour the daily budget the student set during onboarding. Reviews are
+  // never dropped — skipping them is what actually costs retention — so the
+  // trim only ever removes optional tasks from the end, and always leaves at
+  // least two so the plan doesn't degenerate into a single line.
+  const budget = input.dailyMinutes ?? 0;
+  if (budget > 0) {
+    let spend = 0;
+    const kept: SessionTask[] = [];
+    for (const t of tasks) {
+      const mandatory = t.kind === "REVIEW" || kept.length < 2;
+      if (mandatory || t.done || spend + t.minutes <= budget) {
+        kept.push(t);
+        if (!t.done) spend += t.minutes;
+      }
+    }
+    return kept;
+  }
 
   return tasks;
 }

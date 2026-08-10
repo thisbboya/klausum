@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { toast } from "@/lib/notify";
+import { reportError } from "@/lib/report-error";
 import { Check } from "lucide-react";
 import { KlausumLogo } from "@/components/klausum-mark";
 import { COMPANIONS, CompanionSVG } from "@/components/companion-svg";
@@ -72,6 +73,9 @@ function Onboarding() {
   const [level, setLevel] = useState("SHS");
   const [goals, setGoals] = useState<string[]>([]);
   const [frequency, setFrequency] = useState<string | null>(null);
+  // Mon–Fri by default: the most common answer, so most students just tap through.
+  const [studyDays, setStudyDays] = useState<number[]>([0, 1, 2, 3, 4]);
+  const [dailyMinutes, setDailyMinutes] = useState(30);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -82,8 +86,9 @@ function Onboarding() {
     return <div className="flex min-h-[100dvh] items-center justify-center"><KlausumLoading /></div>;
   }
 
-  // steps: 0 pilot · 1..8 VARK · 9 profile · 10 goals · 11 frequency · 12 building
-  const totalSteps = QUESTIONS.length + 5;
+  // steps: 0 pilot · 1..8 VARK · 9 profile · 10 goals · 11 frequency ·
+  //        12 schedule · 13 building
+  const totalSteps = QUESTIONS.length + 6;
   const pilot = COMPANIONS.find((c) => c.id === pilotId) ?? null;
 
   async function complete() {
@@ -112,10 +117,18 @@ function Onboarding() {
         onboarding_completed: true,
         companion_id: chosen.id,
         companion_name: chosen.name,
+        // 0 = Monday. Stored as JSON because available_hours is a Json column
+        // that already existed for exactly this kind of preference.
+        available_hours: { study_days: studyDays },
+        daily_goal_minutes: dailyMinutes,
       } as any);
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      // Route through reportError, not toast.error(error.message). A Supabase
+      // message often reads like a sentence, so the notify layer treats it as
+      // hand-written copy and shows it verbatim without logging — meaning a
+      // failure at the very last step of onboarding was invisible to admins.
+      toast.error(reportError("onboarding.complete", error));
       return false;
     }
     try { localStorage.setItem("klausum:onboarded", "1"); } catch {}
@@ -133,13 +146,39 @@ function Onboarding() {
       </header>
 
       <div className="mx-auto w-full max-w-xl px-4 pb-16 flex-1 flex flex-col justify-center">
-        <div className="mb-6">
-          <div className="h-2.5 rounded-full bg-surface-3 overflow-hidden">
+        {/* Step dots + "n of m", OnePrep style. A bare progress bar tells you
+            how far along you are; a count tells you how much is left, which is
+            what actually stops people abandoning a wizard. Dots collapse to the
+            bar on narrow screens where 14 of them would not fit. */}
+        <div className="mb-6 flex items-center gap-3">
+          {step > 0 && step < totalSteps - 1 && (
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              aria-label="Back"
+              className="shrink-0 rounded-lg border-2 border-border px-2 py-1 text-xs font-extrabold text-muted-foreground transition hover:text-foreground"
+            >
+              ←
+            </button>
+          )}
+          <div className="hidden flex-1 items-center gap-1.5 sm:flex">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <span
+                key={i}
+                className={`h-2 flex-1 rounded-full transition-colors ${
+                  i <= step ? "bg-success" : "bg-surface-3"
+                }`}
+              />
+            ))}
+          </div>
+          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-3 sm:hidden">
             <div
               className="h-full rounded-full bg-success transition-all duration-500"
               style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
             />
           </div>
+          <span className="shrink-0 text-xs font-extrabold tabular-nums text-muted-foreground">
+            {Math.min(step + 1, totalSteps)} of {totalSteps}
+          </span>
         </div>
 
         <motion.div
@@ -351,7 +390,71 @@ function Onboarding() {
             </div>
           )}
 
+          {/* Study schedule. Unlike "how often", these two answers are load
+              bearing: the days drive which mornings Today's Session expects you,
+              and the minutes size the plan it builds. Both land in columns that
+              already existed (available_hours, daily_goal_minutes). */}
           {step === QUESTIONS.length + 4 && (
+            <div>
+              <h2 className="font-display text-2xl font-extrabold">Which days do you want to study?</h2>
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                We'll build your daily session on these days — and leave you alone on the rest.
+              </p>
+              <div className="mt-6 grid grid-cols-7 gap-1.5">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => {
+                  const on = studyDays.includes(i);
+                  return (
+                    <button
+                      key={d}
+                      onClick={() =>
+                        setStudyDays((prev) =>
+                          prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i].sort(),
+                        )
+                      }
+                      aria-pressed={on}
+                      className={`rounded-xl border-2 px-1 py-3 text-[11px] font-extrabold transition ${
+                        on
+                          ? "border-success bg-success/12 text-success"
+                          : "border-border bg-card text-muted-foreground hover:border-success/40"
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <h3 className="mt-7 font-display text-base font-extrabold">
+                How long is a study day?
+              </h3>
+              <div className="mt-2 grid grid-cols-4 gap-1.5">
+                {[15, 30, 45, 60].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setDailyMinutes(m)}
+                    aria-pressed={dailyMinutes === m}
+                    className={`rounded-xl border-2 py-2.5 text-xs font-extrabold transition ${
+                      dailyMinutes === m
+                        ? "border-success bg-success/12 text-success"
+                        : "border-border bg-card text-muted-foreground hover:border-success/40"
+                    }`}
+                  >
+                    {m} min
+                  </button>
+                ))}
+              </div>
+
+              <button
+                disabled={studyDays.length === 0}
+                onClick={() => setStep(step + 1)}
+                className="btn-3d btn-3d-success mt-7 w-full rounded-2xl bg-success py-3 text-sm font-extrabold uppercase tracking-wide text-success-foreground disabled:opacity-40"
+              >
+                {studyDays.length === 0 ? "Pick at least one day" : "Continue"}
+              </button>
+            </div>
+          )}
+
+          {step === QUESTIONS.length + 5 && (
             <BuildingScreen
               pilotId={pilotId ?? 1}
               submitting={submitting}

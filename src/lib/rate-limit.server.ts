@@ -40,6 +40,12 @@ export async function consumeAiQuota(userId: string, feature: AiFeature): Promis
       .eq("feature", feature)
       .maybeSingle();
     if (!rule || !rule.enabled) return; // unconfigured/disabled → unlimited
+    // A cap of 0 (or negative) is treated as unlimited, matching the line
+    // above. Without this, `count >= 0` is true on the very first call, so one
+    // stray 0 in the admin panel silently and permanently kills an AI feature
+    // for every user — and tells them "you've used all 0 of today's free…".
+    // That has already happened in production once.
+    if (rule.daily_limit <= 0) return;
 
     const dayStart = new Date();
     dayStart.setUTCHours(0, 0, 0, 0);
