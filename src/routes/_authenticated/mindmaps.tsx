@@ -111,11 +111,13 @@ function MapList() {
   );
 }
 
+// Token-driven so nodes stay legible in both themes. These used to hard-code
+// white text on translucent fills, which was invisible on a light page.
 const NODE_STYLE: Record<string, React.CSSProperties> = {
-  main: { background: "oklch(0.78 0.16 78 / 0.20)", border: "2px solid oklch(0.78 0.16 78)", color: "white", padding: 12, borderRadius: 12, fontWeight: 600, minWidth: 140 },
-  sub: { background: "oklch(0.25 0.05 260)", border: "1px solid oklch(0.45 0.08 260)", color: "white", padding: 10, borderRadius: 10, minWidth: 120 },
-  example: { background: "oklch(0.35 0.12 150 / 0.4)", border: "1px solid oklch(0.6 0.18 150)", color: "white", padding: 10, borderRadius: 10, minWidth: 120 },
-  warning: { background: "oklch(0.35 0.18 25 / 0.4)", border: "1px solid oklch(0.65 0.22 25)", color: "white", padding: 10, borderRadius: 10, minWidth: 120 },
+  main: { background: "color-mix(in oklab, var(--primary) 18%, var(--card))", border: "2px solid var(--primary)", color: "var(--foreground)", padding: 12, borderRadius: 12, fontWeight: 700, minWidth: 140 },
+  sub: { background: "var(--surface-2)", border: "2px solid var(--border)", color: "var(--foreground)", padding: 10, borderRadius: 10, fontWeight: 600, minWidth: 120 },
+  example: { background: "color-mix(in oklab, var(--success) 15%, var(--card))", border: "2px solid var(--success)", color: "var(--foreground)", padding: 10, borderRadius: 10, fontWeight: 600, minWidth: 120 },
+  warning: { background: "color-mix(in oklab, var(--destructive) 15%, var(--card))", border: "2px solid var(--destructive)", color: "var(--foreground)", padding: 10, borderRadius: 10, fontWeight: 600, minWidth: 120 },
 };
 
 function MapEditor({ id }: { id: string }) {
@@ -335,7 +337,7 @@ function MapEditor({ id }: { id: string }) {
           defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: "oklch(0.6 0.1 260)" } }}
           fitView
         >
-          <Background gap={16} color="oklch(0.3 0.02 260)" />
+          <Background gap={16} color="var(--border)" />
           <MiniMap pannable zoomable />
           <Controls />
         </ReactFlow>

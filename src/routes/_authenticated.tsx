@@ -74,17 +74,18 @@ function AuthLayout() {
     const root = document.documentElement;
     if (!profile?.companion_id) {
       root.style.removeProperty("--pilot");
-      root.style.removeProperty("--primary");
-      root.style.removeProperty("--primary-foreground");
+      root.style.removeProperty("--pilot-foreground");
       return;
     }
     const c = getCompanion(profile.companion_id);
+    // The pilot tints its own surfaces via --pilot, but no longer overwrites
+    // --primary. It used to, which meant the brand colour was whatever mascot
+    // you happened to pick and the app never looked like one product twice.
     root.style.setProperty("--pilot", c.color);
-    root.style.setProperty("--primary", c.color);
-    // Perceived luminance decides whether text on primary is dark or white
+    // Perceived luminance decides whether text on the pilot colour is dark or white
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.color.slice(i, i + 2), 16) / 255);
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    root.style.setProperty("--primary-foreground", lum > 0.6 ? "oklch(0.25 0.02 80)" : "#ffffff");
+    root.style.setProperty("--pilot-foreground", lum > 0.6 ? "oklch(0.25 0.02 80)" : "#ffffff");
   }, [profile?.companion_id]);
 
   if (loading || !user) {

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/lib/notify";
-import { Trophy, RefreshCcw, MessagesSquare, Layers, Loader2 } from "lucide-react";
-import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { Trophy, RefreshCcw, MessagesSquare, Layers, Loader2, Zap, Target, Timer } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { motion } from "framer-motion";
 
 type Search = { attempt?: string };
@@ -38,6 +38,7 @@ function Results() {
   const [att, setAtt] = useState<any>(null);
   const [makingDeck, setMakingDeck] = useState(false);
   const [deckMade, setDeckMade] = useState(false);
+  const [xpEarned, setXpEarned] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -53,6 +54,21 @@ function Results() {
       setQuiz(q);
       setAtt(a);
       setLoading(false);
+      // The XP was already banked when the quiz was submitted, so read the
+      // actual ledger entry rather than re-deriving it — the combo bonus isn't
+      // stored on the attempt, and a made-up number here would not match the
+      // student's real balance.
+      if (a?.user_id) {
+        const { data: ev } = await supabase
+          .from("xp_events")
+          .select("xp_amount, created_at")
+          .eq("user_id", a.user_id)
+          .eq("action", "quiz_completed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (ev) setXpEarned((ev as any).xp_amount ?? null);
+      }
     })();
   }, [id, attempt]);
 
@@ -60,13 +76,43 @@ function Results() {
   if (!quiz || !att) return <div className="text-sm text-muted-foreground">No results.</div>;
 
   const pct = Math.round((att.score / att.total) * 100);
-  const grade =
-    pct >= 90 ? { label: "Distinction", color: "oklch(0.78 0.16 78)" } :
-    pct >= 75 ? { label: "Credit", color: "oklch(0.7 0.18 145)" } :
-    pct >= 60 ? { label: "Pass", color: "oklch(0.7 0.15 220)" } :
-    { label: "Try Again", color: "oklch(0.65 0.22 25)" };
 
-  const ringData = [{ name: "score", value: pct, fill: grade.color }];
+  // Duolingo's trick: the headline reacts to the result, so the screen feels
+  // like it watched you play rather than printing a number.
+  const { headline, subline, gradeWord } =
+    pct === 100
+      ? {
+          headline: "Flawless!",
+          subline: "Every single one. That topic is yours now.",
+          gradeWord: "Perfect",
+        }
+      : pct >= 90
+        ? {
+            headline: "Learning legend!",
+            subline: "Near-perfect run — this is exam-ready territory.",
+            gradeWord: "Amazing",
+          }
+        : pct >= 75
+          ? {
+              headline: "Strong work!",
+              subline: "Solid grasp. We've flagged the few misses as gaps to close.",
+              gradeWord: "Great",
+            }
+          : pct >= 60
+            ? {
+                headline: "Nice progress!",
+                subline: "You're over the line. Drill the misses and this jumps fast.",
+                gradeWord: "Good",
+              }
+            : {
+                headline: "Now you know where to look.",
+                subline: "Every wrong answer just became a gap Klausum will help you close.",
+                gradeWord: "Score",
+              };
+
+  const secs = Number(att.duration_seconds ?? 0);
+  const timeLabel = secs > 0 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}` : "—";
+
   const bloomData = Object.entries((att.bloom_breakdown ?? {}) as Record<string, { right: number; total: number }>)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([level, v]) => ({ level, score: Math.round((v.right / v.total) * 100) }));
@@ -76,36 +122,78 @@ function Results() {
 
   return (
     <div className="space-y-8">
-      <header className="text-center">
-        <Trophy className="mx-auto h-10 w-10 text-primary" />
-        <h1 className="font-display text-2xl font-bold mt-2">{quiz.title}</h1>
-        <p className="text-sm text-muted-foreground">{quiz.subject} · {quiz.difficulty}</p>
-      </header>
+      {/* Duolingo's end-of-lesson celebration: a headline that reacts to how it
+          went, three stat tiles, then one obvious way forward. */}
+      <motion.header
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 140, damping: 18 }}
+        className="pt-2 text-center"
+      >
+        <Trophy className="mx-auto h-12 w-12 text-primary" />
+        <h1 className="mt-3 font-display text-3xl font-extrabold text-primary md:text-4xl">
+          {headline}
+        </h1>
+        <p className="mx-auto mt-2 max-w-md text-sm font-semibold text-muted-foreground">
+          {subline}
+        </p>
+      </motion.header>
+
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+        {[
+          {
+            label: "Total XP",
+            value: xpEarned != null ? `${xpEarned}` : "—",
+            icon: Zap,
+            shell: "bg-primary border-primary",
+            ink: "text-primary",
+          },
+          {
+            label: gradeWord,
+            value: `${pct}%`,
+            icon: Target,
+            shell: "bg-success border-success",
+            ink: "text-success",
+          },
+          {
+            label: "Time",
+            value: timeLabel,
+            icon: Timer,
+            shell: "bg-sky border-sky",
+            ink: "text-sky",
+          },
+        ].map(({ label, value, icon: Icon, shell, ink }) => (
+          <div key={label} className={`overflow-hidden rounded-2xl border-2 ${shell}`}>
+            <div className="px-1 py-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-white">
+              {label}
+            </div>
+            <div className="m-[3px] flex items-center justify-center gap-1.5 rounded-xl bg-card px-1 py-3">
+              <Icon className={`h-4 w-4 shrink-0 ${ink}`} />
+              <span className={`text-lg font-extrabold tabular-nums ${ink}`}>{value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Link
+        to="/quizzes"
+        className="btn-3d btn-3d-success block w-full rounded-2xl bg-success py-3.5 text-center text-sm font-extrabold uppercase tracking-wide text-success-foreground"
+      >
+        Continue
+      </Link>
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="grid gap-6 md:grid-cols-2 items-center card-chunky bg-card p-6"
+        transition={{ duration: 0.4 }}
+        className="card-chunky bg-card p-5"
       >
-        <div className="relative h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadialBarChart cx="50%" cy="50%" innerRadius="65%" outerRadius="100%" data={ringData} startAngle={90} endAngle={-270}>
-              <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-              <RadialBar background={{ fill: "oklch(0.25 0.02 260)" }} dataKey="value" cornerRadius={20} />
-            </RadialBarChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <div className="font-display text-5xl font-bold" style={{ color: grade.color }}>{pct}%</div>
-            <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">{att.score} / {att.total}</div>
-          </div>
-        </div>
-        <div>
-          <div className="font-display text-3xl font-bold" style={{ color: grade.color }}>{grade.label}</div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {pct >= 75 ? "Strong work — keep this rhythm. We've still flagged any wrong answers as gaps." : "Mistakes are gold. Each wrong answer is now a knowledge gap to close."}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+        <div className="text-sm font-extrabold text-foreground">{quiz.title}</div>
+        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+          {quiz.subject} · {quiz.difficulty} · {att.score} / {att.total} correct
+        </p>
+        <div className="mt-4">
+          <div className="flex flex-wrap gap-2">
             <Link to="/quizzes/$id/take" params={{ id }} search={{ timer: 0 }} className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/20">
               <RefreshCcw className="h-3.5 w-3.5" /> Retake
             </Link>
@@ -161,10 +249,21 @@ function Results() {
           <div className="card-chunky bg-card p-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bloomData}>
-                <XAxis dataKey="level" stroke="oklch(0.6 0.02 260)" tick={{ fontSize: 12 }} />
-                <YAxis domain={[0, 100]} stroke="oklch(0.6 0.02 260)" tick={{ fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: "oklch(0.18 0.02 260)", border: "1px solid oklch(0.3 0.02 260)", borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="score" fill="oklch(0.78 0.16 78)" radius={[6, 6, 0, 0]} />
+                {/* Themed off the CSS variables so this tracks light/dark and
+                    the CEG palette instead of hard-coded navy from before. */}
+                <XAxis dataKey="level" stroke="var(--muted-foreground)" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 100]} stroke="var(--muted-foreground)" tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    color: "var(--popover-foreground)",
+                    border: "2px solid var(--border)",
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                />
+                <Bar dataKey="score" fill="var(--primary)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
