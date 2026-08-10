@@ -48,6 +48,20 @@
   .klausum-toast { animation-duration: 1ms; }
 }
 
+/* Landing scene motion. CSS keyframes rather than framer-motion: the backdrop
+   renders on the marketing page where every kilobyte is felt, and drifting a
+   cloud does not need a physics engine. */
+@keyframes ksDrift { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(0,-14px,0); } }
+@keyframes ksCloudA { from { transform: translate3d(-8%,0,0); } to { transform: translate3d(108%,0,0); } }
+@keyframes ksBob { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(0,-10px,0); } }
+.ks-drift-slow { animation: ksDrift 14s ease-in-out infinite; }
+.ks-bob { animation: ksBob 6s ease-in-out infinite; }
+.ks-cloud-a { animation: ksCloudA 70s linear infinite; }
+.ks-cloud-b { animation: ksCloudA 95s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ks-drift-slow, .ks-bob, .ks-cloud-a, .ks-cloud-b { animation: none; }
+}
+
 @keyframes klausumSlowRotate {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
