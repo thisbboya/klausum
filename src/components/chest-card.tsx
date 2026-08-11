@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Sounds as sounds } from "@/lib/sounds";
 import { toast } from "@/lib/notify";
 
+// The gradients below deliberately use literal palette values: a chest is a
+// physical object and bronze/silver/gold read as metals, not as theme states.
 type Tier = "bronze" | "silver" | "gold";
 const TIER_REWARDS: Record<Tier, { xp: [number, number]; gems: [number, number]; color: string }> = {
   bronze: { xp: [10, 25], gems: [5, 15], color: "from-amber-700 to-primary" },

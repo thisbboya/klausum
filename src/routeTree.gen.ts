@@ -39,7 +39,6 @@ import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGapsRouteImport } from './routes/_authenticated/gaps'
 import { Route as AuthenticatedGamesRouteImport } from './routes/_authenticated/games'
 import { Route as AuthenticatedFormulasRouteImport } from './routes/_authenticated/formulas'
-import { Route as AuthenticatedFocusRouteImport } from './routes/_authenticated/focus'
 import { Route as AuthenticatedExamsRouteImport } from './routes/_authenticated/exams'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
@@ -199,11 +198,6 @@ const AuthenticatedFormulasRoute = AuthenticatedFormulasRouteImport.update({
   path: '/formulas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedFocusRoute = AuthenticatedFocusRouteImport.update({
-  id: '/focus',
-  path: '/focus',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedExamsRoute = AuthenticatedExamsRouteImport.update({
   id: '/exams',
   path: '/exams',
@@ -265,7 +259,6 @@ export interface FileRoutesByFullPath {
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
-  '/focus': typeof AuthenticatedFocusRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/games': typeof AuthenticatedGamesRoute
   '/gaps': typeof AuthenticatedGapsRoute
@@ -306,7 +299,6 @@ export interface FileRoutesByTo {
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/exams': typeof AuthenticatedExamsRoute
-  '/focus': typeof AuthenticatedFocusRoute
   '/formulas': typeof AuthenticatedFormulasRoute
   '/games': typeof AuthenticatedGamesRoute
   '/gaps': typeof AuthenticatedGapsRoute
@@ -347,7 +339,6 @@ export interface FileRoutesById {
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/exams': typeof AuthenticatedExamsRoute
-  '/_authenticated/focus': typeof AuthenticatedFocusRoute
   '/_authenticated/formulas': typeof AuthenticatedFormulasRoute
   '/_authenticated/games': typeof AuthenticatedGamesRoute
   '/_authenticated/gaps': typeof AuthenticatedGapsRoute
@@ -390,7 +381,6 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/exams'
-    | '/focus'
     | '/formulas'
     | '/games'
     | '/gaps'
@@ -431,7 +421,6 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/exams'
-    | '/focus'
     | '/formulas'
     | '/games'
     | '/gaps'
@@ -471,7 +460,6 @@ export interface FileRouteTypes {
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/exams'
-    | '/_authenticated/focus'
     | '/_authenticated/formulas'
     | '/_authenticated/games'
     | '/_authenticated/gaps'
@@ -732,13 +720,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormulasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/focus': {
-      id: '/_authenticated/focus'
-      path: '/focus'
-      fullPath: '/focus'
-      preLoaderRoute: typeof AuthenticatedFocusRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/exams': {
       id: '/_authenticated/exams'
       path: '/exams'
@@ -841,7 +822,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExamsRoute: typeof AuthenticatedExamsRoute
-  AuthenticatedFocusRoute: typeof AuthenticatedFocusRoute
   AuthenticatedFormulasRoute: typeof AuthenticatedFormulasRoute
   AuthenticatedGamesRoute: typeof AuthenticatedGamesRoute
   AuthenticatedGapsRoute: typeof AuthenticatedGapsRoute
@@ -865,7 +845,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExamsRoute: AuthenticatedExamsRoute,
-  AuthenticatedFocusRoute: AuthenticatedFocusRoute,
   AuthenticatedFormulasRoute: AuthenticatedFormulasRoute,
   AuthenticatedGamesRoute: AuthenticatedGamesRoute,
   AuthenticatedGapsRoute: AuthenticatedGapsRoute,

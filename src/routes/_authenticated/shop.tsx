@@ -20,7 +20,7 @@ type Item = {
 const ITEMS: Item[] = [
   { id: "streak_freeze", title: "Streak Freeze", desc: "Adds +1 freeze to protect your streak on a missed day.", cost: 30, icon: Snowflake, accent: "text-sky-400" },
   { id: "hint_pack", title: "Hint Pack", desc: "5 hints you can use on hard quiz questions.", cost: 20, icon: Lightbulb, accent: "text-primary" },
-  { id: "xp_boost", title: "2× XP Boost", desc: "Doubles XP for the next 30 minutes of study.", cost: 50, icon: Zap, accent: "text-fuchsia-400" },
+  { id: "xp_boost", title: "2× XP Boost", desc: "Doubles XP for the next 30 minutes of study.", cost: 50, icon: Zap, accent: "text-grape" },
 ];
 
 function Shop() {

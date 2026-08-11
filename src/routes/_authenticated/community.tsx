@@ -185,8 +185,8 @@ function FriendsTab() {
                     <div className="text-sm font-medium truncate">{p?.full_name ?? "User"}</div>
                     <div className="text-xs text-muted-foreground truncate">{p?.handle ? `@${p.handle}` : ""}</div>
                   </div>
-                  <button onClick={() => respond(f.id, true)} className="rounded-md bg-success/20 p-1.5 text-emerald-300"><Check className="h-4 w-4" /></button>
-                  <button onClick={() => respond(f.id, false)} className="rounded-md bg-destructive/20 p-1.5 text-red-300"><X className="h-4 w-4" /></button>
+                  <button onClick={() => respond(f.id, true)} className="rounded-md bg-success/20 p-1.5 text-success"><Check className="h-4 w-4" /></button>
+                  <button onClick={() => respond(f.id, false)} className="rounded-md bg-destructive/20 p-1.5 text-destructive"><X className="h-4 w-4" /></button>
                 </li>
               );
             })}

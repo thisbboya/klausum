@@ -104,10 +104,14 @@ function SchedulePage() {
     setCursor(d);
   }
 
+  // Semantic tokens, not fixed palette steps. The -200 shades these used to
+  // carry were picked against a dark canvas; on the light theme they sat pale
+  // on a pale tint and the label all but vanished. The tokens re-tune
+  // themselves per theme, so the text stays readable on both.
   const colorFor = (t: string) =>
-    t === "review" ? "border-blue-500/40 bg-blue-500/15 text-blue-200"
-    : t === "quiz" ? "border-primary/40 bg-primary/15 text-amber-200"
-    : t === "break" ? "border-success/40 bg-success/15 text-emerald-200"
+    t === "review" ? "border-sky/40 bg-sky/15 text-sky"
+    : t === "quiz" ? "border-primary/40 bg-primary/15 text-primary"
+    : t === "break" ? "border-success/40 bg-success/15 text-success"
     : "border-primary/40 bg-primary/15 text-primary";
 
   return (
@@ -215,7 +219,7 @@ function ListView({ blocks, colorFor, onComplete, onDelete }: any) {
                     <div className="text-[11px] uppercase opacity-70">{b.block_type} · {b.subject}</div>
                   </div>
                   {!b.completed && (
-                    <button onClick={() => onComplete(b.id)} className="text-success hover:text-emerald-300"><CheckCircle2 className="h-4 w-4" /></button>
+                    <button onClick={() => onComplete(b.id)} className="text-success transition hover:opacity-70"><CheckCircle2 className="h-4 w-4" /></button>
                   )}
                   <button onClick={() => onDelete(b.id)} className="opacity-60 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                 </li>
@@ -278,7 +282,7 @@ function WeekGrid({ cursor, blocks, colorFor, onComplete, onDelete }: any) {
               <div className="font-semibold truncate">{b.title}</div>
               <div className="opacity-70 truncate">{s.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
               <div className="absolute top-0.5 right-0.5 flex gap-0.5">
-                {!b.completed && <button onClick={() => onComplete(b.id)} className="text-emerald-300"><CheckCircle2 className="h-3 w-3" /></button>}
+                {!b.completed && <button onClick={() => onComplete(b.id)} className="text-success"><CheckCircle2 className="h-3 w-3" /></button>}
                 <button onClick={() => onDelete(b.id)} className="opacity-60"><X className="h-3 w-3" /></button>
               </div>
             </div>

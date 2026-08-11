@@ -227,7 +227,7 @@ function GapsPage() {
       </div>
 
       {counts.critical === 0 && filter === "all" && open.length > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-emerald-300">
+        <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">
           <PartyPopper className="h-4 w-4" /> No critical gaps right now — keep chipping at the moderates.
         </div>
       )}

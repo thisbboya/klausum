@@ -491,7 +491,7 @@ function TakeQuiz() {
 
       {combo >= 2 && !isChecked && (
         <div className="text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30 px-3 py-1 text-xs font-bold">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 text-primary border border-primary/30 px-3 py-1 text-xs font-bold">
             {combo}× streak{combo >= 5 ? " — 2× XP!" : combo >= 3 ? " — 1.5× XP" : ""}
           </span>
         </div>

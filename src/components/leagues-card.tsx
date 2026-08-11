@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Trophy, Shield } from "lucide-react";
 
+// Bronze and Silver stay literal palette values on purpose: they are metals,
+// not semantic states, and a bronze league should look like bronze in either
+// theme. Everything below them maps to a theme token, which is why they flip.
 const TIERS = [
   { name: "Bronze", min: 0, color: "text-amber-700", bg: "bg-amber-700/10" },
   { name: "Silver", min: 100, color: "text-slate-400", bg: "bg-slate-400/10" },

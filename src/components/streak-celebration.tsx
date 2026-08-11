@@ -98,8 +98,8 @@ export function StreakCelebration({ streak }: { streak?: number | null }) {
               <Kumi size={104} />
             </div>
             <div className="flex items-center justify-center gap-2">
-              <Flame className="h-10 w-10 fill-orange-500 text-orange-500" />
-              <span className="font-display text-6xl font-extrabold text-orange-500">
+              <Flame className="h-10 w-10 fill-orange-500 text-primary" />
+              <span className="font-display text-6xl font-extrabold text-primary">
                 {milestone}
               </span>
             </div>

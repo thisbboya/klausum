@@ -352,7 +352,7 @@ function ProgressPage() {
         <div className="mb-4 grid grid-cols-3 gap-3 text-center">
           <div><div className="text-2xl font-bold">{totalCards}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Total cards</div></div>
           <div><div className="text-2xl font-bold text-primary">{dueToday}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Due today</div></div>
-          <div><div className="text-2xl font-bold text-rose-400">{leeches}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Leeches (≥4 lapses)</div></div>
+          <div><div className="text-2xl font-bold text-destructive">{leeches}</div><div className="text-[10px] uppercase text-muted-foreground tracking-wide">Leeches (≥4 lapses)</div></div>
         </div>
         <div className="space-y-2">
           {healthData.map((h) => {

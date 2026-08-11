@@ -933,7 +933,7 @@ function VideoQuiz({
                     const isPicked = picked === opt;
                     const cls = shown
                       ? isCorrect
-                        ? "border-green-500/60 bg-green-500/10 text-green-300"
+                        ? "border-success/60 bg-success/10 text-success"
                         : isPicked
                         ? "border-destructive/60 bg-destructive/10 text-destructive"
                         : "border-border opacity-50"

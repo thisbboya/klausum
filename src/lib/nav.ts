@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Users,
-  GraduationCap, Youtube, Camera, Focus, Gem, Gamepad2, type LucideIcon,
+  GraduationCap, Youtube, Camera, Gem, Gamepad2, type LucideIcon,
 } from "lucide-react";
 
 export type NavLink = { to: string; label: string; icon: LucideIcon };
@@ -51,9 +51,12 @@ export const MORE_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "Focus & fun",
+    title: "Fun",
     links: [
-      { to: "/focus", label: "Focus Mode", icon: Focus },
+      // Focus Mode used to sit here and was removed: production recorded zero
+      // focus_sessions rows in the app's lifetime, and the timer people do use
+      // is the one embedded in the material reader, which writes to the same
+      // table. A standalone page for it was a nav slot spent on nothing.
       { to: "/games", label: "Games", icon: Gamepad2 },
     ],
   },

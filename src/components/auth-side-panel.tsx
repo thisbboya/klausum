@@ -19,7 +19,7 @@ const slides = [
     eyebrow: "Wrapped",
     title: "Your year in learning — Spotify Wrapped, for your brain.",
     body: "Twelve cinematic slides that show what you mastered, what you struggled with, and the moments that made you smarter.",
-    accent: "from-fuchsia-400/30 to-primary/0",
+    accent: "from-grape/30 to-primary/0",
   },
 ];
 
