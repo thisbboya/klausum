@@ -344,7 +344,7 @@ function SummaryTab({ material }: { material: any }) {
 
   return (
     <div className="space-y-5">
-      <article className="prose prose-invert prose-sm md:prose-base max-w-none">
+      <article className="prose dark:prose-invert prose-sm md:prose-base max-w-none">
         <h2>Summary</h2>
         <p>{material.ai_summary}</p>
       </article>
@@ -394,7 +394,7 @@ function OriginalTab({ material }: { material: any }) {
         >Copy all</button>
       </div>
       <div className="card-chunky bg-card p-5 md:p-6 max-h-[70vh] overflow-auto">
-        <article className="prose prose-invert prose-sm md:prose-base max-w-none whitespace-pre-wrap">
+        <article className="prose dark:prose-invert prose-sm md:prose-base max-w-none whitespace-pre-wrap">
           {content}
         </article>
       </div>
@@ -420,7 +420,7 @@ function CalloutMarkdown({ text }: { text: string }) {
   const processed = useMemo(() => preprocessCallouts(text), [text]);
   if (!text) return <p className="text-muted-foreground text-sm">No adaptation available.</p>;
   return (
-    <article className="prose prose-invert prose-sm md:prose-base max-w-none prose-blockquote:border-l-primary prose-blockquote:bg-card prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-md prose-blockquote:not-italic">
+    <article className="prose dark:prose-invert prose-sm md:prose-base max-w-none prose-blockquote:border-l-primary prose-blockquote:bg-card prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-md prose-blockquote:not-italic">
       <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
         {processed}
       </ReactMarkdown>
@@ -439,7 +439,7 @@ function CornellTab({ material }: { material: any }) {
         </div>
         <div className="md:col-span-2 card-chunky bg-card p-4">
           <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /> Notes</h3>
-          <article className="prose prose-invert prose-sm max-w-none">
+          <article className="prose dark:prose-invert prose-sm max-w-none">
             <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
               {material.cornell_notes}
             </ReactMarkdown>

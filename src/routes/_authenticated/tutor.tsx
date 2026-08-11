@@ -12,6 +12,18 @@ import "katex/dist/katex.min.css";
 import { Send, MessagesSquare, Sparkles, Square, RotateCcw, Lightbulb, ListOrdered, HelpCircle, Baby } from "lucide-react";
 import { CompanionSVG } from "@/components/companion-svg";
 import { awardXp } from "@/lib/xp";
+import { MarkdownMath } from "@/components/notes/MarkdownMath";
+
+/** First thing the student actually typed — used to title a saved session. */
+function firstUserLine(messages: any[]): string {
+  const first = messages.find((m) => m.role === "user");
+  if (!first) return "";
+  const text = (first.parts ?? [])
+    .map((p: any) => (p.type === "text" ? p.text : ""))
+    .join("")
+    .trim();
+  return text.slice(0, 80);
+}
 import { toast } from "@/lib/notify";
 
 export const Route = createFileRoute("/_authenticated/tutor")({
@@ -127,6 +139,60 @@ function Tutor() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // ── Conversation persistence ──────────────────────────────────────────────
+  // useChat holds messages in memory only, so navigating away threw the whole
+  // conversation on the floor. A tutor you cannot re-read is a tutor you cannot
+  // revise from. The tutor_sessions table already existed with a messages jsonb
+  // column and had never received a single row — it was built for this and
+  // never wired up.
+  const sessionIdRef = useRef<string | null>(null);
+  const restoredRef = useRef(false);
+
+  useEffect(() => {
+    if (!user || restoredRef.current) return;
+    restoredRef.current = true;
+    (async () => {
+      const { data } = await supabase
+        .from("tutor_sessions")
+        .select("id, messages")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!data) return;
+      sessionIdRef.current = (data as any).id;
+      const saved = (data as any).messages;
+      if (Array.isArray(saved) && saved.length > 0) setMessages(saved as any);
+    })();
+  }, [user, setMessages]);
+
+  // Save after each exchange settles. Guarded on !isLoading so a streaming
+  // reply isn't written half-finished.
+  useEffect(() => {
+    if (!user || messages.length === 0) return;
+    if (status === "submitted" || status === "streaming") return;
+    const row = {
+      user_id: user.id,
+      title: firstUserLine(messages) || "Tutor session",
+      mode,
+      messages: messages as any,
+      message_count: messages.length,
+      updated_at: new Date().toISOString(),
+    };
+    void (async () => {
+      if (sessionIdRef.current) {
+        await supabase.from("tutor_sessions").update(row).eq("id", sessionIdRef.current);
+      } else {
+        const { data } = await supabase
+          .from("tutor_sessions")
+          .insert(row)
+          .select("id")
+          .maybeSingle();
+        if (data) sessionIdRef.current = (data as any).id;
+      }
+    })();
+  }, [messages, status, user, mode]);
+
   const isLoading = status === "submitted" || status === "streaming";
 
   useEffect(() => {
@@ -151,10 +217,19 @@ function Tutor() {
     if (isLoading) stop();
     setMessages([]);
     setInput("");
+    // Start a genuinely new session rather than overwriting the old one, so
+    // "New chat" never destroys a conversation the student may want back.
+    sessionIdRef.current = null;
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    // dvh, not vh: on phones vh includes the browser chrome, so the composer
+    // sat below the fold. Also -mx-4 on small screens to reclaim the layout
+    // gutter — a chat panel is the one screen that wants every pixel.
+    <div
+      className="-mx-4 flex flex-col px-4 sm:mx-0 sm:px-0"
+      style={{ height: "calc(100dvh - var(--tutor-chrome, 10rem))" }}
+    >
       <header className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
@@ -223,20 +298,30 @@ function Tutor() {
         {messages.map((m) => {
           const text = m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
           return (
-            <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={m.id} className={`flex gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              {m.role !== "user" && (
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-grape/15 text-grape">
+                  <Sparkles className="h-4 w-4" />
+                </span>
+              )}
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                  m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"
-                }`}
+                className={
+                  m.role === "user"
+                    ? "max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm text-primary-foreground"
+                    : // The tutor gets its own colour identity — a grape-tinted
+                      // surface with a left rule — so a glance tells you who is
+                      // talking without reading a word.
+                      "max-w-[85%] rounded-2xl rounded-bl-md border-2 border-grape/25 border-l-4 border-l-grape bg-grape/[0.06] px-4 py-3 text-sm"
+                }
               >
                 {m.role === "user" ? (
                   <div className="whitespace-pre-wrap">{text}</div>
                 ) : (
-                  <article className="prose prose-invert prose-sm max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {text || "…"}
-                    </ReactMarkdown>
-                  </article>
+                  // NOT dark:prose-invert. That is Tailwind Typography's DARK-mode
+                  // variant: it forces near-white body text, which on this
+                  // light-first theme rendered the tutor's answers white-on-
+                  // white — the reason the conversation looked empty.
+                  <MarkdownMath source={text || "…"} />
                 )}
               </div>
             </div>

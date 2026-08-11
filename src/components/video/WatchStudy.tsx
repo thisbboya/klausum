@@ -631,7 +631,7 @@ function VideoChat({
                   : "bg-muted/40 mr-6"
               }`}
             >
-              <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5">
+              <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                   {content}
                 </ReactMarkdown>

@@ -337,7 +337,7 @@ function ReviewPage() {
               <span key={t} className="px-2 py-0.5 rounded-full border border-border">{t}</span>
             ))}
           </div>
-          <article className="prose prose-invert prose-sm md:prose-base max-w-none">
+          <article className="prose dark:prose-invert prose-sm md:prose-base max-w-none">
             <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
               {showBack ? (current?.back ?? "") : (current?.front ?? "")}
             </ReactMarkdown>

@@ -81,7 +81,7 @@ function ReplyWithJumps({
 
   return (
     <>
-      <article className="prose prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+      <article className="prose dark:prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
         {segments.map((seg, i) =>
           seg.type === "text" ? (
             <ReactMarkdown key={i} remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>

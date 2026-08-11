@@ -1,4 +1,10 @@
 @import "tailwindcss" source(none);
+/* Typography plugin. Every AI surface in this app (tutor, material chat, video
+   study, summaries, flashcards, snap-&-solve) renders markdown inside `prose`
+   classes — but the plugin was never installed, so all of them were no-ops and
+   the model's headings, lists, bold and code came out as one flat wall of text.
+   That is the real reason AI answers read as "blunt". */
+@plugin "@tailwindcss/typography";
 @source "../src";
 @import "tw-animate-css";
 @import "katex/dist/katex.min.css";
@@ -46,6 +52,40 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .klausum-toast { animation-duration: 1ms; }
+}
+
+/* Bind the typography plugin to Klausum's own tokens, so AI prose inherits the
+   CEG palette instead of the plugin's stock grays — and stays legible in both
+   themes without needing `prose-invert` sprinkled at each call site. */
+@layer base {
+  .prose {
+    --tw-prose-body: var(--foreground);
+    --tw-prose-headings: var(--foreground);
+    --tw-prose-lead: var(--muted-foreground);
+    --tw-prose-links: var(--sky);
+    --tw-prose-bold: var(--foreground);
+    --tw-prose-counters: var(--muted-foreground);
+    --tw-prose-bullets: var(--primary);
+    --tw-prose-hr: var(--border);
+    --tw-prose-quotes: var(--foreground);
+    --tw-prose-quote-borders: var(--primary);
+    --tw-prose-captions: var(--muted-foreground);
+    --tw-prose-code: var(--grape);
+    --tw-prose-pre-code: var(--foreground);
+    --tw-prose-pre-bg: var(--surface-2);
+    --tw-prose-th-borders: var(--border);
+    --tw-prose-td-borders: var(--border);
+  }
+  /* Headings in the display face, like the rest of the app. */
+  .prose :is(h1, h2, h3, h4) { font-family: var(--font-display); font-weight: 800; }
+  .prose :where(code):not(pre code)::before,
+  .prose :where(code):not(pre code)::after { content: ""; }
+  .prose :where(code):not(pre code) {
+    background: color-mix(in oklab, var(--grape) 10%, transparent);
+    padding: 0.15em 0.4em;
+    border-radius: 0.4em;
+    font-weight: 600;
+  }
 }
 
 /* Landing scene motion. CSS keyframes rather than framer-motion: the backdrop

@@ -233,7 +233,7 @@ function SolvePage() {
 
 function MDMath({ children }: { children: string }) {
   return (
-    <div className="prose prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+    <div className="prose dark:prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
         {children}
       </ReactMarkdown>
