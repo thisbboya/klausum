@@ -22,7 +22,8 @@ interface Props {
   subject: string;
   level?: string;
   currentPage: number;
-  totalPages: number;
+  /** undefined while the document length is still unknown. */
+  totalPages?: number;
   currentPageText: string;
   fullDocumentText: string;
   pageIndex?: Record<number, string>;
@@ -249,7 +250,9 @@ export function MaterialAIChat({
           subject,
           level,
           currentPage,
-          totalPages,
+          // 0 rather than undefined for the model: the prompt interpolates this
+          // and "page 3 of undefined" is worse than "of 0".
+          totalPages: totalPages ?? 0,
           currentPageText,
           fullDocumentText,
           pageIndex: compactIndex,
@@ -324,7 +327,7 @@ export function MaterialAIChat({
             <Clock className="h-2.5 w-2.5" /> {formatFocus(focusSeconds)}
           </span>
           <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-            p.{currentPage}/{totalPages}
+            p.{currentPage}/{totalPages ?? "…"}
           </span>
         </div>
       </div>

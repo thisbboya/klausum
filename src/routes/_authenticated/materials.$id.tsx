@@ -1296,7 +1296,10 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
     subject: material.subject ?? "General",
     level: material.level ?? undefined,
     currentPage: page,
-    totalPages: totalPages || 1,
+    // 0 means "the PDF hasn't reported its length yet", not "one page". The old
+    // `|| 1` turned that into a confident lie — a 14-section document showed
+    // "p.3/1" while the canvas was still blank.
+    totalPages: totalPages || undefined,
     currentPageText: pageText,
     fullDocumentText: material.original_content ?? "",
     pageIndex,

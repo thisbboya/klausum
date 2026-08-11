@@ -125,7 +125,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('klausum-theme')||'light';var r=document.documentElement;if(t==='dark'){r.classList.add('dark');}else{r.classList.remove('dark');}r.style.colorScheme=t;}catch(e){}})();`,
+            // Runs before paint to avoid a flash. It has to resolve "system"
+            // itself — writing colorScheme='system' is invalid and would leave
+            // an OS-dark user staring at a white screen until hydration.
+            __html: `(function(){try{var p=localStorage.getItem('klausum-theme')||'light';var t=p==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;var r=document.documentElement;if(t==='dark'){r.classList.add('dark');}else{r.classList.remove('dark');}r.style.colorScheme=t;}catch(e){}})();`,
           }}
         />
       </head>

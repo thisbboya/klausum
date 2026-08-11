@@ -495,8 +495,10 @@ function PreferencesTab() {
   async function save() {
     setSaving(true);
     await supabase.from("user_profiles").update(form).eq("id", user!.id);
-    // Apply theme immediately so the toggle takes effect on this device
-    setTheme(form.dark_mode ? "dark" : "light");
+    // Deliberately does NOT touch the theme any more. Appearance is chosen in
+    // the picker below and applies instantly; re-deriving it from the old
+    // dark_mode boolean here would silently knock a "System" choice back to an
+    // explicit light/dark on every Save.
     setSaving(false);
     toast.success("Saved");
     refetch();
@@ -516,13 +518,73 @@ function PreferencesTab() {
       <Field label="Pomodoro session length (minutes)">
         <input type="number" min={5} max={120} value={form.preferred_session_minutes} onChange={(e) => setForm({ ...form, preferred_session_minutes: parseInt(e.target.value) || 25 })} className="input" />
       </Field>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={form.dark_mode} onChange={(e) => onToggleDark(e.target.checked)} />
-        Dark mode <span className="text-xs text-muted-foreground">(currently {theme})</span>
-      </label>
+      <ThemePicker />
       <SoundsToggle />
       <button onClick={save} disabled={saving} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
+    </div>
+  );
+}
+
+/**
+ * Appearance, as three previews rather than a checkbox. "Dark mode: on/off"
+ * cannot express System, and System is the option most people actually want —
+ * it follows the phone's night mode without them having to think about it.
+ * Each card previews the theme it selects.
+ */
+function ThemePicker() {
+  const { theme, setTheme } = useTheme();
+  const options: { value: "light" | "dark" | "system"; label: string }[] = [
+    { value: "light", label: "Light" },
+    { value: "dark", label: "Dark" },
+    { value: "system", label: "System" },
+  ];
+  return (
+    <div>
+      <div className="mb-2 text-sm font-extrabold">Theme</div>
+      <p className="mb-3 text-xs font-semibold text-muted-foreground">
+        Choose how Klausum looks on this device.
+      </p>
+      <div className="grid grid-cols-3 gap-2.5">
+        {options.map(({ value, label }) => {
+          const active = theme === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setTheme(value)}
+              aria-pressed={active}
+              className={`rounded-2xl border-2 p-2 text-left transition ${
+                active ? "border-primary" : "border-border hover:border-primary/40"
+              }`}
+            >
+              <span
+                className={`relative flex h-16 w-full items-center justify-center overflow-hidden rounded-xl border-2 border-border font-display text-lg font-extrabold ${
+                  value === "light"
+                    ? "bg-white text-neutral-800"
+                    : value === "dark"
+                      ? "bg-neutral-900 text-white"
+                      : "bg-white text-neutral-800"
+                }`}
+              >
+                Aa
+                {/* System shows both halves, so the split reads at a glance */}
+                {value === "system" && (
+                  <span className="absolute inset-y-0 right-0 flex w-1/2 items-center justify-center bg-neutral-900 text-white">
+                    Aa
+                  </span>
+                )}
+                {active && (
+                  <span className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-black text-primary-foreground">
+                    ✓
+                  </span>
+                )}
+              </span>
+              <span className="mt-1.5 block text-center text-xs font-extrabold">{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

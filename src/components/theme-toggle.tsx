@@ -2,8 +2,10 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const { theme, toggle } = useTheme();
-  const isDark = theme === "dark";
+  // `resolved`, not `theme` — under "System" the preference is neither light
+  // nor dark, and this button reflects what is actually on screen.
+  const { resolved, toggle } = useTheme();
+  const isDark = resolved === "dark";
   return (
     <button
       type="button"
