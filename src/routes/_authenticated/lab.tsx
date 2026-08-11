@@ -14,6 +14,8 @@ import { SIMULATIONS, SUBJECT_LABEL } from "@/lib/sim/registry";
 import { challengesFor } from "@/lib/sim/challenges";
 import { SimulationPlayer } from "@/components/sim/SimulationPlayer";
 import { ChallengePanel } from "@/components/sim/ChallengePanel";
+import { PhetEmbed } from "@/components/sim/PhetEmbed";
+import { phetBySubject, type PhetSim } from "@/lib/sim/phet";
 
 export const Route = createFileRoute("/_authenticated/lab")({ component: Lab });
 
@@ -27,6 +29,7 @@ function Lab() {
   // state because the challenge panel is a React component, but the player
   // throttles them precisely so this doesn't thrash.
   const [readouts, setReadouts] = useState<Record<string, number>>({});
+  const [phetSubject, setPhetSubject] = useState<PhetSim["subject"]>("physics");
 
   const { data: progress = [] } = useQuery({
     queryKey: ["sim-progress", user?.id],
@@ -114,6 +117,41 @@ function Lab() {
           </aside>
         </div>
       )}
+
+      {/* Breadth, clearly separated from the scored tier. These cannot report
+          their state to us, so they cannot be missions — and saying so here is
+          better than letting someone wonder why an hour of PhET earned them
+          nothing. */}
+      <section className="space-y-3 border-t-2 border-border pt-5">
+        <div>
+          <h2 className="font-display text-xl font-extrabold">Explore further</h2>
+          <p className="text-sm font-semibold text-muted-foreground">
+            Simulations from PhET. Nothing to score here — just things worth playing with.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {(["physics", "chemistry", "biology", "maths"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setPhetSubject(s)}
+              className={`rounded-full border-2 px-3 py-1 text-xs font-extrabold capitalize transition ${
+                phetSubject === s
+                  ? "border-sky bg-sky/12 text-sky"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {phetBySubject(phetSubject).map((p) => (
+            <PhetEmbed key={p.id} sim={p} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
