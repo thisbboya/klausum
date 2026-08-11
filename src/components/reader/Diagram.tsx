@@ -12,54 +12,95 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Maximize2 } from "lucide-react";
 
 let mermaidPromise: Promise<any> | null = null;
+/** Theme the loaded instance was configured for, so a switch re-applies it. */
+let themedFor: boolean | null = null;
 
-/** Load-and-configure once per session, themed from the app's own tokens. */
+// Mermaid's colour library cannot parse oklch(), and every token in this app is
+// oklch — that is why diagrams once failed with "Unsupported color format".
+// Round-tripping through a canvas makes the browser do the conversion and hands
+// mermaid a plain hex string.
+function toHexColor(color: string, fallback: string): string {
+  try {
+    const ctx = document.createElement("canvas").getContext("2d");
+    if (!ctx) return fallback;
+    ctx.fillStyle = "#000";
+    ctx.fillStyle = color;
+    const resolved = ctx.fillStyle as string;
+    return resolved.startsWith("#") || resolved.startsWith("rgb") ? resolved : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+const tokens = () => {
+  const css = getComputedStyle(document.documentElement);
+  return (name: string, fallback: string) =>
+    toHexColor(css.getPropertyValue(name).trim(), fallback);
+};
+
+/**
+ * Mermaid does not use these variables the way their names suggest, which is
+ * how a diagram ended up as white boxes on a bright green slab with blue
+ * highlighter behind every edge label: `tertiaryColor` is the *cluster
+ * background*, and `secondaryColor` backs edge labels. Feeding those the brand
+ * green and blue painted the chrome in accent colours instead of the nodes.
+ * Backgrounds are surfaces; accents are reserved for borders and lines.
+ */
+function configure(mermaid: any, v: (n: string, f: string) => string) {
+  const surface = v("--card", "#ffffff");
+  const text = v("--foreground", "#2B3A67");
+  const line = v("--muted-foreground", "#69727D");
+  const border = v("--border", "#d8dce3");
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: "strict", // never execute click handlers from model output
+    theme: "base",
+    fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif",
+    themeVariables: {
+      background: "transparent",
+      primaryColor: v("--surface-2", "#f1f1f1"),
+      primaryTextColor: text,
+      primaryBorderColor: v("--primary", "#FF8B38"),
+      lineColor: line,
+      // Node and cluster fills stay on the surface ramp so the diagram reads
+      // as part of the page rather than a poster stuck onto it.
+      secondaryColor: v("--surface-3", "#e7e9ee"),
+      secondaryTextColor: text,
+      secondaryBorderColor: border,
+      tertiaryColor: surface,
+      tertiaryTextColor: text,
+      tertiaryBorderColor: border,
+      clusterBkg: v("--surface-2", "#f1f1f1"),
+      clusterBorder: border,
+      titleColor: text,
+      // Edge labels sit on the canvas, not in a highlighter box.
+      edgeLabelBackground: surface,
+      labelBackground: surface,
+      nodeTextColor: text,
+      fontSize: "15px",
+    },
+  });
+}
+
+/** Load once, then re-theme whenever light/dark changes. */
 function loadMermaid(isDark: boolean) {
   if (!mermaidPromise) {
     mermaidPromise = import("mermaid").then((mod) => {
       const mermaid = mod.default;
-      const css = getComputedStyle(document.documentElement);
-      // Mermaid's colour library cannot parse oklch(), and every token in this
-      // app is oklch — that is why diagrams failed with "Unsupported color
-      // format". Round-tripping through a canvas makes the browser do the
-      // conversion for us and hands mermaid a plain hex string.
-      const toHex = (color: string, fallback: string): string => {
-        try {
-          const ctx = document.createElement("canvas").getContext("2d");
-          if (!ctx) return fallback;
-          ctx.fillStyle = "#000";
-          ctx.fillStyle = color;
-          const resolved = ctx.fillStyle as string;
-          // canvas normalises to #rrggbb or rgba(...); mermaid is happy with both
-          return resolved.startsWith("#") || resolved.startsWith("rgb")
-            ? resolved
-            : fallback;
-        } catch {
-          return fallback;
-        }
-      };
-      const v = (name: string, fallback: string) =>
-        toHex(css.getPropertyValue(name).trim(), fallback);
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: "strict", // never execute click handlers from model output
-        theme: "base",
-        fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif",
-        themeVariables: {
-          background: "transparent",
-          primaryColor: v("--surface-2", "#f1f1f1"),
-          primaryTextColor: v("--foreground", "#2B3A67"),
-          primaryBorderColor: v("--primary", "#FF8B38"),
-          lineColor: v("--muted-foreground", "#69727D"),
-          secondaryColor: v("--sky", "#0490DC"),
-          tertiaryColor: v("--success", "#008452"),
-          fontSize: "15px",
-        },
-      });
+      configure(mermaid, tokens());
+      themedFor = isDark;
       return mermaid;
     });
   }
-  return mermaidPromise;
+  // The theme was previously captured on first load and never revisited, so a
+  // diagram drawn in light mode kept light-mode fills after switching to dark.
+  return mermaidPromise.then((mermaid) => {
+    if (themedFor !== isDark) {
+      configure(mermaid, tokens());
+      themedFor = isDark;
+    }
+    return mermaid;
+  });
 }
 
 export function Diagram({ code }: { code: string }) {

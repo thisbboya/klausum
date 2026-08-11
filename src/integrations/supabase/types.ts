@@ -2542,6 +2542,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      touch_streak: { Args: never; Returns: Json }
       update_weekly_leaderboard: {
         Args: { p_user_id: string; p_xp: number }
         Returns: undefined
