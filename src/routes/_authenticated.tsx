@@ -157,11 +157,15 @@ function AuthLayout() {
           // is hidden there.
           className={
             isTutor
-              ? // Full bleed: no max-width, no centring, no page padding and no
-                // space-y gaps. min-h-0 is the part that matters — without it a
-                // flex child refuses to shrink and the panel overflows instead
-                // of scrolling inside itself.
-                "flex min-h-0 flex-1 flex-col px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] pt-3 md:px-5 md:pb-4"
+              ? // Full bleed, and this time actually full bleed: no max-width,
+                // no centring, and no page padding at all. The leftover px-3
+                // pt-3 was what still floated the panel off the sidebar and
+                // left a gap in the bottom-left corner. The only reserved space
+                // is the fixed mobile thumb row, which would otherwise sit on
+                // top of the composer. min-h-0 is the part that matters —
+                // without it a flex child refuses to shrink and the panel
+                // overflows instead of scrolling inside itself.
+                "flex min-h-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0"
               : `mx-auto space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0 ${
                   // Wide canvas for the split-pane screens (reader + video/AI
                   // panel); max-w-5xl squeezes those two columns far too narrow.

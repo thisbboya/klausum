@@ -258,20 +258,22 @@ function Tutor() {
     // one. The shell is now a flex column, so this just claims what is actually
     // left. min-h-0 lets it shrink so the message list scrolls internally.
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 mb-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold flex items-center gap-2">
-            <MessagesSquare className="h-5 w-5 text-primary" /> AI Tutor
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
+      {/* A toolbar, not a page heading: it spans the full width and is separated
+          from the conversation by a rule rather than by whitespace, so the
+          workspace reads as one continuous surface. */}
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b-2 border-border bg-card px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <MessagesSquare className="h-5 w-5 shrink-0 text-primary" />
+          <h1 className="font-display text-lg font-extrabold leading-none">AI Tutor</h1>
+          <span className="hidden text-xs font-bold text-muted-foreground sm:inline">
             {msgsThisMonth} message{msgsThisMonth === 1 ? "" : "s"} this month
-          </p>
+          </span>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <select
             value={materialId}
             onChange={(e) => setMaterialId(e.target.value)}
-            className="rounded-md border border-border bg-background px-2 py-1.5 text-xs max-w-[180px]"
+            className="max-w-[180px] rounded-xl border-2 border-border bg-background px-2.5 py-1.5 text-xs font-bold transition hover:border-primary/50 focus:border-primary focus:outline-none"
           >
             <option value="">No material context</option>
             {materials.map((m) => (
@@ -283,7 +285,7 @@ function Tutor() {
             <button
               onClick={resetChat}
               title="Reset chat"
-              className="rounded-md border border-border px-2 py-1.5 hover:bg-accent/10 flex items-center gap-1"
+              className="flex items-center gap-1 rounded-xl border-2 border-border px-2.5 py-1.5 font-extrabold transition hover:border-primary hover:bg-primary/10 hover:text-primary"
             >
               <RotateCcw className="h-3 w-3" /> Reset
             </button>
@@ -294,7 +296,7 @@ function Tutor() {
       {/* min-h-0 is required for a scrollable flex child: without it the panel
           grows to fit its content and pushes the composer off-screen instead
           of scrolling. */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto card-chunky bg-card/30 p-4 space-y-4">
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-2/40 p-4">
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground py-12">
             {/* The pilot the student already chose is the tutor's face. A
@@ -390,35 +392,38 @@ function Tutor() {
         )}
       </div>
 
-      {messages.length > 0 && !isLoading && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {QUICK_ACTIONS.map((a) => (
-            <button
-              key={a.label}
-              onClick={() => quickAction(a.prompt)}
-              disabled={!token}
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs hover:border-primary hover:bg-primary/5 disabled:opacity-50"
-            >
-              <a.icon className="h-3 w-3 text-primary" />
-              {a.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Follow-ups and composer are one docked bar at the foot of the pane —
+          bordered rather than floated, so nothing hangs off a corner. */}
+      <div className="shrink-0 border-t-2 border-border bg-card">
+        {messages.length > 0 && !isLoading && (
+          <div className="flex flex-wrap gap-2 px-4 pt-3">
+            {QUICK_ACTIONS.map((a) => (
+              <button
+                key={a.label}
+                onClick={() => quickAction(a.prompt)}
+                disabled={!token}
+                className="flex items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 py-1 text-xs font-bold transition hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+              >
+                <a.icon className="h-3 w-3 text-primary" />
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-      <form onSubmit={submit} className="mt-3 flex gap-2">
+        <form onSubmit={submit} className="flex gap-2 p-4">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={mode === "socratic" ? "Tell the tutor what you're trying to understand…" : "Ask a question…"}
-          className="flex-1 rounded-xl border-2 border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+          className="flex-1 rounded-xl border-2 border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-primary"
           disabled={isLoading || !token}
         />
         {isLoading ? (
           <button
             type="button"
             onClick={() => stop()}
-            className="rounded-lg bg-destructive px-4 py-3 text-sm font-semibold text-destructive-foreground hover:opacity-90"
+            className="btn-3d rounded-xl bg-destructive px-4 py-3 text-sm font-extrabold text-destructive-foreground transition hover:opacity-90"
             title="Stop generating"
           >
             <Square className="h-4 w-4" />
@@ -427,24 +432,32 @@ function Tutor() {
           <button
             type="submit"
             disabled={!input.trim() || !token}
-            className="btn-3d rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="btn-3d rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
           </button>
         )}
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
 
 function ModePill({ mode, setMode }: { mode: "standard" | "socratic"; setMode: (m: any) => void }) {
   return (
-    <div className="flex rounded-md border border-border overflow-hidden">
+    // A segmented control on the same 2px border language as every other
+    // control in the app, with the selected half carried on a padded track so
+    // the active pill has room to breathe instead of butting into the frame.
+    <div className="flex gap-0.5 rounded-xl border-2 border-border bg-surface-2 p-0.5">
       {(["standard", "socratic"] as const).map((m) => (
         <button
           key={m}
           onClick={() => setMode(m)}
-          className={`px-3 py-1.5 capitalize ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`rounded-lg px-3 py-1 font-extrabold capitalize transition ${
+            mode === m
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
           {m}
         </button>
