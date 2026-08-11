@@ -6,6 +6,7 @@ import "katex/dist/katex.min.css";
 import { Diagram } from "@/components/reader/Diagram";
 import { Plot } from "@/components/reader/Plot";
 import { Simulation } from "@/components/reader/Simulation";
+import { SceneBlock, SimRefBlock } from "@/components/sim/SceneBlock";
 
 /**
  * The one markdown renderer every AI surface should use.
@@ -67,6 +68,11 @@ export function MarkdownMath({
             if (lang === "mermaid") return <Diagram code={text} />;
             if (lang === "plot" || lang === "graph") return <Plot code={text} />;
             if (lang === "sim" || lang === "simulation") return <Simulation code={text} />;
+            // The drawn kinds: a scene the tutor authored, or a reference to
+            // one of the hand-built simulations, which always beat a generated
+            // one on the topics we have covered.
+            if (lang === "scene") return <SceneBlock code={text} />;
+            if (lang === "simref") return <SimRefBlock code={text} />;
             return (
               <code className={cls} {...rest}>
                 {children}

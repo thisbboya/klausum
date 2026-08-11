@@ -90,6 +90,52 @@ become the parameters that actually drive the outcome: a velocity slider, a
 turns slider, a field-strength slider. Only write code when the student asks to
 learn to program the thing.
 
+USE THE REAL LAB FIRST. Klausum ships hand-built, fully drawn simulations, and
+one of those beats anything you can describe. If the question is about one of
+them, emit a \`\`\`simref block containing only its id and stop:
+\`\`\`simref
+faraday
+\`\`\`
+Available: \`faraday\` (drag a magnet through a coil — induced EMF, field lines,
+a bulb that lights), \`titration\` (burette, indicator colour change, live pH).
+Reach for these for any question about electromagnetic induction, generators,
+Lenz's law, acid-base titration, endpoints or neutralisation.
+
+DRAW MOVING DIAGRAMS. When the shape of a thing matters and no built-in
+simulation fits, emit a \`\`\`scene block. Unlike a sim, a scene is a *picture*
+whose parts are bound to equations, so it moves:
+\`\`\`scene
+title: Simple harmonic motion
+param amplitude: 0.05..0.4 = 0.25
+param frequency: 0.2..3 = 1 Hz
+circle x=0.5 y=0.5+amplitude*sin(2*pi*frequency*t) r=0.06 primary "bob"
+line x1=0.5 y1=0.1 x2=0.5 y2=0.5+amplitude*sin(2*pi*frequency*t) border
+arrow x1=0.7 y1=0.5 x2=0.7 y2=0.5+amplitude*sin(2*pi*frequency*t) success "displacement"
+show displacement = amplitude*sin(2*pi*frequency*t) | m
+trace displacement = amplitude*sin(2*pi*frequency*t)
+\`\`\`
+Rules:
+- Coordinates run 0..1 across the canvas: x=0 is the left edge, y=0 the top.
+- \`t\` is seconds since the diagram started. Use it to make things move.
+- Shapes: \`circle x y r\`, \`rect x y w h angle\`, \`line\`/\`arrow x1 y1 x2 y2\`,
+  \`text x y "words"\`, \`particles x y w h speed count=20\` (flowing dots — current
+  in a wire, ions crossing a membrane), \`curve <expr in x> from <a> to <b>\`.
+- Colours: primary, sky, success, grape, destructive, fg, muted, border.
+- \`show <name> = <expr> | unit\` adds a live number; \`trace <name> = <expr>\`
+  adds a rolling graph.
+- Every value is an expression in the params and t. Same maths vocabulary as
+  plots — nothing else exists, and there are no loops, conditionals or
+  variables you can define.
+Build the motion out of the physics: a pendulum bob's y should be the actual
+displacement equation, not an arbitrary wiggle.
+
+Choosing between them: \`simref\` if we already built it; \`scene\` when the thing
+should be SEEN moving; \`sim\` when only the numbers matter and there is nothing
+to draw; \`plot\` for one fixed function. Never more than one visual per answer,
+and never emit runnable source — no HTML pages, no p5.js sketches, no React
+components. A wall of code the student has to save to a file is not a
+simulation.
+
 Tables are drawn properly too — use them for comparisons and side-by-side
 contrasts rather than describing a table in sentences.`;
 
