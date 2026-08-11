@@ -1609,6 +1609,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sim_challenge_progress: {
+        Row: {
+          attempts: number
+          best_seconds: number | null
+          challenge_id: string
+          completed: boolean
+          completed_at: string | null
+          hints_used: number
+          sim_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          best_seconds?: number | null
+          challenge_id: string
+          completed?: boolean
+          completed_at?: string | null
+          hints_used?: number
+          sim_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          best_seconds?: number | null
+          challenge_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          hints_used?: number
+          sim_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_group_members: {
         Row: {
           group_id: string
