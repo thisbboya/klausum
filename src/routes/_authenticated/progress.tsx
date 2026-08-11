@@ -10,7 +10,7 @@ import { celebrateNewBadges } from "@/lib/badge-celebrate";
 import { toast } from "@/lib/notify";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line } from "recharts";
 import { Flame, Trophy, Target, BookOpen, Sparkles, Lock } from "lucide-react";
-import { LEVELS, levelFor, BADGES, type BadgeStats } from "@/lib/gamification";
+import { LEVELS, levelFor, BADGES, badgeProgress, nearestBadge, type BadgeStats } from "@/lib/gamification";
 
 export const Route = createFileRoute("/_authenticated/progress")({ component: ProgressPage });
 
@@ -373,14 +373,67 @@ function ProgressPage() {
 
       {/* Achievements */}
       <Card title="Achievements">
+        {(() => {
+          // The one you are closest to, called out above the grid. A goal you
+          // can see approaching is what makes the next session feel worth
+          // starting; fifteen equal squares give you nothing to aim at.
+          const near = nearestBadge(badgeStats);
+          if (!near) return null;
+          return (
+            <div className="mb-3 flex items-center gap-3 rounded-xl border-2 border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-2xl">{near.badge.emoji}</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-extrabold">
+                  Closest badge — {near.badge.name}
+                </div>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-border/60">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${near.pct}%` }}
+                  />
+                </div>
+              </div>
+              <span className="shrink-0 text-xs font-extrabold tabular-nums text-primary">
+                {near.need - near.have} to go
+              </span>
+            </div>
+          );
+        })()}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {BADGES.map((b) => {
             const earned = b.test(badgeStats);
+            const p = badgeProgress(b, badgeStats);
+            // A started-but-unfinished badge is shown at full opacity with its
+            // progress: knowing you are 3 of 5 uploads in is a reason to do the
+            // fourth. Faded-and-silent is what made these fifteen dead squares.
+            const started = !earned && p.have > 0;
             return (
-              <div key={b.id} className={`rounded-lg border p-3 text-center transition ${earned ? "border-primary/40 bg-primary/5" : "border-border/40 bg-background/50 opacity-60"}`}>
+              <div
+                key={b.id}
+                className={`rounded-lg border p-3 text-center transition ${
+                  earned
+                    ? "border-primary/40 bg-primary/5"
+                    : started
+                      ? "border-border bg-background/50"
+                      : "border-border/40 bg-background/50 opacity-60"
+                }`}
+              >
                 <div className="text-2xl mb-1">{earned ? b.emoji : <Lock className="h-5 w-5 mx-auto text-muted-foreground" />}</div>
                 <div className={`text-xs font-semibold ${earned ? "" : "text-muted-foreground"}`}>{b.name}</div>
                 <div className="text-[10px] text-muted-foreground mt-0.5">{b.desc}</div>
+                {!earned && (
+                  <div className="mt-2">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/60">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${p.pct}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 text-[10px] font-bold tabular-nums text-muted-foreground">
+                      {p.have} / {p.need}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
