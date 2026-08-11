@@ -786,86 +786,131 @@ export function MaterialsPage() {
               </div>
             )}
           </div>
-          <ul className="divide-y-2 divide-border card-chunky bg-card">
+          {/* A grid of previews rather than a list of filenames, matching the
+              video library. A row of identical file icons made every document
+              look the same, so finding one meant reading titles one by one —
+              whereas you recognise your own notes by their opening lines the
+              moment you see them. Progress sits on the preview exactly where
+              a watched-video bar does. */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {materials.filter((m) => (m.subject || "General") === activeSubject).map((m) => {
             const hasPdf = !!(m as any).pdf_storage_path;
             const isReady = m.processing_status === "ready";
             const isFailed = m.processing_status === "failed";
             const pctRead = signals?.read?.[m.id] ?? 0;
             const cardCount = signals?.cards?.[m.id] ?? 0;
+            const preview = (
+              (m as any).ai_summary ||
+              (m as any).adapted_reading ||
+              (m as any).original_content ||
+              ""
+            )
+              .replace(/[#*`_>]/g, "")
+              .trim()
+              .slice(0, 260);
             return (
-              <li key={m.id} className="flex items-center gap-2 px-3 py-3">
-                <Link
-                  to="/materials/$id" params={{ id: m.id }}
-                  className="flex items-center gap-3 flex-1 min-w-0 py-1"
-                >
-                  {/* Progress ring instead of a flat file icon — the row now
-                      says how far through you are at a glance. */}
-                  <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-                    <svg viewBox="0 0 36 36" className="absolute inset-0 h-10 w-10 -rotate-90">
-                      <circle cx="18" cy="18" r="16" fill="none" stroke="var(--surface-3)" strokeWidth="3" />
-                      {pctRead > 0 && (
-                        <circle
-                          cx="18" cy="18" r="16" fill="none"
-                          stroke={pctRead >= 100 ? "var(--success)" : "var(--primary)"}
-                          strokeWidth="3" strokeLinecap="round"
-                          strokeDasharray={`${(pctRead / 100) * 100.5} 100.5`}
-                        />
-                      )}
-                    </svg>
-                    {pctRead >= 100 ? (
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                    ) : pctRead > 0 ? (
-                      <span className="text-[10px] font-extrabold tabular-nums text-primary">{pctRead}</span>
+              <div
+                key={m.id}
+                className="group relative overflow-hidden rounded-2xl border-2 border-border bg-card transition hover:border-primary"
+              >
+                <Link to="/materials/$id" params={{ id: m.id }} className="block">
+                  {/* The "cover": the document's own opening words, set like a
+                      page. It doubles as the thumbnail and as a reminder of
+                      what is actually inside. */}
+                  <div className="relative aspect-video overflow-hidden border-b-2 border-border bg-surface-2 p-3">
+                    {preview ? (
+                      <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-5">
+                        {preview}
+                      </p>
                     ) : (
-                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex h-full items-center justify-center">
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                      </div>
                     )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-extrabold">{m.title}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold">{m.subject}</span>
-                      {cardCount > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-grape/12 px-1.5 py-0.5 text-[10px] font-extrabold text-grape">
-                          <Layers className="h-3 w-3" />{cardCount}
+                    {/* Fade the tail so the text reads as a page continuing
+                        rather than a sentence chopped off. */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface-2 to-transparent" />
+                    <div className="absolute left-2 top-2 flex gap-1">
+                      {hasPdf && (
+                        <span className="rounded-full bg-sky/15 px-1.5 py-0.5 text-[10px] font-extrabold text-sky">
+                          PDF
                         </span>
                       )}
-                      {hasPdf && <span className="px-1.5 py-0.5 rounded-full bg-sky/12 text-sky text-[10px] font-extrabold">PDF</span>}
                       {!isReady && (
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold capitalize ${
-                          isFailed ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground"
-                        }`}>{m.processing_status}</span>
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold capitalize ${
+                            isFailed
+                              ? "bg-destructive/15 text-destructive"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {m.processing_status}
+                        </span>
+                      )}
+                    </div>
+                    {pctRead > 0 && (
+                      <div className="absolute inset-x-0 bottom-0 h-1.5 bg-black/25">
+                        <div
+                          className="h-full transition-[width] duration-500"
+                          style={{
+                            width: `${Math.min(100, pctRead)}%`,
+                            background: pctRead >= 100 ? "var(--success)" : "var(--primary)",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-3">
+                    <div className="truncate text-sm font-extrabold">{m.title}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+                      {pctRead >= 100 ? (
+                        <span className="inline-flex items-center gap-1 text-success">
+                          <CheckCircle2 className="h-3 w-3" /> Finished
+                        </span>
+                      ) : (
+                        <span className="tabular-nums">{pctRead}% read</span>
+                      )}
+                      {cardCount > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-grape/12 px-1.5 py-0.5 text-[10px] font-extrabold text-grape">
+                          <Layers className="h-3 w-3" />
+                          {cardCount}
+                        </span>
                       )}
                     </div>
                   </div>
                 </Link>
-                {isReady && (
-                  <Link
-                    to="/materials/$id" params={{ id: m.id }}
-                    className="shrink-0 inline-flex items-center gap-1 btn-3d btn-3d-success rounded-xl bg-success px-3.5 py-2 text-xs font-extrabold uppercase tracking-wide text-success-foreground transition active:scale-95"
+
+                <div className="flex items-center gap-2 px-3 pb-3">
+                  {isReady && (
+                    <Link
+                      to="/materials/$id"
+                      params={{ id: m.id }}
+                      className="btn-3d btn-3d-success inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-success px-3.5 py-2 text-xs font-extrabold uppercase tracking-wide text-success-foreground transition active:scale-95"
+                    >
+                      {pctRead > 0 && pctRead < 100 ? "Resume" : hasPdf ? "Read" : "Open"}
+                    </Link>
+                  )}
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete "${m.title}"?`)) return;
+                      const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
+                      if (error) toast.error(reportError("materials.index", error));
+                      else {
+                        toast.success("Material deleted");
+                        qc.invalidateQueries({ queryKey: ["materials"] });
+                      }
+                    }}
+                    className="shrink-0 rounded-xl border-2 border-border p-2 text-muted-foreground transition hover:border-destructive hover:text-destructive active:scale-95"
+                    aria-label="Delete material"
                   >
-                    {pctRead > 0 && pctRead < 100 ? "Resume" : hasPdf ? "Read" : "Open"}
-                  </Link>
-                )}
-                <button
-                  onClick={async () => {
-                    if (!confirm(`Delete "${m.title}"?`)) return;
-                    const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
-                    if (error) toast.error(reportError("materials.index", error));
-                    else {
-                      toast.success("Material deleted");
-                      qc.invalidateQueries({ queryKey: ["materials"] });
-                    }
-                  }}
-                  className="shrink-0 p-2 text-muted-foreground hover:text-destructive active:scale-95 transition"
-                  aria-label="Delete material"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             );
           })}
-          </ul>
+          </div>
         </>
       ) : (
         !uploading && <p className="text-center text-sm text-muted-foreground py-8">No materials yet.</p>
