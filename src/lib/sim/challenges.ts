@@ -91,6 +91,85 @@ export const CHALLENGES: Challenge[] = [
     ],
     hints: ["Set the acid concentration to 0.04 M first.", "A weaker acid needs less titrant, so equivalence arrives sooner."],
   },
+
+  {
+    id: "derivative-close-the-gap",
+    simId: "derivative",
+    title: "Close the Gap",
+    brief: "Get the secant slope within 0.01 of the true derivative. There is only one way.",
+    xp: 100,
+    difficulty: "easy",
+    objectives: [{ kind: "max", key: "error", value: 0.01, label: "Difference below 0.01" }],
+    hints: [
+      "The secant is a chord between two points on the curve.",
+      "What happens to that chord as the two points converge?",
+      "Drag h towards zero.",
+    ],
+  },
+  {
+    id: "derivative-stationary",
+    simId: "derivative",
+    title: "Find the Stationary Point",
+    // Deliberately not tied to one curve: x² has a stationary point at 0 and
+    // sin x has one at π/2, and finding either is the same understanding.
+    brief: "Park the point where the curve stops rising — and prove it with a tiny h, not by luck.",
+    xp: 200,
+    difficulty: "medium",
+    objectives: [
+      { kind: "max", key: "tangent", value: 0.02, label: "f′(x) essentially zero" },
+      { kind: "max", key: "h", value: 0.05, label: "With h below 0.05, so it is not luck" },
+    ],
+    hints: ["Set the function to sin x.", "cos x is zero where sin x turns over.", "That is x ≈ 1.57."],
+  },
+
+  {
+    id: "osmosis-equilibrium",
+    simId: "osmosis",
+    title: "Reach Equilibrium",
+    brief: "Balance the two sides so neither gains water — without sealing the membrane.",
+    xp: 150,
+    difficulty: "medium",
+    objectives: [
+      { kind: "sustain", key: "gradient", max: 0.03, seconds: 2, label: "Hold the gradient near zero for 2s" },
+      { kind: "min", key: "permeability", value: 0.3, label: "Membrane still permeable (≥0.3)" },
+    ],
+    hints: [
+      "Water moves towards the higher solute concentration.",
+      "Equilibrium is not stillness — particles keep crossing both ways.",
+      "Match the two concentrations.",
+    ],
+  },
+
+  {
+    id: "circuit-ohm",
+    simId: "circuit",
+    title: "One Amp Exactly",
+    brief: "Drive exactly 1 A through the circuit. Work out the resistance you need first.",
+    xp: 150,
+    difficulty: "medium",
+    objectives: [
+      { kind: "range", key: "current", min: 0.98, max: 1.02, label: "Current between 0.98 and 1.02 A" },
+    ],
+    hints: ["V = IR, so R = V/I.", "For 1 A you need total resistance equal to the battery voltage.", "In series the two resistors simply add."],
+  },
+  {
+    id: "circuit-parallel-insight",
+    simId: "circuit",
+    title: "Less Than Either",
+    brief: "Get a total resistance below 15 Ω using two resistors that are each at least 25 Ω.",
+    xp: 250,
+    difficulty: "hard",
+    objectives: [
+      { kind: "max", key: "rt", value: 15, label: "Total resistance under 15 Ω" },
+      { kind: "min", key: "r1", value: 25, label: "R1 at least 25 Ω" },
+      { kind: "min", key: "r2", value: 25, label: "R2 at least 25 Ω" },
+    ],
+    hints: [
+      "In series this is impossible — the total can never be below one resistor.",
+      "Adding a second path gives current somewhere else to go.",
+      "Switch to parallel.",
+    ],
+  },
 ];
 
 export const challengesFor = (sim: SimModel | string) =>
@@ -127,7 +206,10 @@ export function evaluate(
       case "min":
         return { met: Math.abs(v) >= o.value, label: o.label, progress: Math.min(1, Math.abs(v) / o.value) };
       case "max":
-        return { met: v <= o.value, label: o.label, progress: v <= o.value ? 1 : 0 };
+        // Magnitude, to match `min`. Without the abs, "keep f′(x) below 0.02"
+        // would be satisfied by f′(x) = −1, which is the opposite of what
+        // every objective phrased that way means.
+        return { met: Math.abs(v) <= o.value, label: o.label, progress: Math.abs(v) <= o.value ? 1 : 0 };
       case "range":
         return { met: v >= o.min && v <= o.max, label: o.label, progress: v >= o.min && v <= o.max ? 1 : 0 };
       case "sustain": {

@@ -6,8 +6,14 @@
 import type { SimModel } from "@/lib/sim/engine";
 import { faraday } from "@/lib/sim/models/faraday";
 import { titration } from "@/lib/sim/models/titration";
+import { derivative } from "@/lib/sim/models/derivative";
+import { osmosis } from "@/lib/sim/models/osmosis";
+import { circuit } from "@/lib/sim/models/circuit";
 
-export const SIMULATIONS: SimModel[] = [faraday, titration];
+// One per subject, deliberately: the point of the first five is to prove the
+// engine generalises, not to be a library. Adding the sixth should be one
+// import and one entry.
+export const SIMULATIONS: SimModel[] = [faraday, titration, osmosis, derivative, circuit];
 
 export const simById = (id: string) => SIMULATIONS.find((s) => s.id === id);
 

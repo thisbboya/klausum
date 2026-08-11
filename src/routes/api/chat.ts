@@ -96,10 +96,17 @@ them, emit a \`\`\`simref block containing only its id and stop:
 \`\`\`simref
 faraday
 \`\`\`
-Available: \`faraday\` (drag a magnet through a coil — induced EMF, field lines,
-a bulb that lights), \`titration\` (burette, indicator colour change, live pH).
-Reach for these for any question about electromagnetic induction, generators,
-Lenz's law, acid-base titration, endpoints or neutralisation.
+Available ids:
+- \`faraday\` — drag a magnet through a coil; induced EMF, field lines, a bulb
+  that lights. Use for induction, generators, Lenz's law, flux.
+- \`titration\` — burette, indicator colour change, live pH curve. Use for
+  acid-base titration, endpoints, neutralisation, pH.
+- \`osmosis\` — water particles crossing a membrane at random with a net drift.
+  Use for diffusion, osmosis, tonicity, concentration gradients.
+- \`derivative\` — shrink h and watch the secant become the tangent. Use for
+  limits, differentiation from first principles, gradients, stationary points.
+- \`circuit\` — series/parallel resistors with charge you can see moving. Use
+  for Ohm's law, resistance, current, power, series vs parallel.
 
 DRAW MOVING DIAGRAMS. When the shape of a thing matters and no built-in
 simulation fits, emit a \`\`\`scene block. Unlike a sim, a scene is a *picture*
