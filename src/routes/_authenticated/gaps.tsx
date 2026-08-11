@@ -64,11 +64,6 @@ function GapsPage() {
     closed: resolved.length,
   };
 
-  const sevColor = (s: string) =>
-    s === "critical" ? "text-destructive border-destructive/40 bg-destructive/10"
-    : s === "moderate" ? "text-primary border-primary/40 bg-primary/10"
-    : "text-success border-success/40 bg-success/10";
-
   const daysOpen = (iso: string) =>
     Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
 
@@ -207,13 +202,27 @@ function GapsPage() {
           <h1 className="font-display text-2xl font-bold sm:text-3xl">Knowledge Gaps</h1>
           <p className="text-sm text-muted-foreground">Topics your quizzes flagged as weak. Close them one by one.</p>
         </div>
-        {/* Inline chips on phones — a right-aligned stack wasted a whole column */}
-        <div className="flex shrink-0 gap-2 text-xs text-muted-foreground sm:block sm:text-right">
-          <div className="rounded-full bg-surface-3 px-2.5 py-1 sm:bg-transparent sm:px-0 sm:py-0">
-            <span className="text-foreground font-semibold">{open.length}</span> open
+        {/* Two bare counts told you how much was wrong and nothing about how
+            far you'd come. Closing gaps is the entire point of the page, so
+            the header is the scoreboard for it. */}
+        <div className="shrink-0 sm:w-56">
+          <div className="flex items-center justify-between text-xs font-extrabold">
+            <span className="text-muted-foreground">Closed</span>
+            <span className="tabular-nums">
+              {resolved.length} / {open.length + resolved.length}
+            </span>
           </div>
-          <div className="rounded-full bg-surface-3 px-2.5 py-1 sm:bg-transparent sm:px-0 sm:py-0">
-            <span className="text-foreground font-semibold">{resolved.length}</span> closed
+          <div className="mt-1.5 h-2.5 overflow-hidden rounded-full border-2 border-border bg-surface-2">
+            <div
+              className="h-full rounded-full bg-success transition-[width] duration-500"
+              style={{
+                width: `${
+                  open.length + resolved.length === 0
+                    ? 0
+                    : Math.round((resolved.length / (open.length + resolved.length)) * 100)
+                }%`,
+              }}
+            />
           </div>
         </div>
       </header>
@@ -243,26 +252,77 @@ function GapsPage() {
           {visible.map((g: any) => {
             const isClosed = g.status === "resolved";
             return (
-              <li key={g.id} className={`rounded-xl border p-4 ${isClosed ? "border-border/40 bg-card/40 opacity-80" : sevColor(g.severity)}`}>
+              // A severity spine instead of flooding the whole card. Twenty-five
+              // gaps all rendered in full red read as one undifferentiated
+              // alarm — nothing stood out, so nothing felt actionable. The
+              // stripe still says "critical" at a glance while the card itself
+              // stays a normal card you can actually read.
+              <li
+                key={g.id}
+                className={`relative overflow-hidden rounded-2xl border-2 pl-5 pr-4 py-4 transition ${
+                  isClosed
+                    ? "border-border bg-card/40 opacity-75"
+                    : "border-border bg-card hover:border-primary/50"
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className={`absolute inset-y-0 left-0 w-1.5 ${
+                    isClosed
+                      ? "bg-success"
+                      : g.severity === "critical"
+                        ? "bg-destructive"
+                        : g.severity === "moderate"
+                          ? "bg-primary"
+                          : "bg-sky"
+                  }`}
+                />
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide opacity-80">
-                      {isClosed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">
+                      {isClosed ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                      ) : (
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      )}
                       {isClosed ? "closed" : g.severity} · {g.subject}
                       {!isClosed && g.hit_count > 0 && (
-                        <span className="rounded-full border border-current/40 px-1.5 py-0.5 text-[10px]">×{g.hit_count} missed</span>
+                        <span className="rounded-full border-2 border-border px-1.5 py-0.5">
+                          ×{g.hit_count} missed
+                        </span>
                       )}
                     </div>
-                    <div className="mt-1 font-medium text-foreground">{g.topic}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">
-                      Confidence: {g.confidence ?? 30}% · {daysOpen(g.created_at)}d {isClosed ? "to close" : "open"}
+                    <div className="mt-1 font-display text-base font-extrabold text-foreground">
+                      {g.topic}
+                    </div>
+
+                    {/* Confidence was a bare percentage in a line of grey text,
+                        which is a number you skim past. As a bar it is the one
+                        thing on the card that visibly moves as you work, which
+                        is the whole reason to come back to this page. */}
+                    {!isClosed && (
+                      <div className="mt-2 max-w-xs">
+                        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">
+                          <span>Confidence</span>
+                          <span className="tabular-nums text-foreground">{g.confidence ?? 30}%</span>
+                        </div>
+                        <div className="mt-1 h-2 overflow-hidden rounded-full border-2 border-border bg-surface-2">
+                          <div
+                            className="h-full rounded-full bg-primary transition-[width] duration-500"
+                            style={{ width: `${Math.min(100, Math.max(0, g.confidence ?? 30))}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-1.5 text-[11px] font-bold text-muted-foreground">
+                      {daysOpen(g.created_at)}d {isClosed ? "to close" : "open"}
                     </div>
                   </div>
                   {!isClosed && (
                     <div className="flex shrink-0 gap-2">
                       <button
                         onClick={() => resolve(g)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-success/40 px-3 py-1.5 text-xs font-semibold text-success hover:bg-success/10"
+                        className="inline-flex items-center gap-1 rounded-xl border-2 border-success px-3 py-1.5 text-xs font-extrabold text-success transition hover:bg-success/10"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" /> Close
                       </button>
@@ -270,38 +330,43 @@ function GapsPage() {
                   )}
                 </div>
 
+                {/* Five buttons of identical weight is five decisions, and the
+                    page had that on every one of twenty-five rows. "Explain"
+                    is what you almost always want first, so it leads as a
+                    solid button and the rest follow as quiet outlines. */}
                 {!isClosed && (
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => ask(g)}
                       disabled={busy?.id === g.id}
-                      className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-50"
+                      className="btn-3d inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-extrabold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                     >
-                      <Sparkles className="h-3.5 w-3.5" /> {busy?.id === g.id && busy?.kind === "explain" ? "Explaining…" : "Explain"}
+                      <Sparkles className="h-3.5 w-3.5" />{" "}
+                      {busy?.id === g.id && busy?.kind === "explain" ? "Explaining…" : "Explain this"}
                     </button>
                     <button
                       onClick={() => spawnQuiz(g)}
                       disabled={busy?.id === g.id}
-                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border px-3 py-1.5 text-xs font-extrabold transition hover:border-primary hover:text-primary disabled:opacity-50"
                     >
                       <ListChecks className="h-3.5 w-3.5" /> {busy?.id === g.id && busy?.kind === "quiz" ? "Building…" : "5-Q drill"}
                     </button>
                     <button
                       onClick={() => spawnDeck(g)}
                       disabled={busy?.id === g.id}
-                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border px-3 py-1.5 text-xs font-extrabold transition hover:border-primary hover:text-primary disabled:opacity-50"
                     >
                       <Layers className="h-3.5 w-3.5" /> {busy?.id === g.id && busy?.kind === "deck" ? "Building…" : "Flashcards"}
                     </button>
                     <Link
                       to="/tutor"
-                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border px-3 py-1.5 text-xs font-extrabold transition hover:border-primary hover:text-primary"
                     >
                       <MessagesSquare className="h-3.5 w-3.5" /> Tutor
                     </Link>
                     <button
                       onClick={() => scheduleReview(g)}
-                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border/60 px-3 py-1.5 text-xs font-semibold hover:border-primary/40"
+                      className="inline-flex items-center gap-1 rounded-xl border-2 border-border px-3 py-1.5 text-xs font-extrabold transition hover:border-primary hover:text-primary"
                     >
                       <CalendarPlus className="h-3.5 w-3.5" /> +25m tomorrow
                     </button>
