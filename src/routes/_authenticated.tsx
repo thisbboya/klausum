@@ -203,7 +203,13 @@ function AuthLayout() {
           <Outlet />
         </div>
       </main>
-      <FloatingCompanion companionId={profile?.companion_id} companionName={profile?.companion_name} />
+      {/* Not on the tutor: it is pinned bottom-right, which is exactly where
+          the composer's send button lives, so it sat on top of the one control
+          that screen exists for. The tutor is also the one page where a second
+          thing offering to talk to you is redundant. */}
+      {!isTutor && (
+        <FloatingCompanion companionId={profile?.companion_id} companionName={profile?.companion_name} />
+      )}
     </div>
   );
 }
