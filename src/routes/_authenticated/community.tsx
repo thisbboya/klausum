@@ -338,6 +338,7 @@ function LeaderboardTab() {
         </div>
       ) : (
         <>
+          <YourStanding rows={rows} meId={user?.id} />
           {hasPodium && (
             <div className="grid grid-cols-3 items-end gap-2">
               <PodiumCard rank={2} row={podium[1]} isMe={podium[1].user_id === user?.id} />
@@ -354,7 +355,7 @@ function LeaderboardTab() {
                 <Avatar p={r.profile} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-extrabold truncate">
-                    {r.profile?.full_name ?? "Anonymous"}
+                    {r.profile?.full_name ?? "A classmate"}
                     {r.user_id === user?.id && <span className="ml-1 text-xs text-primary">(you)</span>}
                   </div>
                   {r.profile?.handle && <div className="text-xs font-semibold text-muted-foreground">@{r.profile.handle}</div>}
@@ -364,6 +365,84 @@ function LeaderboardTab() {
             ))}
           </ol>
         </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Where you actually stand, and who is directly in front of you.
+ *
+ * A podium of three strangers is demotivating for everyone who isn't on it —
+ * an absolute global ranking tells the other forty-seven people only that they
+ * lost. What moves someone is a gap they could close this evening, so the
+ * headline number here is the distance to the single person above you, not the
+ * distance to first.
+ */
+function YourStanding({ rows, meId }: { rows: any[]; meId?: string }) {
+  const idx = rows.findIndex((r) => r.user_id === meId);
+  if (idx === -1) {
+    // On the board's scope but with no XP banked this week.
+    return (
+      <div className="card-chunky bg-card p-3.5 text-sm font-semibold text-muted-foreground">
+        You're not on this week's board yet. Any session at all puts you on it.
+      </div>
+    );
+  }
+
+  const me = rows[idx];
+  const ahead = idx > 0 ? rows[idx - 1] : null;
+  const behind = rows[idx + 1] ?? null;
+  const gap = ahead ? Math.max(0, ahead.xp_this_week - me.xp_this_week) : 0;
+  // How far you are along the stretch between the person behind and the one
+  // ahead — a bar that is nearly full reads as "almost", which is the point.
+  const floor = behind?.xp_this_week ?? 0;
+  const span = ahead ? Math.max(1, ahead.xp_this_week - floor) : 1;
+  const pct = ahead
+    ? Math.min(100, Math.max(4, Math.round(((me.xp_this_week - floor) / span) * 100)))
+    : 100;
+
+  return (
+    <div className="card-chunky bg-card p-3.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">
+          Your standing
+        </span>
+        <span className="font-display text-lg font-extrabold tabular-nums">
+          #{idx + 1}
+          <span className="ml-1 text-xs font-bold text-muted-foreground">
+            of {rows.length}
+          </span>
+        </span>
+      </div>
+
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2">
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-700"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <p className="mt-2 text-sm font-extrabold">
+        {ahead ? (
+          gap === 0 ? (
+            <>You're level with {ahead.profile?.full_name ?? "the player above"} — one card breaks the tie.</>
+          ) : (
+            <>
+              <span className="text-primary">{gap} XP</span> behind{" "}
+              {ahead.profile?.full_name ?? "the player above"}.
+            </>
+          )
+        ) : (
+          <>You're top of this board. {behind ? `${me.xp_this_week - behind.xp_this_week} XP clear.` : ""}</>
+        )}
+      </p>
+      {behind && ahead && (
+        // Loss avoidance, stated once and quietly. Said louder or more often it
+        // becomes nagging, which is exactly the black-hat trap.
+        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+          {behind.profile?.full_name ?? "Someone"} is {me.xp_this_week - behind.xp_this_week} XP behind you.
+        </p>
       )}
     </div>
   );
@@ -383,7 +462,7 @@ function PodiumCard({ rank, row, isMe }: { rank: 1 | 2 | 3; row: any; isMe: bool
         <Avatar p={row.profile} />
       </div>
       <div className="w-full truncate text-center text-xs font-extrabold">
-        {row.profile?.full_name ?? "Anonymous"}{isMe && <span className="text-primary"> (you)</span>}
+        {row.profile?.full_name ?? "A classmate"}{isMe && <span className="text-primary"> (you)</span>}
       </div>
       <div
         className={`card-chunky mt-2 flex w-full flex-col items-center justify-end gap-1 border-2 p-2 ${heights[rank]} ${tones[rank]}`}
