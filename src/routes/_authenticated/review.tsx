@@ -21,6 +21,15 @@ import { Sounds } from "@/lib/sounds";
 import { XPBurst, type XPBurstState } from "@/components/xp-burst";
 import { Hearts } from "@/components/hearts";
 import { CallingLine } from "@/components/calling-card";
+import { LoadoutPicker } from "@/components/loadout-picker";
+import {
+  applyMultiplier,
+  loadLoadout,
+  loadoutMultiplier,
+  saveLoadout,
+  tacticById,
+  type TacticId,
+} from "@/lib/loadout";
 
 export const Route = createFileRoute("/_authenticated/review")({
   component: ReviewPage,
@@ -63,11 +72,21 @@ function ReviewPage() {
   const [feedback, setFeedback] = useState<any>(null);
   const [evaluating, setEvaluating] = useState(false);
 
+  // The tactics chosen for this session, and whether the student has committed
+  // to them yet. The picker stands between "I want to study" and the first
+  // card, which is the only place the decision can still be made.
+  const [loadout, setLoadout] = useState<TacticId[]>(() => loadLoadout());
+  const [started, setStarted] = useState(false);
+  const has = (id: TacticId) => started && loadout.includes(id);
+
   // Duolingo state
   const [hearts, setHearts] = useState(3);
   const [hotStreak, setHotStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [totalXp, setTotalXp] = useState(0);
+  /** How much of totalXp the loadout is responsible for — the feedback half of
+      the bargain, so the risk can be judged against what it actually paid. */
+  const [bonusXp, setBonusXp] = useState(0);
   const [flash, setFlash] = useState<"green" | "red" | null>(null);
   const [xpBurst, setXpBurst] = useState<XPBurstState>({ show: false, amount: 0 });
   const [pausedUntil, setPausedUntil] = useState<number | null>(null);
@@ -101,8 +120,13 @@ function ReviewPage() {
   // takes the actual elapsed interval into account when it reschedules.
   const [ahead, setAhead] = useState(false);
 
+  // Marathon buys its multiplier by pulling cards forward, so it implies the
+  // same escape hatch "study ahead" opens.
+  const marathon = has("marathon");
+  const pullAhead = ahead || marathon;
+
   const { data: cards, refetch } = useQuery({
-    queryKey: ["due-cards", user?.id, ahead],
+    queryKey: ["due-cards", user?.id, pullAhead, has("deep")],
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -112,9 +136,17 @@ function ReviewPage() {
         .order("next_review_date", { ascending: true })
         .limit(50);
       if (error) throw error;
-      const all = data ?? [];
+      let all = data ?? [];
+      // Deep End reorders the whole queue by how much the card has been
+      // fighting you, so the session opens on your worst material instead of
+      // easing in.
+      if (has("deep")) {
+        all = [...all].sort(
+          (a, b) => (b.fsrs_difficulty ?? 5) - (a.fsrs_difficulty ?? 5),
+        );
+      }
       const due = all.filter((c) => c.next_review_date && isDue(c.next_review_date));
-      if (due.length > 0 || !ahead) return due;
+      if (due.length > 0 || !pullAhead) return due;
       // Ordered by next_review_date already, so the head of the list is what
       // is closest to due — the cards least wasteful to see early.
       return all.slice(0, 10);
@@ -134,6 +166,16 @@ function ReviewPage() {
       return count ?? 0;
     },
   });
+
+  // Sudden Death is exactly one heart: the safety net is the thing being
+  // wagered, so it has to be gone rather than merely smaller.
+  const heartCap = has("sudden") ? 1 : 3;
+
+  function startSession() {
+    saveLoadout(loadout);
+    setHearts(loadout.includes("sudden") ? 1 : 3);
+    setStarted(true);
+  }
 
   const current = cards?.[0];
 
@@ -184,7 +226,7 @@ function ReviewPage() {
       if (rating === 4) Sounds.correct();
       else Sounds.xpEarn();
       setFlash("green");
-      setHearts((h) => Math.min(3, h + (rating === 4 ? 1 : 0)));
+      setHearts((h) => Math.min(heartCap, h + (rating === 4 ? 1 : 0)));
       const newStreak = hotStreak + 1;
       setHotStreak(newStreak);
       setBestStreak((b) => Math.max(b, newStreak));
@@ -214,7 +256,9 @@ function ReviewPage() {
       stability_before: state.stability, stability_after: next.stability,
     });
 
-    const xpAmount = rating === 1 ? 1 : rating === 4 ? 5 : 2;
+    const baseXp = rating === 1 ? 1 : rating === 4 ? 5 : 2;
+    const xpAmount = applyMultiplier(baseXp, started ? loadout : []);
+    setBonusXp((b) => b + (xpAmount - baseXp));
     triggerXpBurst(xpAmount);
     setTotalXp((x) => x + xpAmount);
     const xp = awardXp({ userId: user.id, amount: xpAmount, action: "card_reviewed", description: `Rated ${rating}` });
@@ -227,6 +271,46 @@ function ReviewPage() {
     qc.invalidateQueries({ queryKey: ["due-cards"] });
     refetch();
   }
+
+  // --- Speed Run -----------------------------------------------------------
+  // Twelve seconds a card. Running out is not a free pass: it rates the card
+  // Again, which costs a heart and reschedules it, because a timer you can sit
+  // out is not a timer.
+  const SPEED_MS = 12000;
+  const rateRef = useRef(handleRate);
+  useEffect(() => {
+    rateRef.current = handleRate;
+  });
+
+  const speed = has("speed");
+  const [deadline, setDeadline] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!speed || !current || (pausedUntil && Date.now() < pausedUntil)) {
+      setDeadline(null);
+      return;
+    }
+    setDeadline(Date.now() + SPEED_MS);
+  }, [speed, current?.id, pausedUntil]);
+
+  useEffect(() => {
+    if (!deadline) return;
+    // The interval only drives the on-screen countdown; the timeout is what
+    // actually fires, so a throttled background tab can't win extra seconds.
+    const ticker = setInterval(() => setTick((t) => t + 1), 200);
+    const expire = setTimeout(
+      () => void rateRef.current(1),
+      Math.max(0, deadline - Date.now()),
+    );
+    return () => {
+      clearInterval(ticker);
+      clearTimeout(expire);
+    };
+  }, [deadline]);
+
+  const secondsLeft = deadline
+    ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+    : null;
 
   async function submitFeynman() {
     if (!current || !explanation.trim()) return;
@@ -284,6 +368,12 @@ function ReviewPage() {
           </div>
         )}
         <p className="mt-6 text-sm text-muted-foreground max-w-md mx-auto">{motivation}</p>
+        {bonusXp > 0 && (
+          <p className="mt-4 mx-auto max-w-md text-sm font-extrabold text-success">
+            Your loadout ({loadout.map((id) => tacticById(id).name).join(" + ")}) earned
+            you +{bonusXp} XP you would not have had.
+          </p>
+        )}
         {/* The end of a session is where the point of it is easiest to lose.
             Their own words land harder here than any streak counter. */}
         <CallingLine className="mt-4 mx-auto max-w-md" />
@@ -308,6 +398,18 @@ function ReviewPage() {
           </Link>
         </div>
       </div>
+    );
+  }
+
+  // The choice happens here, between wanting to study and the first card.
+  if (!started) {
+    return (
+      <LoadoutPicker
+        selected={loadout}
+        onChange={setLoadout}
+        onStart={startSession}
+        dueCount={cards.length}
+      />
     );
   }
 
@@ -348,8 +450,41 @@ function ReviewPage() {
             <Brain className="h-5 w-5 text-primary" /> Review
           </h1>
           <p className="text-xs text-muted-foreground mt-1">{cards.length} due · {reviewedToday} reviewed</p>
+          {/* The loadout stays visible all session. A choice you can't see the
+              consequences of stops feeling like one by the third card. */}
+          {loadout.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {loadout.map((id) => {
+                const t = tacticById(id);
+                const Icon = t.icon;
+                return (
+                  <span
+                    key={id}
+                    title={t.risk}
+                    className="inline-flex items-center gap-1 rounded-full border-2 border-border bg-surface-2 px-2 py-0.5 text-[10px] font-extrabold"
+                  >
+                    <Icon className={`h-3 w-3 ${t.tone}`} /> {t.name}
+                  </span>
+                );
+              })}
+              <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-extrabold tabular-nums text-success">
+                ×{loadoutMultiplier(loadout).toFixed(2).replace(/\.?0+$/, "")} XP
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {secondsLeft !== null && (
+            <span
+              className={`rounded-full px-2.5 py-1 font-mono text-sm font-extrabold tabular-nums ${
+                secondsLeft <= 3
+                  ? "bg-destructive/15 text-destructive"
+                  : "bg-sky/15 text-sky"
+              }`}
+            >
+              {secondsLeft}s
+            </span>
+          )}
           <Hearts count={hearts} />
           {hotStreak >= 2 && (
             <div className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full streak-bounce" key={hotStreak}>
@@ -392,7 +527,9 @@ function ReviewPage() {
               {showBack ? (current?.back ?? "") : (current?.front ?? "")}
             </ReactMarkdown>
           </article>
-          {!showBack && current?.hint && (
+          {/* Blind Recall removes the hint outright rather than greying it
+              out — a locked button you can see is a nag, not a constraint. */}
+          {!showBack && current?.hint && !has("blind") && (
             <div className="mt-4">
               {hint ? (
                 <p className="text-xs italic text-muted-foreground">💡 {current.hint}</p>
