@@ -36,6 +36,7 @@ import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMindmapsRouteImport } from './routes/_authenticated/mindmaps'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
+import { Route as AuthenticatedLabRouteImport } from './routes/_authenticated/lab'
 import { Route as AuthenticatedGapsRouteImport } from './routes/_authenticated/gaps'
 import { Route as AuthenticatedGamesRouteImport } from './routes/_authenticated/games'
 import { Route as AuthenticatedFormulasRouteImport } from './routes/_authenticated/formulas'
@@ -183,6 +184,11 @@ const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
   path: '/materials',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedLabRoute = AuthenticatedLabRouteImport.update({
+  id: '/lab',
+  path: '/lab',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedGapsRoute = AuthenticatedGapsRouteImport.update({
   id: '/gaps',
   path: '/gaps',
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/formulas': typeof AuthenticatedFormulasRoute
   '/games': typeof AuthenticatedGamesRoute
   '/gaps': typeof AuthenticatedGapsRoute
+  '/lab': typeof AuthenticatedLabRoute
   '/materials': typeof AuthenticatedMaterialsRouteWithChildren
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/formulas': typeof AuthenticatedFormulasRoute
   '/games': typeof AuthenticatedGamesRoute
   '/gaps': typeof AuthenticatedGapsRoute
+  '/lab': typeof AuthenticatedLabRoute
   '/mindmaps': typeof AuthenticatedMindmapsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/progress': typeof AuthenticatedProgressRoute
@@ -342,6 +350,7 @@ export interface FileRoutesById {
   '/_authenticated/formulas': typeof AuthenticatedFormulasRoute
   '/_authenticated/games': typeof AuthenticatedGamesRoute
   '/_authenticated/gaps': typeof AuthenticatedGapsRoute
+  '/_authenticated/lab': typeof AuthenticatedLabRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRouteWithChildren
   '/_authenticated/mindmaps': typeof AuthenticatedMindmapsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
@@ -384,6 +393,7 @@ export interface FileRouteTypes {
     | '/formulas'
     | '/games'
     | '/gaps'
+    | '/lab'
     | '/materials'
     | '/mindmaps'
     | '/notes'
@@ -424,6 +434,7 @@ export interface FileRouteTypes {
     | '/formulas'
     | '/games'
     | '/gaps'
+    | '/lab'
     | '/mindmaps'
     | '/notes'
     | '/progress'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/_authenticated/formulas'
     | '/_authenticated/games'
     | '/_authenticated/gaps'
+    | '/_authenticated/lab'
     | '/_authenticated/materials'
     | '/_authenticated/mindmaps'
     | '/_authenticated/notes'
@@ -699,6 +711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMaterialsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/lab': {
+      id: '/_authenticated/lab'
+      path: '/lab'
+      fullPath: '/lab'
+      preLoaderRoute: typeof AuthenticatedLabRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/gaps': {
       id: '/_authenticated/gaps'
       path: '/gaps'
@@ -825,6 +844,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFormulasRoute: typeof AuthenticatedFormulasRoute
   AuthenticatedGamesRoute: typeof AuthenticatedGamesRoute
   AuthenticatedGapsRoute: typeof AuthenticatedGapsRoute
+  AuthenticatedLabRoute: typeof AuthenticatedLabRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRouteWithChildren
   AuthenticatedMindmapsRoute: typeof AuthenticatedMindmapsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
@@ -848,6 +868,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFormulasRoute: AuthenticatedFormulasRoute,
   AuthenticatedGamesRoute: AuthenticatedGamesRoute,
   AuthenticatedGapsRoute: AuthenticatedGapsRoute,
+  AuthenticatedLabRoute: AuthenticatedLabRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRouteWithChildren,
   AuthenticatedMindmapsRoute: AuthenticatedMindmapsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,

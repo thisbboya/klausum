@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, BookOpen, Brain, MessagesSquare, Settings, NotebookPen, Network,
   ListChecks, Target, TrendingUp, Sigma, CalendarClock, Users,
-  GraduationCap, Youtube, Camera, Gem, Gamepad2, type LucideIcon,
+  GraduationCap, Youtube, Camera, Gem, Gamepad2, FlaskConical, type LucideIcon,
 } from "lucide-react";
 
 export type NavLink = { to: string; label: string; icon: LucideIcon };
@@ -39,6 +39,7 @@ export const MORE_GROUPS: NavGroup[] = [
       { to: "/formulas", label: "Formulas", icon: Sigma },
       { to: "/videos", label: "Videos", icon: Youtube },
       { to: "/solve", label: "Snap & Solve", icon: Camera },
+      { to: "/lab", label: "Lab", icon: FlaskConical },
       { to: "/notes", label: "Notes", icon: NotebookPen },
       { to: "/mindmaps", label: "Mind Maps", icon: Network },
     ],
