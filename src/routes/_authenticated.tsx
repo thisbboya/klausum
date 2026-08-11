@@ -26,6 +26,7 @@ function AuthLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAdmin } = useIsAdmin();
+  const isTutor = location.pathname === "/tutor";
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -128,7 +129,16 @@ function AuthLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0">
+      {/* The tutor is a workspace, not a document: it gets the entire pane,
+          edge to edge and floor to ceiling. Making main itself the flex column
+          is what lets the chat panel size to the real remaining space instead
+          of guessing at a viewport calculation and leaving dead air below the
+          composer. */}
+      <main
+        className={`flex-1 min-w-0 ${
+          isTutor ? "flex h-[100dvh] flex-col overflow-hidden" : ""
+        }`}
+      >
         <MobileNav
           userLabel={profile?.full_name || user.email || ""}
           level={profile?.level}
@@ -145,19 +155,22 @@ function AuthLayout() {
         <div
           // pb-* clears the fixed mobile thumb row; md: resets it since the bar
           // is hidden there.
-          className={`mx-auto space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0 ${
-            // Wide canvas for the split-pane screens (reader + video/AI panel);
-            // max-w-5xl squeezes those two columns far too narrow.
-            // The tutor is a full-height workspace, not an article: at max-w-5xl
-            // it sat in a column with a third of a wide screen empty on either
-            // side, and diagrams and plots had nowhere to breathe. It also wants
-            // tighter vertical padding so the composer isn't pushed off-screen.
-            /^\/materials\/[^/]+$/.test(location.pathname) ||
-            location.pathname === "/videos" ||
-            location.pathname === "/tutor"
-              ? "max-w-[1500px] py-4 md:px-5 md:py-5" // CourieX-wide reading canvas
-              : "max-w-5xl py-6 md:px-8 md:py-10"
-          }`}
+          className={
+            isTutor
+              ? // Full bleed: no max-width, no centring, no page padding and no
+                // space-y gaps. min-h-0 is the part that matters — without it a
+                // flex child refuses to shrink and the panel overflows instead
+                // of scrolling inside itself.
+                "flex min-h-0 flex-1 flex-col px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] pt-3 md:px-5 md:pb-4"
+              : `mx-auto space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0 ${
+                  // Wide canvas for the split-pane screens (reader + video/AI
+                  // panel); max-w-5xl squeezes those two columns far too narrow.
+                  /^\/materials\/[^/]+$/.test(location.pathname) ||
+                  location.pathname === "/videos"
+                    ? "max-w-[1500px] py-4 md:px-5 md:py-5" // CourieX-wide reading canvas
+                    : "max-w-5xl py-6 md:px-8 md:py-10"
+                }`
+          }
         >
           {profile && !profile.level && location.pathname !== "/settings" && (
             <ProfileCompletionBanner level={profile?.level} />

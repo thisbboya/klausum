@@ -252,14 +252,13 @@ function Tutor() {
   }
 
   return (
-    // dvh, not vh: on phones vh includes the browser chrome, so the composer
-    // sat below the fold. Also -mx-4 on small screens to reclaim the layout
-    // gutter — a chat panel is the one screen that wants every pixel.
-    <div
-      className="-mx-4 flex flex-col px-4 sm:mx-0 sm:px-0"
-      style={{ height: "calc(100dvh - var(--tutor-chrome, 10rem))" }}
-    >
-      <header className="flex flex-wrap items-center justify-between gap-3 mb-4">
+    // The old height here was calc(100dvh - var(--tutor-chrome, 10rem)) — a
+    // guess at how much chrome sat above, which is why there was dead white
+    // space below the composer on a tall screen and a cramped panel on a short
+    // one. The shell is now a flex column, so this just claims what is actually
+    // left. min-h-0 lets it shrink so the message list scrolls internally.
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 mb-3">
         <div>
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <MessagesSquare className="h-5 w-5 text-primary" /> AI Tutor
@@ -292,7 +291,10 @@ function Tutor() {
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto card-chunky bg-card/30 p-4 space-y-4">
+      {/* min-h-0 is required for a scrollable flex child: without it the panel
+          grows to fit its content and pushes the composer off-screen instead
+          of scrolling. */}
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto card-chunky bg-card/30 p-4 space-y-4">
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground py-12">
             {/* The pilot the student already chose is the tutor's face. A
