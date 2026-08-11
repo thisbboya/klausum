@@ -48,8 +48,17 @@ export function MarkdownMath({
             ) {
               return <>{props.children}</>;
             }
-            const { node, ...rest } = props;
-            return <pre {...rest} />;
+            const { node, className, ...rest } = props;
+            // A long code answer must scroll inside its own box. Without the
+            // max-width clamp a wide line makes the <pre> as wide as it likes,
+            // which widens the bubble, which widens the pane — and the whole
+            // layout starts scrolling instead of the code.
+            return (
+              <pre
+                {...rest}
+                className={`${className ?? ""} max-w-full overflow-x-auto`}
+              />
+            );
           },
           code(props: any) {
             const { className: cls, children, ...rest } = props;

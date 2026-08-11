@@ -92,8 +92,16 @@ function ReviewPage() {
     } catch {}
   }, []);
 
+  // "Study ahead" pulls the cards closest to falling due when nothing is due
+  // yet. Without it, owning twenty cards and being told to go away is the
+  // normal experience — FSRS schedules everything into the future, and the
+  // page then refuses to let you study material you own. Anki and every app
+  // like it offer the same escape hatch, and reviewing early is safe: FSRS
+  // takes the actual elapsed interval into account when it reschedules.
+  const [ahead, setAhead] = useState(false);
+
   const { data: cards, refetch } = useQuery({
-    queryKey: ["due-cards", user?.id],
+    queryKey: ["due-cards", user?.id, ahead],
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -103,7 +111,26 @@ function ReviewPage() {
         .order("next_review_date", { ascending: true })
         .limit(50);
       if (error) throw error;
-      return (data ?? []).filter((c) => c.next_review_date && isDue(c.next_review_date));
+      const all = data ?? [];
+      const due = all.filter((c) => c.next_review_date && isDue(c.next_review_date));
+      if (due.length > 0 || !ahead) return due;
+      // Ordered by next_review_date already, so the head of the list is what
+      // is closest to due — the cards least wasteful to see early.
+      return all.slice(0, 10);
+    },
+  });
+
+  // How many exist at all, so the empty state can tell the difference between
+  // "you have nothing" and "you have plenty, just nothing due".
+  const { data: totalCards = 0 } = useQuery({
+    queryKey: ["card-count", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("flashcards")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id);
+      return count ?? 0;
     },
   });
 
@@ -239,7 +266,9 @@ function ReviewPage() {
       : pct >= 70 ? "Strong work. Consistency beats intensity every time."
       : pct >= 50 ? "Good effort. Tomorrow will be even better."
       : reviewedToday > 0 ? "These cards are tough — that's why FSRS keeps showing them. You've got this!"
-      : "No cards due. Generate flashcards from a material.";
+      : totalCards > 0
+        ? `Nothing is due yet — your ${totalCards} cards are all scheduled ahead. That is spaced repetition doing its job, but you can still get ahead of it.`
+        : "No cards due. Generate flashcards from a material.";
 
     return (
       <div className="text-center py-16 card-entrance">
@@ -254,9 +283,26 @@ function ReviewPage() {
           </div>
         )}
         <p className="mt-6 text-sm text-muted-foreground max-w-md mx-auto">{motivation}</p>
-        <Link to="/materials" className="mt-6 inline-block btn-3d rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
-          Back to materials
-        </Link>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          {totalCards > 0 && !ahead && (
+            <button
+              onClick={() => setAhead(true)}
+              className="btn-3d rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground"
+            >
+              Study ahead anyway
+            </button>
+          )}
+          <Link
+            to="/materials"
+            className={`inline-block rounded-xl px-5 py-2.5 text-sm font-extrabold ${
+              totalCards > 0 && !ahead
+                ? "border-2 border-border transition hover:border-primary hover:text-primary"
+                : "btn-3d bg-primary text-primary-foreground"
+            }`}
+          >
+            Back to materials
+          </Link>
+        </div>
       </div>
     );
   }

@@ -96,8 +96,17 @@ function AuthLayout() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
-      <aside className="hidden md:flex w-60 flex-col border-r-2 border-border bg-background px-3 py-5">
+    // On the tutor the shell is pinned to the viewport and cannot scroll at
+    // all. min-h-screen lets the page grow past the window, which is how a
+    // long answer — a big fenced code block especially — ended up scrolling
+    // the entire layout, sidebar included, and leaving a lake of dead space
+    // under the composer. Only the message list is allowed to scroll here.
+    <div
+      className={`flex bg-background text-foreground ${
+        isTutor ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+      }`}
+    >
+      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r-2 border-border bg-background px-3 py-5">
         <Link to="/dashboard" className="mb-8 flex items-center gap-2 px-2">
           <KlausumLogo size={24} />
         </Link>
@@ -136,7 +145,11 @@ function AuthLayout() {
           composer. */}
       <main
         className={`flex-1 min-w-0 ${
-          isTutor ? "flex h-[100dvh] flex-col overflow-hidden" : ""
+          // h-full, not h-[100dvh]: the shell above is already exactly the
+          // viewport, and pinning a second element to the viewport height
+          // inside it is how you get a pane that is taller than the space it
+          // was given.
+          isTutor ? "flex h-full min-h-0 flex-col overflow-hidden" : ""
         }`}
       >
         <MobileNav
