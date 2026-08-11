@@ -11,6 +11,7 @@ import { toast } from "@/lib/notify";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line } from "recharts";
 import { Flame, Trophy, Target, BookOpen, Sparkles, Lock } from "lucide-react";
 import { LEVELS, levelFor, BADGES, badgeProgress, nearestBadge, type BadgeStats } from "@/lib/gamification";
+import { Collection } from "@/components/collection";
 
 export const Route = createFileRoute("/_authenticated/progress")({ component: ProgressPage });
 
@@ -370,6 +371,11 @@ function ProgressPage() {
         </div>
         {totalCards === 0 && <p className="text-xs text-muted-foreground text-center mt-3">No flashcards yet — generate some from a study material.</p>}
       </Card>
+
+      {/* Badges are given to you; crests are taken. They sit together because
+          they are two halves of the same question — what do you have to show
+          for the work. */}
+      <Collection stats={badgeStats as unknown as Record<string, number>} />
 
       {/* Achievements */}
       <Card title="Achievements">

@@ -2436,6 +2436,7 @@ export type Database = {
         Args: { p_key: string; p_xp: number }
         Returns: undefined
       }
+      equip_crest: { Args: { _crest: string }; Returns: Json }
       get_monthly_usage: {
         Args: { p_user_id: string }
         Returns: {
@@ -2481,6 +2482,7 @@ export type Database = {
           reward_xp: number
         }[]
       }
+      purchase_crest: { Args: { _crest: string }; Returns: Json }
       purchase_shop_item: { Args: { _item: string }; Returns: Json }
       submit_duel_score: {
         Args: { p_challenge_id: string; p_score: number; p_total: number }

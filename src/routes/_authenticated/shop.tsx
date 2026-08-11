@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/lib/notify";
-import { Gem, Snowflake, Zap, Lightbulb, Loader2 } from "lucide-react";
+import { Gem, Snowflake, Zap, Lightbulb, Loader2, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/shop")({ component: Shop });
@@ -81,6 +81,21 @@ function Shop() {
       <div className="rounded-xl border-2 border-border/50 bg-muted/20 px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
         <Snowflake className="h-3.5 w-3.5 text-sky-400" /> You have {profile?.streak_freezes ?? 0} streak freeze{(profile?.streak_freezes ?? 0) === 1 ? "" : "s"} available.
       </div>
+
+      {/* Everything above is used up. Crests are the only thing here you still
+          own next month, so the shop should say where they are. */}
+      <Link
+        to="/progress"
+        className="flex items-center justify-between gap-3 rounded-xl border-2 border-grape/40 bg-grape/8 px-4 py-3 transition hover:border-grape"
+      >
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold">Crests — yours to keep</span>
+          <span className="block text-xs font-semibold text-muted-foreground">
+            Boosts run out. Crests don't. Find them in your Collection.
+          </span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-grape" />
+      </Link>
 
       <div className="grid gap-4 md:grid-cols-3">
         {ITEMS.map((it) => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, Crown, Snowflake } from "lucide-react";
 import { CompanionSVG, getCompanion } from "@/components/companion-svg";
+import { EquippedCrest } from "@/components/collection";
 
 function greeting() {
   const h = new Date().getHours();
@@ -112,7 +113,7 @@ export function CompanionHero({
           {/* text-xl on phones: at text-3xl a long handle wrapped onto two
               lines and the greeting alone owned a fifth of the screen. */}
           <h1 className="break-words font-display text-xl sm:text-2xl md:text-4xl font-extrabold leading-tight text-foreground">
-            Hey {firstName || "there"}!
+            Hey {firstName || "there"}! <EquippedCrest className="align-middle" />
           </h1>
           <p className="mt-0.5 text-xs font-semibold text-muted-foreground sm:text-sm">
             Good {greeting()} — your pilot's warmed up!
