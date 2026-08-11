@@ -14,11 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_rate_limits: {
+        Row: {
+          daily_limit: number
+          enabled: boolean
+          feature: string
+          updated_at: string
+        }
+        Insert: {
+          daily_limit?: number
+          enabled?: boolean
+          feature: string
+          updated_at?: string
+        }
+        Update: {
+          daily_limit?: number
+          enabled?: boolean
+          feature?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_usage_events: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_providers: {
+        Row: {
+          api_key: string
+          created_at: string
+          enabled: boolean
+          id: string
+          last_used_at: string | null
+          mode: string
+          name: string
+          priority: number
+          provider: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_used_at?: string | null
+          mode?: string
+          name: string
+          priority?: number
+          provider: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_used_at?: string | null
+          mode?: string
+          name?: string
+          priority?: number
+          provider?: string
+        }
+        Relationships: []
+      }
+      app_error_logs: {
+        Row: {
+          context: string
+          created_at: string
+          id: string
+          message: string
+          status_code: number | null
+          user_id: string | null
+        }
+        Insert: {
+          context: string
+          created_at?: string
+          id?: string
+          message: string
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: string
+          message?: string
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          daily_goal_xp: number
+          id: number
+          loss_aversion_nudges: boolean
+          streak_freeze_enabled: boolean
+          updated_at: string
+          variable_reward_max: number
+          variable_reward_min: number
+          xp_per_material: number
+          xp_per_quiz: number
+          xp_per_review: number
+        }
+        Insert: {
+          daily_goal_xp?: number
+          id?: number
+          loss_aversion_nudges?: boolean
+          streak_freeze_enabled?: boolean
+          updated_at?: string
+          variable_reward_max?: number
+          variable_reward_min?: number
+          xp_per_material?: number
+          xp_per_quiz?: number
+          xp_per_review?: number
+        }
+        Update: {
+          daily_goal_xp?: number
+          id?: number
+          loss_aversion_nudges?: boolean
+          streak_freeze_enabled?: boolean
+          updated_at?: string
+          variable_reward_max?: number
+          variable_reward_min?: number
+          xp_per_material?: number
+          xp_per_quiz?: number
+          xp_per_review?: number
+        }
+        Relationships: []
+      }
+      app_updates: {
+        Row: {
+          badge: string | null
+          body: string
+          created_at: string
+          id: string
+          published: boolean
+          title: string
+        }
+        Insert: {
+          badge?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          title: string
+        }
+        Update: {
+          badge?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          title?: string
+        }
+        Relationships: []
+      }
       challenge_completions: {
         Row: {
           challenge_key: string
           completed_at: string | null
           id: string
+          period_start: string | null
           user_id: string
           xp_awarded: number
         }
@@ -26,6 +198,7 @@ export type Database = {
           challenge_key: string
           completed_at?: string | null
           id?: string
+          period_start?: string | null
           user_id: string
           xp_awarded: number
         }
@@ -33,6 +206,7 @@ export type Database = {
           challenge_key?: string
           completed_at?: string | null
           id?: string
+          period_start?: string | null
           user_id?: string
           xp_awarded?: number
         }
@@ -136,6 +310,65 @@ export type Database = {
           summary?: string | null
           title?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      course_members: {
+        Row: {
+          course_id: string
+          joined_at: string | null
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          joined_at?: string | null
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          joined_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_members_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          color: string
+          created_at: string | null
+          description: string | null
+          icon: string
+          id: string
+          name: string
+          share_code: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          name: string
+          share_code?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          share_code?: string | null
           user_id?: string
         }
         Relationships: []
@@ -630,6 +863,39 @@ export type Database = {
           },
         ]
       }
+      material_highlights: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          material_id: string
+          page_number: number
+          rects: Json
+          text: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          material_id: string
+          page_number?: number
+          rects?: Json
+          text: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          material_id?: string
+          page_number?: number
+          rects?: Json
+          text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       material_notes: {
         Row: {
           content: string
@@ -800,6 +1066,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      quiz_challenges: {
+        Row: {
+          challenger_id: string
+          challenger_score: number | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          opponent_id: string
+          opponent_score: number | null
+          quiz_id: string
+          status: string
+          time_limit_seconds: number
+          winner_id: string | null
+        }
+        Insert: {
+          challenger_id: string
+          challenger_score?: number | null
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          opponent_id: string
+          opponent_score?: number | null
+          quiz_id: string
+          status?: string
+          time_limit_seconds?: number
+          winner_id?: string | null
+        }
+        Update: {
+          challenger_id?: string
+          challenger_score?: number | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          opponent_id?: string
+          opponent_score?: number | null
+          quiz_id?: string
+          status?: string
+          time_limit_seconds?: number
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_challenges_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quizzes: {
         Row: {
@@ -1372,6 +1688,7 @@ export type Database = {
           estimated_read_minutes: number | null
           field_category: string | null
           file_name: string | null
+          file_storage_path: string | null
           file_type: string | null
           formulas: Json | null
           id: string
@@ -1407,6 +1724,7 @@ export type Database = {
           estimated_read_minutes?: number | null
           field_category?: string | null
           file_name?: string | null
+          file_storage_path?: string | null
           file_type?: string | null
           formulas?: Json | null
           id?: string
@@ -1442,6 +1760,7 @@ export type Database = {
           estimated_read_minutes?: number | null
           field_category?: string | null
           file_name?: string | null
+          file_storage_path?: string | null
           file_type?: string | null
           formulas?: Json | null
           id?: string
@@ -1611,11 +1930,34 @@ export type Database = {
           },
         ]
       }
+      user_collectibles: {
+        Row: {
+          acquired_at: string
+          equipped: boolean
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          equipped?: boolean
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          equipped?: boolean
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           auditory_score: number | null
           available_hours: Json | null
           avatar_url: string | null
+          calling_set_at: string | null
+          calling_text: string | null
           cohort_units: number | null
           companion_id: number | null
           companion_name: string | null
@@ -1659,6 +2001,8 @@ export type Database = {
           auditory_score?: number | null
           available_hours?: Json | null
           avatar_url?: string | null
+          calling_set_at?: string | null
+          calling_text?: string | null
           cohort_units?: number | null
           companion_id?: number | null
           companion_name?: string | null
@@ -1702,6 +2046,8 @@ export type Database = {
           auditory_score?: number | null
           available_hours?: Json | null
           avatar_url?: string | null
+          calling_set_at?: string | null
+          calling_text?: string | null
           cohort_units?: number | null
           companion_id?: number | null
           companion_name?: string | null
@@ -2038,6 +2384,54 @@ export type Database = {
       }
     }
     Functions: {
+      admin_ai_usage_today: { Args: never; Returns: Json }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          handle: string
+          id: string
+          is_admin: boolean
+          xp_total: number
+        }[]
+      }
+      admin_recent_materials: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          processing_status: string
+          subject: string
+          title: string
+          user_id: string
+        }[]
+      }
+      admin_set_role: {
+        Args: { p_email: string; p_make_admin: boolean }
+        Returns: undefined
+      }
+      admin_stats: { Args: never; Returns: Json }
+      admin_user_insights: {
+        Args: never
+        Returns: {
+          attempts: number
+          avg_accuracy: number
+          cards: number
+          days_inactive: number
+          email: string
+          engagement: number
+          full_name: string
+          id: string
+          last_active: string
+          materials: number
+          risk: string
+          streak_days: number
+          xp_total: number
+        }[]
+      }
       complete_challenge: {
         Args: { p_key: string; p_xp: number }
         Returns: undefined
@@ -2074,6 +2468,7 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
+      join_course_by_code: { Args: { p_code: string }; Returns: Json }
       join_study_group: { Args: { p_invite_code: string }; Returns: string }
       log_xp_event: {
         Args: { _action: string; _amount: number; _description?: string }
@@ -2087,6 +2482,28 @@ export type Database = {
         }[]
       }
       purchase_shop_item: { Args: { _item: string }; Returns: Json }
+      submit_duel_score: {
+        Args: { p_challenge_id: string; p_score: number; p_total: number }
+        Returns: {
+          challenger_id: string
+          challenger_score: number | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          opponent_id: string
+          opponent_score: number | null
+          quiz_id: string
+          status: string
+          time_limit_seconds: number
+          winner_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "quiz_challenges"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_weekly_leaderboard: {
         Args: { p_user_id: string; p_xp: number }
         Returns: undefined

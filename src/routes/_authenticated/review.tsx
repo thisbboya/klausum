@@ -20,6 +20,7 @@ import confetti from "canvas-confetti";
 import { Sounds } from "@/lib/sounds";
 import { XPBurst, type XPBurstState } from "@/components/xp-burst";
 import { Hearts } from "@/components/hearts";
+import { CallingLine } from "@/components/calling-card";
 
 export const Route = createFileRoute("/_authenticated/review")({
   component: ReviewPage,
@@ -283,6 +284,9 @@ function ReviewPage() {
           </div>
         )}
         <p className="mt-6 text-sm text-muted-foreground max-w-md mx-auto">{motivation}</p>
+        {/* The end of a session is where the point of it is easiest to lose.
+            Their own words land harder here than any streak counter. */}
+        <CallingLine className="mt-4 mx-auto max-w-md" />
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           {totalCards > 0 && !ahead && (
             <button

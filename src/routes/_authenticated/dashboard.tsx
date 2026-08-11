@@ -20,6 +20,7 @@ import { CompanionHero } from "@/components/companion-hero";
 import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { HeartsRow } from "@/components/hearts-row";
+import { CallingCard } from "@/components/calling-card";
 import { TodaySession, buildSessionTasks } from "@/components/today-session";
 import { ensureTodayQuests } from "@/lib/quests";
 import { BADGES } from "@/lib/gamification";
@@ -206,6 +207,10 @@ function Dashboard() {
         due={data?.dueCount}
         freezes={profile?.streak_freezes}
       />
+
+      {/* The reason sits directly under the companion and above every counter,
+          because the counters only mean something in service of it. */}
+      <CallingCard />
 
       {hearts && (
         <div className="flex justify-end -mt-2">
