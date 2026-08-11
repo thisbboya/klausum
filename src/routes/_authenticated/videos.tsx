@@ -4,6 +4,7 @@ import { Compass, Library, PlayCircle } from "lucide-react";
 import { DiscoverTab, LibraryTab, WatchStudy, type Video } from "@/components/video/WatchStudy";
 import { getAccessToken } from "@/lib/auth-helper";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/videos")({
@@ -106,6 +107,12 @@ function VideosPage() {
         ))}
       </div>
 
+      {/* Picking up where you stopped is the single most common thing anyone
+          wants from a video page, and until now it only existed on the
+          dashboard — so arriving here directly meant hunting for the video
+          again and scrubbing back to where you were. */}
+      {tab !== "watch" && <ContinueWatching onResume={pick} />}
+
       {tab === "discover" && <DiscoverTab onPick={pick} />}
       {tab === "library" && <LibraryTab onPick={pick} />}
       {tab === "watch" && active && token && (
@@ -117,5 +124,85 @@ function VideosPage() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * The most recently watched, not-yet-finished video. Renders nothing at all
+ * when there is no such video — an empty "Continue watching" shelf is worse
+ * than no shelf, because it reads as something broken rather than something
+ * you haven't started.
+ */
+function ContinueWatching({ onResume }: { onResume: (v: Video) => void }) {
+  const { user } = useAuth();
+
+  const { data } = useQuery({
+    queryKey: ["continue-video", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: p } = await (supabase as any)
+        .from("video_watch_progress")
+        .select("youtube_video_id,watch_seconds,total_seconds,percent_watched")
+        .eq("user_id", user!.id)
+        // 95% and over is finished; offering to resume it would be noise.
+        .lt("percent_watched", 95)
+        .order("last_watched_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!p?.youtube_video_id) return null;
+      // saved_videos is a separate opt-in table, so the title may be missing.
+      // YouTube always has a thumbnail at a predictable URL, which is enough
+      // to make the card recognisable even when the metadata isn't there.
+      const { data: sv } = await (supabase as any)
+        .from("saved_videos")
+        .select("title,channel,thumbnail_url")
+        .eq("user_id", user!.id)
+        .eq("youtube_video_id", p.youtube_video_id)
+        .maybeSingle();
+      return {
+        video: {
+          id: p.youtube_video_id as string,
+          title: (sv?.title as string) ?? "Your last video",
+          channel: (sv?.channel as string) ?? "",
+          thumbnail:
+            (sv?.thumbnail_url as string) ??
+            `https://i.ytimg.com/vi/${p.youtube_video_id}/hqdefault.jpg`,
+        } satisfies Video,
+        percent: Math.min(100, Math.max(0, Math.round(Number(p.percent_watched) || 0))),
+        left: Math.max(
+          0,
+          Math.floor((Number(p.total_seconds) || 0) - (Number(p.watch_seconds) || 0)),
+        ),
+      };
+    },
+  });
+
+  if (!data) return null;
+  const mins = Math.round(data.left / 60);
+
+  return (
+    <button
+      onClick={() => onResume(data.video)}
+      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition hover:border-primary"
+    >
+      <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-xl bg-surface-2">
+        <img src={data.video.thumbnail} alt="" className="h-full w-full object-cover" />
+        <span className="absolute inset-0 flex items-center justify-center bg-black/35 text-white">
+          <PlayCircle className="h-6 w-6" />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] font-extrabold uppercase tracking-wide text-primary">
+          Continue watching
+        </div>
+        <div className="truncate text-sm font-extrabold">{data.video.title}</div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${data.percent}%` }} />
+        </div>
+        <div className="mt-1 text-[11px] font-bold text-muted-foreground">
+          {data.percent}% watched{mins > 0 ? ` · about ${mins} min left` : ""}
+        </div>
+      </div>
+    </button>
   );
 }

@@ -127,7 +127,12 @@ export function WatchStudy({
         try {
           const t = playerRef.current?.getCurrentTime() ?? 0;
           const d = playerRef.current?.getDuration() ?? 0;
-          if (d && !duration) setDuration(d);
+          // Set unconditionally rather than guarding on `duration`: this
+          // closure captured `duration` from the render that started the
+          // player and the effect only re-runs when the video changes, so the
+          // guard was reading a value frozen at 0 forever. React drops a set
+          // to an identical number, so this costs nothing after the first.
+          if (d) setDuration(d);
           setCurrentTime(t);
         } catch {
           // ignore
@@ -173,17 +178,27 @@ export function WatchStudy({
     const id = setInterval(() => {
       if (!playerRef.current || duration <= 0) return;
       const t = playerRef.current.getCurrentTime();
-      void supabase.from("video_watch_progress").upsert(
-        {
-          user_id: user.id,
-          youtube_video_id: video.id,
-          watch_seconds: Math.floor(t),
-          total_seconds: Math.floor(duration),
-          percent_watched: Math.min(100, Math.round((t / duration) * 100)),
-          last_watched_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,youtube_video_id" },
-      );
+      // The result used to be discarded with `void`, so a failing write left no
+      // trace anywhere — which is exactly the state this table was found in:
+      // people were plainly watching videos (chapters and chat rows exist) and
+      // yet not one progress row had ever been recorded. A silent write is a
+      // feature that can never be debugged, so failures are reported now.
+      void supabase
+        .from("video_watch_progress")
+        .upsert(
+          {
+            user_id: user.id,
+            youtube_video_id: video.id,
+            watch_seconds: Math.floor(t),
+            total_seconds: Math.floor(duration),
+            percent_watched: Math.min(100, Math.round((t / duration) * 100)),
+            last_watched_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,youtube_video_id" },
+        )
+        .then(({ error }) => {
+          if (error) reportError("video-progress", error);
+        });
     }, 5000);
     return () => clearInterval(id);
   }, [user, video.id, duration]);
