@@ -9,7 +9,8 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { Send, History, MessagesSquare, Sparkles, Square, RotateCcw, Lightbulb, ListOrdered, HelpCircle, Baby } from "lucide-react";
+import { Send, History, MessagesSquare, Sparkles, Square, RotateCcw, Lightbulb, ListOrdered, HelpCircle, Baby, ChevronLeft, SlidersHorizontal } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CompanionSVG } from "@/components/companion-svg";
 import { awardXp } from "@/lib/xp";
@@ -163,6 +164,12 @@ function Tutor() {
   const sessionIdRef = useRef<string | null>(null);
   const restoredRef = useRef(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // On a phone the title bar is the only room left to say what the tutor is
+  // currently reading, and that is more useful there than the words "AI Tutor".
+  const activeMaterialTitle = materialId
+    ? materials.find((m) => m.id === materialId)?.title
+    : "";
 
   // Past conversations. Refetched whenever the drawer opens, so a chat you
   // just finished is in the list the first time you look for it.
@@ -295,15 +302,44 @@ function Tutor() {
       {/* A toolbar, not a page heading: it spans the full width and is separated
           from the conversation by a rule rather than by whitespace, so the
           workspace reads as one continuous surface. */}
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b-2 border-border bg-card px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <MessagesSquare className="h-5 w-5 shrink-0 text-primary" />
-          <h1 className="font-display text-lg font-extrabold leading-none">AI Tutor</h1>
-          <span className="hidden text-xs font-bold text-muted-foreground sm:inline">
+      {/* One row, always. It used to wrap to two on a phone and the material
+          picker still ran off the edge, so the chat began a third of the way
+          down the screen. The controls now collapse into a single menu below
+          sm, which is how every chat app on a phone does it. */}
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-card px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top,0px))] sm:px-4 sm:py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          {/* The app bars are hidden here, so the way out has to live in the
+              page itself. */}
+          <Link
+            to="/dashboard"
+            aria-label="Back"
+            className="-ml-1 rounded-lg p-1.5 text-muted-foreground transition hover:bg-surface-2 hover:text-foreground md:hidden"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <MessagesSquare className="hidden h-5 w-5 shrink-0 text-primary sm:block" />
+          <h1 className="truncate font-display text-base font-extrabold leading-none sm:text-lg">
+            {activeMaterialTitle || "AI Tutor"}
+          </h1>
+          <span className="hidden text-xs font-bold text-muted-foreground lg:inline">
             {msgsThisMonth} message{msgsThisMonth === 1 ? "" : "s"} this month
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs">
+
+        {/* Phones: one button. */}
+        <div className="flex items-center gap-1.5 sm:hidden">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Tutor options"
+            className={`rounded-xl border-2 p-1.5 transition ${
+              menuOpen ? "border-primary bg-primary/10 text-primary" : "border-border"
+            }`}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="hidden items-center gap-2 text-xs sm:flex">
           <select
             value={materialId}
             onChange={(e) => setMaterialId(e.target.value)}
@@ -337,6 +373,49 @@ function Tutor() {
           )}
         </div>
       </header>
+
+      {/* The phone version of the toolbar. A drop-down panel rather than a
+          second permanent row, so it costs nothing until it is asked for. */}
+      {menuOpen && (
+        <div className="shrink-0 space-y-2.5 border-b-2 border-border bg-card px-3 py-3 sm:hidden">
+          <select
+            value={materialId}
+            onChange={(e) => {
+              setMaterialId(e.target.value);
+              setMenuOpen(false);
+            }}
+            className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm font-bold focus:border-primary focus:outline-none"
+          >
+            <option value="">No material context</option>
+            {materials.map((m) => (
+              <option key={m.id} value={m.id}>{m.title}</option>
+            ))}
+          </select>
+          <ModePill mode={mode} setMode={setMode} />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setHistoryOpen((v) => !v);
+                setMenuOpen(false);
+              }}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-border py-2 text-xs font-extrabold transition hover:border-primary"
+            >
+              <History className="h-3.5 w-3.5" /> History
+            </button>
+            {messages.length > 0 && (
+              <button
+                onClick={() => {
+                  resetChat();
+                  setMenuOpen(false);
+                }}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-border py-2 text-xs font-extrabold transition hover:border-primary"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> New chat
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* min-h-0 is required for a scrollable flex child: without it the panel
           grows to fit its content and pushes the composer off-screen instead
@@ -485,13 +564,16 @@ function Tutor() {
           bordered rather than floated, so nothing hangs off a corner. */}
       <div className="shrink-0 border-t-2 border-border bg-card">
         {messages.length > 0 && !isLoading && (
-          <div className="flex flex-wrap gap-2 px-4 pt-3">
+          // One line that scrolls sideways, rather than a block that wraps to
+          // two rows and eats the conversation. Four chips wrapping cost about
+          // 80px of a phone screen every time an answer finished.
+          <div className="flex gap-2 overflow-x-auto px-3 pt-2.5 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:px-4 sm:pt-3">
             {QUICK_ACTIONS.map((a) => (
               <button
                 key={a.label}
                 onClick={() => quickAction(a.prompt)}
                 disabled={!token}
-                className="flex items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 py-1 text-xs font-bold transition hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 py-1 text-xs font-bold transition hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-50"
               >
                 <a.icon className="h-3 w-3 text-primary" />
                 {a.label}
@@ -500,7 +582,7 @@ function Tutor() {
           </div>
         )}
 
-        <form onSubmit={submit} className="flex gap-2 p-4">
+        <form onSubmit={submit} className="flex gap-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:p-4">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

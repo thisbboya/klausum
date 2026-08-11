@@ -705,20 +705,64 @@ export function MaterialsPage() {
                 onClick={() => setActiveSubject(subjectName)}
                 className="card-chunky card-chunky-hover overflow-hidden bg-card text-left"
               >
+                {/* The cover shows the documents actually in the course. A
+                    coloured band with a generic icon told you nothing you
+                    couldn't read from the title underneath, so every course
+                    looked identical and the previews built for the inner grid
+                    were never reached from here. */}
                 <div
-                  className="flex h-20 items-center justify-center"
+                  className="relative h-28 overflow-hidden p-2.5"
                   style={{ backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)` }}
                 >
-                  <span
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl"
-                    style={{ backgroundColor: `color-mix(in srgb, ${color} 22%, transparent)` }}
-                  >
-                    {course?.icon ? (
-                      <span className="text-2xl leading-none">{course.icon}</span>
-                    ) : (
-                      <FileText className="h-6 w-6" style={{ color }} />
-                    )}
-                  </span>
+                  {items.length === 0 ? (
+                    <div className="flex h-full items-center justify-center">
+                      <span
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                        style={{ backgroundColor: `color-mix(in srgb, ${color} 22%, transparent)` }}
+                      >
+                        {course?.icon ? (
+                          <span className="text-2xl leading-none">{course.icon}</span>
+                        ) : (
+                          <FileText className="h-6 w-6" style={{ color }} />
+                        )}
+                      </span>
+                    </div>
+                  ) : (
+                    // Fanned like papers on a desk: the top three documents,
+                    // each showing its own opening words.
+                    <div className="flex h-full gap-1.5">
+                      {items.slice(0, 3).map((m, i) => {
+                        const snippet = (
+                          (m as any).ai_summary ||
+                          (m as any).adapted_reading ||
+                          (m as any).original_content ||
+                          ""
+                        )
+                          .replace(/[#*`_>]/g, "")
+                          .trim()
+                          .slice(0, 120);
+                        return (
+                          <div
+                            key={m.id}
+                            className="min-w-0 flex-1 overflow-hidden rounded-lg border-2 border-border bg-card p-1.5"
+                            style={{ transform: `rotate(${(i - 1) * 1.2}deg)` }}
+                          >
+                            <div className="truncate text-[9px] font-extrabold leading-tight">
+                              {m.title}
+                            </div>
+                            <p className="mt-0.5 text-[8px] leading-snug text-muted-foreground line-clamp-4">
+                              {snippet || "Processing…"}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {items.length > 3 && (
+                    <span className="absolute bottom-1.5 right-1.5 rounded-full bg-card/90 px-1.5 py-0.5 text-[9px] font-extrabold">
+                      +{items.length - 3} more
+                    </span>
+                  )}
                 </div>
                 <div className="p-4">
                   <div className="flex items-center gap-2">
@@ -735,6 +779,29 @@ export function MaterialsPage() {
                     </span>
                     <span className="text-success">{ready} ready</span>
                   </div>
+                  {/* Course-level progress, averaged over its materials, so the
+                      grid answers "where was I" without opening anything. */}
+                  {items.length > 0 && (() => {
+                    const avg = Math.round(
+                      items.reduce((sum, m) => sum + (signals?.read?.[m.id] ?? 0), 0) / items.length,
+                    );
+                    return (
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+                          <div
+                            className="h-full rounded-full transition-[width] duration-500"
+                            style={{
+                              width: `${Math.min(100, avg)}%`,
+                              background: avg >= 100 ? "var(--success)" : color,
+                            }}
+                          />
+                        </div>
+                        <span className="shrink-0 text-[10px] font-extrabold tabular-nums text-muted-foreground">
+                          {avg}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </button>
             );

@@ -30,11 +30,11 @@ function PublicProfilePage() {
   });
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center"><KlausumLoading /></div>;
+    return <div className="min-h-[100dvh] flex items-center justify-center"><KlausumLoading /></div>;
   }
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-3">
         <p className="text-muted-foreground">No student found at @{clean}</p>
         <Link to="/" className="text-sm text-primary underline">Back home</Link>
       </div>
@@ -44,7 +44,7 @@ function PublicProfilePage() {
   const companion = COMPANIONS.find((c) => c.id === (data.companion_id ?? 1)) ?? COMPANIONS[0];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       <header className="border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">

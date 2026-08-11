@@ -16,6 +16,7 @@ export function MobileNav({
   streak,
   gems,
   hearts,
+  immersive = false,
 }: {
   onSignOut: () => void;
   userLabel: string;
@@ -24,6 +25,11 @@ export function MobileNav({
   streak?: number | null;
   gems?: number | null;
   hearts?: number | null;
+  /** Hide both mobile bars. Set on full-screen workspaces like the tutor,
+      where a chat is the whole point of the screen and app chrome above and
+      below leaves a letterbox in the middle. Those screens carry their own
+      way back. */
+  immersive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -67,6 +73,8 @@ export function MobileNav({
   const tabActive = (to: string) =>
     location.pathname === to || location.pathname.startsWith(to + "/");
 
+  if (immersive) return null;
+
   return (
     <>
       {/* Slim top bar — identity only. Navigation lives in the thumb row. */}
@@ -84,8 +92,12 @@ export function MobileNav({
       {/* Thumb row. Fixed so it survives long pages; safe-area aware so it
           clears the iOS home indicator instead of hiding under it. */}
       <nav
+        // max(), not a bare env(): in an in-app browser and on most Android
+        // builds the inset reports 0, which left the labels sitting flush
+        // against the gesture bar and looking clipped. The floor guarantees
+        // the row is readable on a device that tells us nothing.
         className="md:hidden fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t-2 border-border bg-background
-                   pb-[env(safe-area-inset-bottom,0px)]"
+                   pb-[max(0.375rem,env(safe-area-inset-bottom,0px))]"
         aria-label="Primary"
       >
         {BOTTOM_TAB_LINKS.map(({ to, label, icon: Icon }) => {

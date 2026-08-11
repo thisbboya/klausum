@@ -36,7 +36,7 @@ function CompanionSelect() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
       <header className="px-6 py-4 flex items-center gap-2 text-primary">
         <KlausumLogo size={22} />
       </header>

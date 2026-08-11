@@ -103,7 +103,11 @@ function AuthLayout() {
     // under the composer. Only the message list is allowed to scroll here.
     <div
       className={`flex bg-background text-foreground ${
-        isTutor ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+        // dvh, not vh: on a phone 100vh is measured against the browser with
+        // its toolbars retracted, so a vh-tall page is always taller than what
+        // you can actually see and anything pinned to its bottom sits below
+        // the fold.
+        isTutor ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh]"
       }`}
     >
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r-2 border-border bg-background px-3 py-5">
@@ -159,6 +163,7 @@ function AuthLayout() {
           streak={(profile as any)?.streak_days}
           gems={(profile as any)?.gems}
           hearts={(profile as any)?.hearts}
+          immersive={isTutor}
           onSignOut={async () => {
             await supabase.auth.signOut();
             toast.success("Signed out");
@@ -178,7 +183,10 @@ function AuthLayout() {
                 // top of the composer. min-h-0 is the part that matters —
                 // without it a flex child refuses to shrink and the panel
                 // overflows instead of scrolling inside itself.
-                "flex min-h-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0"
+                // No thumb-row allowance any more: on the tutor the bar is
+                // hidden, so reserving 4.75rem for it was simply a strip of
+                // dead space under the composer on every phone.
+                "flex min-h-0 flex-1 flex-col pb-[env(safe-area-inset-bottom,0px)] md:pb-0"
               : `mx-auto space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0 ${
                   // Wide canvas for the split-pane screens (reader + video/AI
                   // panel); max-w-5xl squeezes those two columns far too narrow.
