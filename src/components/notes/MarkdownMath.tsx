@@ -5,6 +5,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { Diagram } from "@/components/reader/Diagram";
 import { Plot } from "@/components/reader/Plot";
+import { Simulation } from "@/components/reader/Simulation";
 
 /**
  * The one markdown renderer every AI surface should use.
@@ -38,7 +39,13 @@ export function MarkdownMath({
           pre(props: any) {
             const child = Array.isArray(props.children) ? props.children[0] : props.children;
             const lang = /language-(\w+)/.exec(child?.props?.className || "")?.[1];
-            if (lang === "mermaid" || lang === "plot" || lang === "graph") {
+            if (
+              lang === "mermaid" ||
+              lang === "plot" ||
+              lang === "graph" ||
+              lang === "sim" ||
+              lang === "simulation"
+            ) {
               return <>{props.children}</>;
             }
             const { node, ...rest } = props;
@@ -50,6 +57,7 @@ export function MarkdownMath({
             const text = String(children ?? "").replace(/\n$/, "");
             if (lang === "mermaid") return <Diagram code={text} />;
             if (lang === "plot" || lang === "graph") return <Plot code={text} />;
+            if (lang === "sim" || lang === "simulation") return <Simulation code={text} />;
             return (
               <code className={cls} {...rest}>
                 {children}

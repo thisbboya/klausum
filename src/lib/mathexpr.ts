@@ -49,14 +49,21 @@ const CONSTANTS: Record<string, number> = Object.assign(Object.create(null), {
 
 type Token =
   | { k: "num"; v: number }
-  | { k: "var" }
+  | { k: "var"; name: string }
   | { k: "fn"; v: string }
   | { k: "op"; v: string }
   | { k: "("; }
   | { k: ")" };
 
-/** Turn the source into tokens, rejecting anything outside the grammar. */
-function tokenize(src: string): Token[] {
+/**
+ * Turn the source into tokens, rejecting anything outside the grammar.
+ *
+ * `allowed` is the set of variable names this expression may reference. A plot
+ * passes ["x"]; a simulation passes its declared parameters. Anything not in
+ * that set and not a known constant or function is a hard error — which is
+ * what keeps an unknown identifier from ever reaching evaluation.
+ */
+function tokenize(src: string, allowed: ReadonlySet<string>): Token[] {
   const out: Token[] = [];
   let i = 0;
   // Students write "2x" and "3sin(x)"; models write "2*x". We insert the
@@ -85,7 +92,9 @@ function tokenize(src: string): Token[] {
       let j = i;
       while (j < src.length && /[a-zA-Z0-9_]/.test(src[j])) j++;
       const word = src.slice(i, j).toLowerCase();
-      if (word === "x") out.push({ k: "var" });
+      // Declared variables win over constants, so a simulation may legitimately
+      // call a parameter "e" without silently becoming Euler's number.
+      if (allowed.has(word)) out.push({ k: "var", name: word });
       else if (word in CONSTANTS) out.push({ k: "num", v: CONSTANTS[word] });
       else if (word in FUNCTIONS) out.push({ k: "fn", v: word });
       else throw new Error(`Unknown name "${word}"`);
@@ -120,7 +129,7 @@ function tokenize(src: string): Token[] {
 
 type Node =
   | { t: "num"; v: number }
-  | { t: "var" }
+  | { t: "var"; name: string }
   | { t: "fn"; name: string; arg: Node }
   | { t: "bin"; op: string; l: Node; r: Node }
   | { t: "neg"; v: Node };
@@ -190,7 +199,7 @@ function parse(tokens: Token[]): Node {
     const t = eat();
     if (!t) throw new Error("Expression ended early");
     if (t.k === "num") return { t: "num", v: t.v };
-    if (t.k === "var") return { t: "var" };
+    if (t.k === "var") return { t: "var", name: t.name };
     if (t.k === "fn") {
       if (peek()?.k !== "(") throw new Error(`"${t.v}" needs brackets, e.g. ${t.v}(x)`);
       eat();
@@ -211,19 +220,21 @@ function parse(tokens: Token[]): Node {
   return tree;
 }
 
-function evalNode(n: Node, x: number): number {
+type Scope = Record<string, number>;
+
+function evalNode(n: Node, scope: Scope): number {
   switch (n.t) {
     case "num":
       return n.v;
     case "var":
-      return x;
+      return scope[n.name] ?? NaN;
     case "neg":
-      return -evalNode(n.v, x);
+      return -evalNode(n.v, scope);
     case "fn":
-      return FUNCTIONS[n.name](evalNode(n.arg, x));
+      return FUNCTIONS[n.name](evalNode(n.arg, scope));
     case "bin": {
-      const a = evalNode(n.l, x);
-      const b = evalNode(n.r, x);
+      const a = evalNode(n.l, scope);
+      const b = evalNode(n.r, scope);
       switch (n.op) {
         case "+": return a + b;
         case "-": return a - b;
@@ -242,11 +253,27 @@ function evalNode(n: Node, x: number): number {
  * can show the source instead of a broken graph.
  */
 export function compileExpression(src: string): (x: number) => number {
-  const trimmed = src.trim().replace(/^y\s*=\s*/i, "").replace(/^f\s*\(\s*x\s*\)\s*=\s*/i, "");
+  const fn = compileScoped(src, ["x"]);
+  return (x: number) => fn({ x });
+}
+
+/**
+ * The multi-variable form, used by simulations: compile once against a set of
+ * declared names, then evaluate against a scope of live slider values.
+ */
+export function compileScoped(
+  src: string,
+  variables: readonly string[],
+): (scope: Scope) => number {
+  const trimmed = src
+    .trim()
+    .replace(/^y\s*=\s*/i, "")
+    .replace(/^f\s*\(\s*x\s*\)\s*=\s*/i, "");
   if (!trimmed) throw new Error("Empty expression");
   if (trimmed.length > 500) throw new Error("Expression too long");
-  const tree = parse(tokenize(trimmed));
-  return (x: number) => evalNode(tree, x);
+  const allowed = new Set(variables.map((v) => v.toLowerCase()));
+  const tree = parse(tokenize(trimmed, allowed));
+  return (scope: Scope) => evalNode(tree, scope);
 }
 
 /** Human-readable label for the legend, with the y= restored. */
