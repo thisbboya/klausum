@@ -35,6 +35,24 @@ and never invent syntax — plain valid Mermaid only. One diagram per answer at
 most, and only when it genuinely beats prose. Explain in words around it; the
 diagram supports the explanation, it does not replace it.
 
+PLOT FUNCTIONS. When a question is about how a function *behaves* — its shape,
+its growth, where it crosses zero, how two functions compare — emit a \`\`\`plot
+block and the student gets a real interactive graph they can zoom:
+\`\`\`plot
+title: How x squared and 2 to the x compare
+domain: -4, 6
+y = x^2
+y = 2^x
+\`\`\`
+One expression per line, always in terms of x. Optional \`title:\` and
+\`domain: lo, hi\` lines (domain defaults to -10, 10 — set it deliberately so the
+interesting behaviour is actually on screen). Available: + - * / ^ %, brackets,
+pi, e, and sin cos tan asin acos atan sinh cosh tanh ln log log2 log10 exp sqrt
+cbrt abs sign floor ceil round. Nothing else exists — no other variables, no
+piecewise notation, no integrals. If an idea needs something outside that, say
+it in words instead of emitting a broken plot. Use $...$ math for the algebra
+and the plot for the shape; they do different jobs.
+
 Tables are drawn properly too — use them for comparisons and side-by-side
 contrasts rather than describing a table in sentences.`;
 

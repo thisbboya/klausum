@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { Diagram } from "@/components/reader/Diagram";
+import { Plot } from "@/components/reader/Plot";
 
 /**
  * The one markdown renderer every AI surface should use.
@@ -28,11 +29,27 @@ export function MarkdownMath({
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[rehypeKatex]}
         components={{
+          // A fenced block always arrives as <pre><code>. For mermaid and plot
+          // we replace the <code> with a <figure>, which would otherwise end up
+          // nested inside that <pre> — invalid HTML, and it inherits
+          // white-space:pre and the prose code-block background, which visibly
+          // distorts the diagram. So the <pre> is dropped for those languages
+          // and kept for genuine code.
+          pre(props: any) {
+            const child = Array.isArray(props.children) ? props.children[0] : props.children;
+            const lang = /language-(\w+)/.exec(child?.props?.className || "")?.[1];
+            if (lang === "mermaid" || lang === "plot" || lang === "graph") {
+              return <>{props.children}</>;
+            }
+            const { node, ...rest } = props;
+            return <pre {...rest} />;
+          },
           code(props: any) {
             const { className: cls, children, ...rest } = props;
             const lang = /language-(\w+)/.exec(cls || "")?.[1];
             const text = String(children ?? "").replace(/\n$/, "");
             if (lang === "mermaid") return <Diagram code={text} />;
+            if (lang === "plot" || lang === "graph") return <Plot code={text} />;
             return (
               <code className={cls} {...rest}>
                 {children}
