@@ -9,7 +9,8 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { Send, MessagesSquare, Sparkles, Square, RotateCcw, Lightbulb, ListOrdered, HelpCircle, Baby } from "lucide-react";
+import { Send, History, MessagesSquare, Sparkles, Square, RotateCcw, Lightbulb, ListOrdered, HelpCircle, Baby } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { CompanionSVG } from "@/components/companion-svg";
 import { awardXp } from "@/lib/xp";
 import { MarkdownMath } from "@/components/notes/MarkdownMath";
@@ -161,6 +162,23 @@ function Tutor() {
   // never wired up.
   const sessionIdRef = useRef<string | null>(null);
   const restoredRef = useRef(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Past conversations. Refetched whenever the drawer opens, so a chat you
+  // just finished is in the list the first time you look for it.
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["tutor-sessions", user?.id, historyOpen],
+    enabled: !!user && historyOpen,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tutor_sessions")
+        .select("id, title, message_count, updated_at")
+        .eq("user_id", user!.id)
+        .order("updated_at", { ascending: false })
+        .limit(40);
+      return data ?? [];
+    },
+  });
 
   useEffect(() => {
     if (!user || restoredRef.current) return;
@@ -242,6 +260,22 @@ function Tutor() {
     send(prompt);
   }
 
+  /** Bring a past conversation back into the panel. */
+  async function openSession(id: string) {
+    if (isLoading) stop();
+    const { data } = await supabase
+      .from("tutor_sessions")
+      .select("id, messages, mode")
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) return;
+    const saved = (data as any).messages;
+    sessionIdRef.current = (data as any).id;
+    if ((data as any).mode) setMode((data as any).mode);
+    setMessages(Array.isArray(saved) ? (saved as any) : []);
+    setHistoryOpen(false);
+  }
+
   function resetChat() {
     if (isLoading) stop();
     setMessages([]);
@@ -281,13 +315,24 @@ function Tutor() {
             ))}
           </select>
           <ModePill mode={mode} setMode={setMode} />
+          <button
+            onClick={() => setHistoryOpen((v) => !v)}
+            title="Past conversations"
+            className={`flex items-center gap-1 rounded-xl border-2 px-2.5 py-1.5 font-extrabold transition ${
+              historyOpen
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border hover:border-primary hover:bg-primary/10 hover:text-primary"
+            }`}
+          >
+            <History className="h-3 w-3" /> History
+          </button>
           {messages.length > 0 && (
             <button
               onClick={resetChat}
-              title="Reset chat"
+              title="Start a new chat — this one stays in History"
               className="flex items-center gap-1 rounded-xl border-2 border-border px-2.5 py-1.5 font-extrabold transition hover:border-primary hover:bg-primary/10 hover:text-primary"
             >
-              <RotateCcw className="h-3 w-3" /> Reset
+              <RotateCcw className="h-3 w-3" /> New
             </button>
           )}
         </div>
@@ -296,6 +341,50 @@ function Tutor() {
       {/* min-h-0 is required for a scrollable flex child: without it the panel
           grows to fit its content and pushes the composer off-screen instead
           of scrolling. */}
+      {/* Every conversation was already being saved; there was simply no way
+          back to one. The list is a strip under the toolbar rather than a
+          modal, so picking up an old thread doesn't feel like leaving the
+          page you're on. */}
+      {historyOpen && (
+        <div className="max-h-56 shrink-0 overflow-y-auto border-b-2 border-border bg-card px-4 py-3">
+          <div className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">
+            Past conversations
+          </div>
+          {sessions.length === 0 ? (
+            <p className="text-xs font-bold text-muted-foreground">
+              Nothing saved yet — your chats appear here once you've asked something.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {sessions.map((s: any) => (
+                <li key={s.id}>
+                  <button
+                    onClick={() => openSession(s.id)}
+                    className={`flex w-full items-center gap-2 rounded-xl border-2 px-3 py-2 text-left transition hover:border-primary hover:bg-primary/5 ${
+                      s.id === sessionIdRef.current ? "border-primary bg-primary/10" : "border-border"
+                    }`}
+                  >
+                    <MessagesSquare className="h-3.5 w-3.5 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1 truncate text-xs font-extrabold">
+                      {s.title || "Tutor session"}
+                    </span>
+                    <span className="shrink-0 text-[10px] font-bold text-muted-foreground">
+                      {s.message_count ?? 0} msg
+                      {s.updated_at
+                        ? ` · ${new Date(s.updated_at).toLocaleDateString(undefined, {
+                            day: "numeric",
+                            month: "short",
+                          })}`
+                        : ""}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-2/40 p-4">
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground py-12">

@@ -254,7 +254,11 @@ export function Simulation({ code }: { code: string }) {
               onChange={(e) =>
                 setValues((v) => ({ ...v, [p.name]: Number(e.target.value) }))
               }
-              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-2 accent-primary"
+              // accent-primary alone leaves the track to the browser, which is
+              // why one slider could come out with a white bar in dark mode
+              // while its neighbours looked right. The track is drawn here so
+              // every slider matches regardless of engine.
+              className="klausum-range h-2 w-full cursor-pointer appearance-none rounded-full accent-primary"
             />
           </label>
         ))}

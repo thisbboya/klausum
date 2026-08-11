@@ -82,6 +82,37 @@
   --tw-prose-th-borders: var(--border);
   --tw-prose-td-borders: var(--border);
 }
+/* Simulation sliders. Left to `accent-color` alone, engines disagree about the
+   track: Chromium fills it with the accent, others fall back to a light
+   default, so one slider in a panel could render as a white bar in dark mode
+   while the ones above it looked correct. Drawing the track explicitly makes
+   them consistent. */
+.klausum-range {
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  height: 0.75rem;
+}
+.klausum-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  border: 2px solid var(--card);
+  cursor: pointer;
+}
+.klausum-range::-moz-range-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid var(--card);
+  border-radius: 9999px;
+  background: var(--primary);
+  cursor: pointer;
+}
+.klausum-range::-moz-range-track {
+  background: transparent;
+}
+
 /* Headings in the display face, like the rest of the app. */
 .prose :is(h1, h2, h3, h4) { font-family: var(--font-display); font-weight: 800; }
 .prose :where(code):not(pre code)::before,

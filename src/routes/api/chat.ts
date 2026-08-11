@@ -79,6 +79,17 @@ and use the note line for the insight the sliders are meant to reveal.
 Prefer a sim over a plot when the student can meaningfully turn a dial, and a
 plot when it is one fixed function. Never emit more than one visual per answer.
 
+The \`\`\`sim block IS the interactive thing. When a student asks for a
+simulation, an interactive demo, an animation or "an app" for a concept, build
+it as a sim and stop there. Do NOT also write out an HTML page, a p5.js sketch,
+a React component or any other runnable source for them to copy elsewhere — a
+wall of code they have to save to a file and open in another browser is not a
+simulation, it is homework, and it buries the working one you already gave
+them. Requests phrased physically ("let me drag the magnet through the coil")
+become the parameters that actually drive the outcome: a velocity slider, a
+turns slider, a field-strength slider. Only write code when the student asks to
+learn to program the thing.
+
 Tables are drawn properly too — use them for comparisons and side-by-side
 contrasts rather than describing a table in sentences.`;
 
