@@ -15,13 +15,13 @@
 //   ```
 //
 // Expressions are parsed by our own evaluator, never eval() — see mathexpr.ts.
-import { Suspense, lazy, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, Minus, Plus, RotateCcw } from "lucide-react";
 import { compileExpression, prettyExpression } from "@/lib/mathexpr";
-
 // Recharts is heavy and most answers have no graph in them, so it only loads
-// when a plot is actually on screen — the same rule Diagram.tsx follows.
-const PlotCanvas = lazy(() => import("./PlotCanvas"));
+// when a plot is actually on screen — the same rule Diagram.tsx follows. It is
+// loaded without React.lazy so a stale chunk cannot take the page down with it.
+import { usePlotCanvas } from "./use-plot-canvas";
 
 const SERIES_COLORS = [
   "var(--primary)",
@@ -82,6 +82,7 @@ function parseSpec(code: string): PlotSpec {
 
 export function Plot({ code }: { code: string }) {
   const [zoom, setZoom] = useState(1);
+  const PlotCanvas = usePlotCanvas();
 
   const parsed = useMemo(() => {
     try {
@@ -181,11 +182,11 @@ export function Plot({ code }: { code: string }) {
           </button>
         </div>
       </div>
-      <Suspense
-        fallback={<div className="h-56 animate-pulse bg-surface-2" />}
-      >
+      {PlotCanvas ? (
         <PlotCanvas data={data} series={series} />
-      </Suspense>
+      ) : (
+        <div className="h-56 animate-pulse bg-surface-2" />
+      )}
     </figure>
   );
 }

@@ -21,11 +21,11 @@
 //   ```
 //
 // Every expression goes through the same parser as plots: no eval, ever.
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { compileScoped } from "@/lib/mathexpr";
 
-const PlotCanvas = lazy(() => import("./PlotCanvas"));
+import { usePlotCanvas } from "./use-plot-canvas";
 
 type Param = {
   name: string;
@@ -147,21 +147,11 @@ export function Simulation({ code }: { code: string }) {
     }
   }, [code]);
 
-  // The chart chunk is loaded eagerly on mount rather than being left to
-  // Suspense alone. Without this the resolved lazy component had nothing to
-  // re-render it, so the chart sat as a skeleton until the student happened to
-  // move a slider — which is exactly when they are no longer looking at it.
-  const [chartReady, setChartReady] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    void import("./PlotCanvas").then(
-      () => alive && setChartReady(true),
-      () => {},
-    );
-    return () => {
-      alive = false;
-    };
-  }, []);
+  // Loaded by hand rather than via Suspense: it re-renders when the chunk
+  // arrives (otherwise the chart sat as a skeleton until the student moved a
+  // slider) and it degrades to no chart if the chunk is missing, instead of
+  // throwing and taking the whole page down with it.
+  const PlotCanvas = usePlotCanvas();
 
   const [values, setValues] = useState<Record<string, number>>(() =>
     parsed.spec
@@ -270,17 +260,15 @@ export function Simulation({ code }: { code: string }) {
         ))}
       </div>
 
-      {spec.chart && chartData.length > 0 && chartReady && (
+      {spec.chart && chartData.length > 0 && PlotCanvas && (
         <div className="border-t-2 border-border">
           <div className="px-3 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">
             {titleCase(spec.chart.of)} against {titleCase(spec.chart.vs)}
           </div>
-          <Suspense fallback={<div className="h-56 animate-pulse bg-surface-2" />}>
-            <PlotCanvas
-              data={chartData}
-              series={[{ label: titleCase(spec.chart.of), color: "var(--primary)" }]}
-            />
-          </Suspense>
+          <PlotCanvas
+            data={chartData}
+            series={[{ label: titleCase(spec.chart.of), color: "var(--primary)" }]}
+          />
         </div>
       )}
 
