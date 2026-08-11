@@ -80,12 +80,16 @@ export function PDFViewer({
   const pageTextCache = useRef<Record<number, string>>({});
 
   // ── Reflow ("Text") mode ──────────────────────────────────────────────────
-  // Defaults on where the canvas view is genuinely unusable: a fixed A4 page
-  // scaled to a 375px screen. Desktop keeps the real page, because there the
-  // page IS readable and layout fidelity is worth more.
-  const [viewMode, setViewMode] = useState<"page" | "text">(() =>
-    typeof window !== "undefined" && window.innerWidth < 640 ? "text" : "page",
-  );
+  // The real rendered page is the default on every screen size, phones
+  // included. This used to flip to reflowed text below 640px on the theory
+  // that an A4 page at 375px is unreadable — but that theory traded away the
+  // thing people opened the document for. A student checking a past paper
+  // needs the diagram, the table and the marking scheme laid out as printed;
+  // stripped text is a different document that happens to share the words.
+  // Every real phone PDF reader shows the page and lets you pinch, which this
+  // viewer already supports, so it does the same. Text mode is still one tap
+  // away in the toggle for anyone who prefers it or is reading a scan.
+  const [viewMode, setViewMode] = useState<"page" | "text">("page");
   const [blocks, setBlocks] = useState<ReflowBlock[] | null>(null);
   const [reflowing, setReflowing] = useState(false);
 
