@@ -284,7 +284,27 @@ export const processMaterial = createServerFn({ method: "POST" })
       `Keys required: extracted_text, summary, key_concepts, concept_graph, ${styleKeys.join(", ")}, cornell, flashcards, formulas, bloom_questions, word_count, estimated_read_minutes. ` +
       `Each key_concept MUST have a SPECIFIC, distinct definition drawn from the material — never reuse the summary text. ` +
       `Each bloom_questions[Lx] item MUST be specific to the material — never write generic placeholders like "What should you understand about ${data.title}?". ` +
-      `Create 8-15 key concepts, 6-15 useful flashcards, Cornell notes, and Bloom questions for L1-L6.\n\n--- MATERIAL ---\n${sourceText}`;
+      `Create 8-15 key concepts, 6-15 useful flashcards, Cornell notes, and Bloom questions for L1-L6.\n\n` +
+      // The reader has rendered these markers for a long time; nothing ever
+      // told the generator they existed, so every adaptation came back as
+      // undifferentiated prose and the diagram feature had nothing to draw.
+      `INLINE MARKERS — the reader renders these specially, so use them inside the ` +
+      `${styleKeys.join(", ")} adaptation text:\n` +
+      `[DIAGRAM: what the picture should show] — renders as a real drawn diagram. ` +
+      `Use it wherever the shape of an idea carries meaning a paragraph would flatten: ` +
+      `a process with ordered steps, how parts of a system connect, a cycle, a hierarchy, ` +
+      `a comparison. Describe the CONTENT of the picture in one specific sentence ` +
+      `("how current induces a magnetic field around a conductor"), never a vague label ` +
+      `("a diagram of the topic"). Put 2-4 of these in a visual adaptation and at least ` +
+      `one in any other adaptation of material that has structure.\n` +
+      `[KEY TERM: term — its definition]\n` +
+      `[FORMULA: LaTeX source] — rendered as display maths.\n` +
+      `[REAL WORLD: a concrete everyday instance]\n` +
+      `[TRY THIS: a small active task]\n` +
+      `[WRITE THIS DOWN: the one line worth copying]\n` +
+      `[SAY THIS ALOUD: a sentence to speak], [VERBAL SUMMARY: ...] — for auditory adaptations.\n` +
+      `Markers go on their own line, and the text still has to read as continuous prose ` +
+      `without them.\n\n--- MATERIAL ---\n${sourceText}`;
 
     let raw: any = {};
     try {

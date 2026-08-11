@@ -16,6 +16,7 @@ import { FocusTimer } from "@/components/focus-timer";
 import { PDFViewer } from "@/components/reader/PDFViewer";
 import { PdfTextIndexer } from "@/components/reader/PdfTextIndexer";
 import { MaterialAIChat } from "@/components/reader/MaterialAIChat";
+import { AutoDiagram } from "@/components/reader/AutoDiagram";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { summarizeMaterial, appendMaterialNote, regenerateKeyConcepts, regenerateBloomQuestions, regenerateFormulas, extractMaterialText } from "@/lib/materials.functions";
 import { getAccessToken } from "@/lib/auth-helper";
@@ -263,7 +264,7 @@ function MaterialDetail() {
           {tab === "summary" && <SummaryTab material={material} />}
           {tab === "original" && <OriginalTab material={material} />}
           {(tab === "visual" || tab === "auditory" || tab === "reading" || tab === "kinesthetic") && (
-            <AdaptationTab text={(material as any)[`adapted_${tab}`] ?? ""} />
+            <AdaptationTab text={(material as any)[`adapted_${tab}`] ?? ""} topic={material.title} />
           )}
           {tab === "cornell" && <CornellTab material={material} />}
           {tab === "graph" && <ConceptGraphTab graph={material.concept_graph as any[]} concepts={material.key_concepts as any[]} />}
@@ -407,7 +408,9 @@ function preprocessCallouts(text: string): string {
   if (!text) return "";
   return text
     .replace(/\[KEY TERM:\s*([^\]]+)\]/g, '\n\n> 🔑 **Key term:** $1\n\n')
-    .replace(/\[DIAGRAM:\s*([^\]]+)\]/g, '\n\n> 📊 **Diagram:** $1\n\n')
+    // [DIAGRAM: ...] is deliberately NOT handled here — it is split out and
+    // drawn for real by CalloutMarkdown below. Turning it into a line of text
+    // was the whole bug: a promise of a picture that never arrived.
     .replace(/\[SAY THIS ALOUD:\s*([^\]]+)\]/g, '\n\n> 🎧 **Say aloud:** $1\n\n')
     .replace(/\[VERBAL SUMMARY:\s*([^\]]+)\]/g, '\n\n> 🗣️ **Verbal summary:** $1\n\n')
     .replace(/\[TRY THIS:\s*([^\]]+)\]/g, '\n\n> **Try this:** $1\n\n')
@@ -416,14 +419,61 @@ function preprocessCallouts(text: string): string {
     .replace(/\[FORMULA:\s*([^\]]+)\]/g, '\n\n$$$1$$\n\n');
 }
 
-function CalloutMarkdown({ text }: { text: string }) {
-  const processed = useMemo(() => preprocessCallouts(text), [text]);
+const PROSE =
+  "prose dark:prose-invert prose-sm md:prose-base max-w-none prose-blockquote:border-l-primary prose-blockquote:bg-card prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-md prose-blockquote:not-italic";
+
+function CalloutMarkdown({ text, topic }: { text: string; topic?: string }) {
+  // The reading is cut at each [DIAGRAM: ...] marker so a real diagram can be
+  // rendered in place, between the paragraphs that talk about it. Markdown
+  // can't host a React component mid-string, so the string has to be split.
+  const segments = useMemo(() => {
+    if (!text) return [];
+    const out: ({ kind: "md"; body: string } | { kind: "diagram"; body: string })[] = [];
+    const re = /\[DIAGRAM:\s*([^\]]+)\]/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push({ kind: "md", body: text.slice(last, m.index) });
+      out.push({ kind: "diagram", body: m[1].trim() });
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push({ kind: "md", body: text.slice(last) });
+    return out;
+  }, [text]);
+
   if (!text) return <p className="text-muted-foreground text-sm">No adaptation available.</p>;
+
   return (
-    <article className="prose dark:prose-invert prose-sm md:prose-base max-w-none prose-blockquote:border-l-primary prose-blockquote:bg-card prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-md prose-blockquote:not-italic">
-      <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
-        {processed}
-      </ReactMarkdown>
+    <article className={PROSE}>
+      {segments.map((seg, i) =>
+        seg.kind === "diagram" ? (
+          <AutoDiagram
+            key={`d${i}`}
+            description={seg.body}
+            // The paragraphs immediately before it, so the drawing matches the
+            // lesson rather than the model's general idea of the topic.
+            context={(segments[i - 1]?.kind === "md" ? segments[i - 1].body : "").slice(-1200)}
+          />
+        ) : (
+          <ReactMarkdown
+            key={`m${i}`}
+            remarkPlugins={[remarkMath, remarkGfm]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {preprocessCallouts(seg.body)}
+          </ReactMarkdown>
+        ),
+      )}
+      {/* Readings adapted before the generator knew about [DIAGRAM: ...] have
+          no markers at all, and re-processing every old upload to add them
+          would be an expensive way to fix a missing button. This offers the
+          picture anyway. */}
+      {topic && !segments.some((s) => s.kind === "diagram") && (
+        <AutoDiagram
+          description={`the main idea of ${topic} and how its parts relate`}
+          context={text.slice(0, 1200)}
+        />
+      )}
     </article>
   );
 }
@@ -643,7 +693,7 @@ function BloomTab({ material }: { material: any }) {
   );
 }
 
-function AdaptationTab({ text }: { text: string }) {
+function AdaptationTab({ text, topic }: { text: string; topic?: string }) {
   const [speaking, setSpeaking] = useState(false);
   useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch {} }, []);
   function toggleSpeak() {
@@ -678,7 +728,7 @@ function AdaptationTab({ text }: { text: string }) {
           {speaking ? <><Pause className="h-3.5 w-3.5" /> Stop reading</> : <><Volume2 className="h-3.5 w-3.5" /> Read aloud</>}
         </button>
       </div>
-      <CalloutMarkdown text={text} />
+      <CalloutMarkdown text={text} topic={topic} />
     </div>
   );
 }
