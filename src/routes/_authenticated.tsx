@@ -148,7 +148,13 @@ function AuthLayout() {
           className={`mx-auto space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:pb-0 ${
             // Wide canvas for the split-pane screens (reader + video/AI panel);
             // max-w-5xl squeezes those two columns far too narrow.
-            /^\/materials\/[^/]+$/.test(location.pathname) || location.pathname === "/videos"
+            // The tutor is a full-height workspace, not an article: at max-w-5xl
+            // it sat in a column with a third of a wide screen empty on either
+            // side, and diagrams and plots had nowhere to breathe. It also wants
+            // tighter vertical padding so the composer isn't pushed off-screen.
+            /^\/materials\/[^/]+$/.test(location.pathname) ||
+            location.pathname === "/videos" ||
+            location.pathname === "/tutor"
               ? "max-w-[1500px] py-4 md:px-5 md:py-5" // CourieX-wide reading canvas
               : "max-w-5xl py-6 md:px-8 md:py-10"
           }`}

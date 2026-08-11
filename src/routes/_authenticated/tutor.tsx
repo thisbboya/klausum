@@ -25,6 +25,7 @@ function firstUserLine(messages: any[]): string {
   return text.slice(0, 80);
 }
 import { toast } from "@/lib/notify";
+import { reportError } from "@/lib/report-error";
 
 export const Route = createFileRoute("/_authenticated/tutor")({
   component: Tutor,
@@ -69,6 +70,10 @@ function Tutor() {
   const [materials, setMaterials] = useState<{ id: string; title: string; ai_summary: string | null; adapted_reading: string | null }[]>([]);
   const [loadingIdx, setLoadingIdx] = useState(0);
   const [msgsThisMonth, setMsgsThisMonth] = useState<number>(0);
+  // The question whose answer failed, kept so the student can retry it without
+  // retyping — a failed request should never cost them their question.
+  const [failed, setFailed] = useState<string | null>(null);
+  const lastSentRef = useRef<string>("");
 
   useEffect(() => {
     getAccessToken().then(setToken).catch(() => {});
@@ -111,7 +116,16 @@ function Tutor() {
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport,
-    onError: (e) => console.error(e),
+    // This used to be console.error only. When the request failed — a rate
+    // limit, a 500, a dropped connection — the answer simply never appeared,
+    // with nothing shown to the student and nothing recorded for admins. That
+    // is the whole of "the AI sometimes doesn't respond": it failed silently
+    // every time. Now the real error goes to the admin log and the student
+    // gets plain language plus a way to try again.
+    onError: (e) => {
+      setFailed(lastSentRef.current || null);
+      toast.error(reportError("tutor", e));
+    },
     onFinish: () => {
       if (!user) return;
       supabase.rpc("increment_ai_messages", { p_user_id: user.id }).then(() => refreshUsage());
@@ -201,16 +215,31 @@ function Tutor() {
     return () => clearInterval(id);
   }, [isLoading]);
 
+  // One send path for the composer, the quick actions and retry, so none of
+  // them can drift back into failing quietly.
+  function send(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
+    if (!token) {
+      // Previously this returned silently, so pressing send before the access
+      // token had loaded looked exactly like the tutor ignoring you.
+      toast.error("Still signing you in — try again in a second.");
+      return;
+    }
+    setFailed(null);
+    lastSentRef.current = trimmed;
+    sendMessage({ text: trimmed });
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim() || !token) return;
-    sendMessage({ text: input.trim() });
+    if (!input.trim()) return;
+    send(input);
     setInput("");
   }
 
   function quickAction(prompt: string) {
-    if (!token || isLoading) return;
-    sendMessage({ text: prompt });
+    send(prompt);
   }
 
   function resetChat() {
@@ -307,11 +336,15 @@ function Tutor() {
               <div
                 className={
                   m.role === "user"
-                    ? "max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm text-primary-foreground"
+                    ? "max-w-[85%] sm:max-w-[36rem] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm text-primary-foreground"
                     : // The tutor gets its own colour identity — a grape-tinted
                       // surface with a left rule — so a glance tells you who is
                       // talking without reading a word.
-                      "max-w-[85%] rounded-2xl rounded-bl-md border-2 border-grape/25 border-l-4 border-l-grape bg-grape/[0.06] px-4 py-3 text-sm"
+                      // The panel is now full-width, but a 1500px line of prose
+                      // is unreadable — so the bubble grows to a comfortable
+                      // measure and stops, while diagrams and plots inside it
+                      // get the extra room they actually benefit from.
+                      "w-full max-w-[85%] sm:max-w-[58rem] rounded-2xl rounded-bl-md border-2 border-grape/25 border-l-4 border-l-grape bg-grape/[0.06] px-4 py-3 text-sm"
                 }
               >
                 {m.role === "user" ? (
@@ -335,6 +368,22 @@ function Tutor() {
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse [animation-delay:240ms]" />
             </div>
             {LOADING_MESSAGES[loadingIdx]}
+          </div>
+        )}
+        {failed && !isLoading && (
+          // A toast disappears; a failed question should stay on screen with a
+          // way to recover it, because the student's own words are in it.
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-border bg-surface-2 px-3 py-2 text-xs">
+            <span className="font-bold text-muted-foreground">
+              That answer didn't come through.
+            </span>
+            <button
+              type="button"
+              onClick={() => send(failed)}
+              className="flex items-center gap-1 rounded-lg border-2 border-primary px-2 py-1 font-extrabold text-primary transition hover:bg-primary/10"
+            >
+              <RotateCcw className="h-3 w-3" /> Try again
+            </button>
           </div>
         )}
       </div>
