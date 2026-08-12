@@ -17,10 +17,14 @@ import { ChallengePanel } from "@/components/sim/ChallengePanel";
 import { PhetEmbed } from "@/components/sim/PhetEmbed";
 import { phetBySubject, type PhetSim } from "@/lib/sim/phet";
 import { QUESTS, questState } from "@/lib/sim/quests";
+import { CHALLENGES } from "@/lib/sim/challenges";
 import { QuestTrack } from "@/components/sim/QuestTrack";
 import { useCollection } from "@/components/collection";
 
 export const Route = createFileRoute("/_authenticated/lab")({ component: Lab });
+
+/** Every mission across every simulation — the denominator for the header. */
+const CHALLENGE_TOTAL = CHALLENGES.length;
 
 function Lab() {
   const { user } = useAuth();
@@ -33,6 +37,7 @@ function Lab() {
   // throttles them precisely so this doesn't thrash.
   const [readouts, setReadouts] = useState<Record<string, number>>({});
   const [phetSubject, setPhetSubject] = useState<PhetSim["subject"]>("physics");
+  const [view, setView] = useState<"quests" | "bench" | "explore">("quests");
 
   const { data: progress = [] } = useQuery({
     queryKey: ["sim-progress", user?.id],
@@ -61,24 +66,52 @@ function Lab() {
     return B.doneCount - A.doneCount;
   });
 
+  const doneTotal = CHALLENGE_TOTAL === 0 ? 0 : Math.round((doneIds.size / CHALLENGE_TOTAL) * 100);
+
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="flex items-center gap-2 font-display text-3xl font-extrabold">
-          <FlaskConical className="h-7 w-7 text-primary" /> Lab
-        </h1>
-        <p className="text-sm font-semibold text-muted-foreground">
-          Experiments you can actually run. Drag things, break things, see what happens.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 font-display text-3xl font-extrabold">
+            <FlaskConical className="h-7 w-7 text-primary" /> Lab
+          </h1>
+          <p className="text-sm font-semibold text-muted-foreground">
+            Experiments you can actually run. Drag things, break things, see what happens.
+          </p>
+        </div>
+        <span className="rounded-xl border-2 border-border bg-card px-3 py-1.5 text-xs font-extrabold tabular-nums">
+          {doneIds.size}/{CHALLENGE_TOTAL} missions · {doneTotal}%
+        </span>
       </header>
 
-      {/* Journeys, before the equipment. A rack of instruments is a menu;
-          "you are two steps from being an Induction Engineer" is a reason to
-          start one of them. */}
-      <section>
-        <h2 className="mb-3 font-display text-xl font-extrabold">Quests</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {questOrder.map((q) => (
+      {/* Three views instead of one column. The page used to stack five quest
+          cards, a simulation, its missions and eighteen PhET tiles into a
+          single scroll, so finding the thing you came for meant reading past
+          everything you didn't. */}
+      <div className="flex gap-1 rounded-2xl border-2 border-border bg-surface-2 p-1">
+        {(
+          [
+            ["quests", "Quests"],
+            ["bench", "Bench"],
+            ["explore", "Explore"],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setView(k)}
+            className={`flex-1 rounded-xl px-3 py-2 text-xs font-extrabold uppercase tracking-wide transition ${
+              view === k ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "quests" && (
+        <section>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {questOrder.map((q) => (
             <QuestTrack
               key={q.id}
               quest={q}
@@ -86,10 +119,11 @@ function Lab() {
               ownedCrests={ownedCrests}
               activeChallengeId={null}
               onSelectStep={(simId) => {
+                // Picking a step takes you straight to the bench with that
+                // simulation loaded, which is the whole reason to tap it.
                 setActiveId(simId);
                 setReadouts({});
-                // Jump to the bench so the chosen step is actually in view.
-                document.getElementById("lab-bench")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                setView("bench");
               }}
               onAwarded={() => {
                 qc.invalidateQueries({ queryKey: ["collectibles"] });
@@ -97,10 +131,13 @@ function Lab() {
               }}
             />
           ))}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
-      <div id="lab-bench" className="flex flex-wrap gap-2 scroll-mt-4">
+      {view === "bench" && (
+        <>
+      <div className="flex flex-wrap gap-2">
         {SIMULATIONS.map((s) => {
           const total = challengesFor(s.id).length;
           const done = challengesFor(s.id).filter((c) => doneIds.has(c.id)).length;
@@ -159,18 +196,18 @@ function Lab() {
           </aside>
         </div>
       )}
+        </>
+      )}
 
       {/* Breadth, clearly separated from the scored tier. These cannot report
           their state to us, so they cannot be missions — and saying so here is
           better than letting someone wonder why an hour of PhET earned them
           nothing. */}
-      <section className="space-y-3 border-t-2 border-border pt-5">
-        <div>
-          <h2 className="font-display text-xl font-extrabold">Explore further</h2>
-          <p className="text-sm font-semibold text-muted-foreground">
-            Simulations from PhET. Nothing to score here — just things worth playing with.
-          </p>
-        </div>
+      {view === "explore" && (
+      <section className="space-y-3">
+        <p className="text-sm font-semibold text-muted-foreground">
+          Simulations from PhET. Nothing to score here — just things worth playing with.
+        </p>
 
         <div className="flex flex-wrap gap-2">
           {(["physics", "chemistry", "biology", "maths"] as const).map((s) => (
@@ -194,6 +231,7 @@ function Lab() {
           ))}
         </div>
       </section>
+      )}
     </div>
   );
 }

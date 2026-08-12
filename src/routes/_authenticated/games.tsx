@@ -24,6 +24,26 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/**
+ * Save a run and shout about it only if it beat the previous best.
+ *
+ * The server decides whether it was a record, because the client's idea of the
+ * old best is whatever it cached when the page loaded — which is stale the
+ * moment you play twice.
+ */
+async function recordScore(game: string, score: number) {
+  try {
+    const { data } = await supabase.rpc("record_game_score", { _game: game, _score: score });
+    const r = data as any;
+    if (r?.best && r.previous > 0) {
+      Sounds.streak();
+      toast.success(`New personal best — ${score}, beating ${r.previous}`);
+    }
+  } catch {
+    /* a lost score must never interrupt the game that earned it */
+  }
+}
+
 /** Pull usable concept/definition pairs out of a material's stored key_concepts. */
 function toConcepts(raw: unknown): Concept[] {
   if (!Array.isArray(raw)) return [];
@@ -53,6 +73,19 @@ function GamesPage() {
       return (data ?? []).filter((m) => toConcepts(m.key_concepts).length >= 4);
     },
   });
+
+  const { data: scores = [] } = useQuery({
+    queryKey: ["game-scores", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("game_scores")
+        .select("game, best_score, plays")
+        .eq("user_id", user!.id);
+      return data ?? [];
+    },
+  });
+  const scoreFor = (g: string) => scores.find((s: any) => s.game === g);
 
   const selected = materials.find((m) => m.id === materialId);
   const concepts = useMemo(() => toConcepts(selected?.key_concepts), [selected]);
@@ -154,6 +187,8 @@ function GamesPage() {
                 title="Matching"
                 blurb="Pair every term with its definition against the clock."
                 onClick={() => start("match")}
+                best={scoreFor("matching")?.best_score}
+                plays={scoreFor("matching")?.plays}
               />
               <GameCard
                 icon={Lightbulb}
@@ -161,6 +196,8 @@ function GamesPage() {
                 title="Guess the Term"
                 blurb="Read the definition, name the concept it describes."
                 onClick={() => start("guess")}
+                best={scoreFor("guess")?.best_score}
+                plays={scoreFor("guess")?.plays}
               />
             </div>
           </section>
@@ -171,16 +208,36 @@ function GamesPage() {
 }
 
 function GameCard({
-  icon: Icon, tint, title, blurb, onClick,
-}: { icon: any; tint: string; title: string; blurb: string; onClick: () => void }) {
+  icon: Icon, tint, title, blurb, onClick, best, plays,
+}: {
+  icon: any; tint: string; title: string; blurb: string; onClick: () => void;
+  best?: number; plays?: number;
+}) {
   return (
     <button onClick={onClick} className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4 text-left">
       <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tint}`}>
         <Icon className="h-6 w-6" />
       </span>
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block font-display text-base font-extrabold">{title}</span>
         <span className="text-xs font-semibold text-muted-foreground">{blurb}</span>
+        {/* A game with no record of your best run has nothing to beat, which
+            is most of why this section read as two buttons rather than as
+            somewhere worth coming back to. */}
+        <span className="mt-1.5 flex items-center gap-2 text-[11px] font-extrabold">
+          {best ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-primary">
+              <Trophy className="h-3 w-3" /> Best {best}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">No score yet — set one</span>
+          )}
+          {!!plays && (
+            <span className="text-muted-foreground">
+              {plays} play{plays === 1 ? "" : "s"}
+            </span>
+          )}
+        </span>
       </span>
     </button>
   );
@@ -257,6 +314,9 @@ function MatchGame({ concepts, title, userId }: { concepts: Concept[]; title: st
     Sounds.xpEarn();
     confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
     void awardXp({ userId, amount: xp, action: "game_matching", description: `Matching · ${title}` });
+    // The score is what makes a rerun mean anything - beating your own number
+    // is the only competition available in a single-player game.
+    void recordScore("matching", xp);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
@@ -388,6 +448,7 @@ function GuessGame({ concepts, title, userId }: { concepts: Concept[]; title: st
     Sounds.xpEarn();
     if (score === questions.length) confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
     void awardXp({ userId, amount: Math.max(5, xp), action: "game_guess", description: `Guess the Term · ${title}` });
+    void recordScore("guess", Math.max(5, xp));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 

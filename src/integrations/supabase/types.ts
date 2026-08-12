@@ -753,6 +753,30 @@ export type Database = {
         }
         Relationships: []
       }
+      game_scores: {
+        Row: {
+          best_score: number
+          game: string
+          plays: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_score?: number
+          game: string
+          plays?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_score?: number
+          game?: string
+          plays?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       knowledge_gaps: {
         Row: {
           bloom_level: number | null
@@ -2552,6 +2576,10 @@ export type Database = {
       }
       purchase_crest: { Args: { _crest: string }; Returns: Json }
       purchase_shop_item: { Args: { _item: string }; Returns: Json }
+      record_game_score: {
+        Args: { _game: string; _score: number }
+        Returns: Json
+      }
       send_treasure: { Args: { _to: string }; Returns: Json }
       submit_duel_score: {
         Args: { p_challenge_id: string; p_score: number; p_total: number }

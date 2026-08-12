@@ -12,6 +12,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { reportError } from "@/lib/report-error";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/lib/notify";
 
 // Types
@@ -1107,6 +1108,64 @@ function parseYoutubeId(input: string): string | null {
   return null;
 }
 
+/**
+ * Search suggestions built from the student's own uploads.
+ *
+ * Key concepts first, because "Torque-slip characteristics" is a far better
+ * video search than "Electrical Engineering" — the subject is only a fallback
+ * for a library that has been uploaded but not yet read.
+ */
+function TopicsFromLibrary({ onSearch }: { onSearch: (topic: string) => void }) {
+  const { user } = useAuth();
+  const { data: topics = [] } = useQuery({
+    queryKey: ["video-topics", user?.id],
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("study_materials")
+        .select("subject, key_concepts")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(12);
+      const out: string[] = [];
+      for (const m of data ?? []) {
+        const kc = (m as any).key_concepts;
+        if (Array.isArray(kc)) {
+          for (const c of kc.slice(0, 3)) {
+            const name = String(c?.concept ?? c?.term ?? "").trim();
+            // Very long concept names make hopeless search queries.
+            if (name.length > 2 && name.length < 46) out.push(name);
+          }
+        }
+        if ((m as any).subject) out.push(String((m as any).subject));
+      }
+      return Array.from(new Set(out)).slice(0, 12);
+    },
+  });
+
+  if (topics.length === 0) return null;
+
+  return (
+    <div>
+      <h2 className="font-display text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
+        From your materials
+      </h2>
+      <div className="flex flex-wrap gap-2">
+        {topics.map((t: string) => (
+          <button
+            key={t}
+            onClick={() => onSearch(t)}
+            className="rounded-full border-2 border-border bg-card px-3 py-1.5 text-xs font-extrabold transition hover:border-primary hover:text-primary"
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
   const [q, setQ] = useState("");
   const [link, setLink] = useState("");
@@ -1244,6 +1303,17 @@ export function DiscoverTab({ onPick }: { onPick: (v: Video) => void }) {
           ))}
         </div>
       )}
+
+      {/* The page was a search box, a link box and eight channel names on a
+          screen with room for far more — and none of it knew anything about
+          the student. These chips come from their own library, so the first
+          thing offered is a video about what they are actually studying. */}
+      <TopicsFromLibrary
+        onSearch={(t) => {
+          setQ(t);
+          void search(t);
+        }}
+      />
 
       <div>
         <h2 className="font-display text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
