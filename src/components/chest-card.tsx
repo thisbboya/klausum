@@ -5,6 +5,9 @@ import { Gift, Sparkles, Gem } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sounds as sounds } from "@/lib/sounds";
 import { toast } from "@/lib/notify";
+import { useQueryClient } from "@tanstack/react-query";
+import confetti from "canvas-confetti";
+import { CHEST_ODDS, crestById } from "@/lib/collectibles";
 
 // The gradients below deliberately use literal palette values: a chest is a
 // physical object and bronze/silver/gold read as metals, not as theme states.
@@ -21,7 +24,9 @@ function roll([min, max]: [number, number]) {
 
 export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: string; tier?: Tier; unlocked: boolean }) {
   const [opening, setOpening] = useState(false);
-  const [reward, setReward] = useState<{ xp: number; gems: number } | null>(null);
+  const [reward, setReward] = useState<{ xp: number; gems: number; crest?: string | null } | null>(null);
+  const qc = useQueryClient();
+  const odds = CHEST_ODDS[tier];
 
   async function openChest() {
     if (!userId || !unlocked || opening) return;
@@ -32,12 +37,23 @@ export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: stri
       toast.error(reportError("chest-card", error));
       return;
     }
-    const row = Array.isArray(data) ? data[0] : data;
+    const row: any = Array.isArray(data) ? data[0] : data;
     const xp = row?.reward_xp ?? 0;
     const gems = row?.reward_gems ?? 0;
+    const crestId: string | null = row?.reward_crest ?? null;
     sounds.levelUp?.();
-    setReward({ xp, gems });
-    toast.success(`Chest opened! +${xp} XP · +${gems} gems`);
+    setReward({ xp, gems, crest: crestId });
+
+    if (crestId) {
+      // The rare outcome has to feel different from the common one, or the
+      // published odds are just a number nobody ever sees pay off.
+      const crest = crestById(crestId);
+      confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+      toast.success(`${crest?.emoji ?? "✨"} RARE — ${crest?.name ?? "Curio"} found!`);
+      qc.invalidateQueries({ queryKey: ["collectibles"] });
+    } else {
+      toast.success(`Chest opened! +${xp} XP · +${gems} gems`);
+    }
   }
 
   const conf = TIER_REWARDS[tier];
@@ -64,6 +80,11 @@ export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: stri
                 <Gem className="h-5 w-5" /> {reward.gems}
               </span>
             </div>
+            {reward.crest && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-grape bg-grape/15 px-3 py-1 text-xs font-extrabold text-grape">
+                {crestById(reward.crest)?.emoji} {crestById(reward.crest)?.name} — rare find
+              </div>
+            )}
             <p className="mt-2 text-xs font-semibold text-muted-foreground">Come back tomorrow for more!</p>
           </motion.div>
         ) : (
@@ -81,6 +102,28 @@ export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: stri
           </motion.button>
         )}
       </AnimatePresence>
+
+      {/* The possibility space, stated before you open it. A hidden range is
+          just noise — 40 gems means nothing if you never learn whether that
+          was lucky. Knowing what COULD be in there is what turns a random
+          number into anticipation, and printing the rare odds is the
+          difference between a surprise and a slot machine. */}
+      {!reward && odds && (
+        <dl className="mt-3 space-y-1 rounded-xl border-2 border-border bg-surface-2 px-3 py-2 text-left text-[11px] font-bold">
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">XP</dt>
+            <dd className="tabular-nums">{odds.xp[0]}–{odds.xp[1]}</dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">Gems</dt>
+            <dd className="tabular-nums">{odds.gems[0]}–{odds.gems[1]}</dd>
+          </div>
+          <div className="flex items-center justify-between text-grape">
+            <dt>Rare curio</dt>
+            <dd className="tabular-nums">{Math.round(odds.crest * 100)}%</dd>
+          </div>
+        </dl>
+      )}
 
       {!unlocked && !reward && (
         <p className="mt-3 text-xs font-semibold text-muted-foreground">

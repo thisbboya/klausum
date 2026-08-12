@@ -1645,6 +1645,36 @@ export type Database = {
         }
         Relationships: []
       }
+      social_treasures: {
+        Row: {
+          claimed: boolean
+          created_at: string
+          id: string
+          kind: string
+          receiver_id: string
+          sender_id: string
+          sent_on: string
+        }
+        Insert: {
+          claimed?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          receiver_id: string
+          sender_id: string
+          sent_on?: string
+        }
+        Update: {
+          claimed?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          receiver_id?: string
+          sender_id?: string
+          sent_on?: string
+        }
+        Relationships: []
+      }
       study_group_members: {
         Row: {
           group_id: string
@@ -2468,6 +2498,7 @@ export type Database = {
           xp_total: number
         }[]
       }
+      claim_treasures: { Args: never; Returns: Json }
       complete_challenge: {
         Args: { p_key: string; p_xp: number }
         Returns: undefined
@@ -2514,12 +2545,14 @@ export type Database = {
       open_chest: {
         Args: { _tier: string }
         Returns: {
+          reward_crest: string
           reward_gems: number
           reward_xp: number
         }[]
       }
       purchase_crest: { Args: { _crest: string }; Returns: Json }
       purchase_shop_item: { Args: { _item: string }; Returns: Json }
+      send_treasure: { Args: { _to: string }; Returns: Json }
       submit_duel_score: {
         Args: { p_challenge_id: string; p_score: number; p_total: number }
         Returns: {

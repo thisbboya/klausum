@@ -8,7 +8,7 @@
 // Crests are the opposite: bought or earned once, kept forever, and worn where
 // other people can see them. They also come in sets, because an incomplete set
 // is one of the few goals a person will pursue without being asked to.
-export type CrestSet = "elements" | "scholar" | "ghana" | "labs";
+export type CrestSet = "elements" | "scholar" | "ghana" | "labs" | "curios";
 
 export type Crest = {
   id: string;
@@ -37,6 +37,10 @@ export const SETS: Record<CrestSet, { name: string; blurb: string }> = {
   labs: {
     name: "Lab Quests",
     blurb: "One for each journey finished in the Lab. Not for sale at any price.",
+  },
+  curios: {
+    name: "Curios",
+    blurb: "Rare finds from chests. The odds are printed on the chest — no secrets.",
   },
 };
 
@@ -102,7 +106,35 @@ export const CRESTS: Crest[] = [
     id: "membrane", name: "The Membrane", emoji: "🧬", set: "labs", gems: null,
     earn: { stat: "quest", need: 1, label: "Finish the Cell Biologist quest" },
   },
+
+  // Curios drop from chests, rolled on the server. Unbuyable, and never
+  // duplicated — the roll only ever picks from crests you don't own, because
+  // winning something you already have is the fastest way to make published
+  // odds feel like a lie.
+  {
+    id: "comet", name: "Comet", emoji: "☄️", set: "curios", gems: null,
+    earn: { stat: "chest", need: 1, label: "Rare find from a chest" },
+  },
+  {
+    id: "geode", name: "Geode", emoji: "🪨", set: "curios", gems: null,
+    earn: { stat: "chest", need: 1, label: "Rare find from a chest" },
+  },
+  {
+    id: "aurora", name: "Aurora", emoji: "🌌", set: "curios", gems: null,
+    earn: { stat: "chest", need: 1, label: "Rare find from a chest" },
+  },
+  {
+    id: "fossil", name: "Fossil", emoji: "🦴", set: "curios", gems: null,
+    earn: { stat: "chest", need: 1, label: "Rare find from a chest" },
+  },
 ];
+
+/** Published chest odds, so the UI and the server agree on the same numbers. */
+export const CHEST_ODDS: Record<string, { xp: [number, number]; gems: [number, number]; crest: number }> = {
+  bronze: { xp: [10, 25], gems: [5, 15], crest: 0.02 },
+  silver: { xp: [25, 60], gems: [15, 35], crest: 0.05 },
+  gold: { xp: [60, 150], gems: [35, 80], crest: 0.1 },
+};
 
 export const crestById = (id: string) => CRESTS.find((c) => c.id === id);
 

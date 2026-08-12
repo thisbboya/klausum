@@ -8,6 +8,7 @@ import { awardXp } from "@/lib/xp";
 import { CHALLENGES, challengeWindow, type Challenge } from "@/lib/challenges";
 import { createDuel, TIME_LIMIT_OPTIONS, EXPIRY_OPTIONS, type Duel } from "@/lib/duels";
 import { toast } from "@/lib/notify";
+import { TreasureInbox, SendTreasureButton } from "@/components/social-treasures";
 import {
   Users, Trophy, Target, UsersRound, Search, UserPlus, Check, X, Crown,
   Plus, LogIn, Copy, Sparkles, CheckCircle2, Swords, Clock, Hourglass,
@@ -172,6 +173,10 @@ function FriendsTab() {
         )}
       </section>
 
+      {/* Gifts first: something waiting for you is a better reason to open
+          this page than a list of people you already know. */}
+      <TreasureInbox />
+
       {incoming.length > 0 && (
         <section>
           <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Incoming requests</h2>
@@ -214,6 +219,7 @@ function FriendsTab() {
                       {p?.handle ? `@${p.handle} · ` : ""}{p?.xp_total ?? 0} XP
                     </div>
                   </div>
+                  <SendTreasureButton friendId={otherId} name={p?.full_name} />
                   <button onClick={() => unfriend(f.id)} className="text-xs text-muted-foreground hover:text-destructive">Remove</button>
                 </li>
               );
