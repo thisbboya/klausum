@@ -338,7 +338,7 @@ function ColumnPane({
         <span className={`text-[11px] uppercase tracking-wider ${tone === "primary" ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
         <button
           onClick={() => setMode(mode === "edit" ? "preview" : "edit")}
-          className="inline-flex items-center gap-1 rounded border border-border/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1 rounded border-2 border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground"
         >
           {mode === "edit" ? <><Eye className="h-3 w-3" /> Preview</> : <><Pencil className="h-3 w-3" /> Edit</>}
         </button>

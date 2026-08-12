@@ -372,7 +372,7 @@ function UsersTab() {
           <span>Failed to load users: {(error as any)?.message ?? "unknown error"}</span>
           <button
             onClick={() => refetch()}
-            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/10"
+            className="rounded-xl border-2 border-border px-2 py-1 text-xs hover:bg-accent/10"
           >
             Retry
           </button>
@@ -414,7 +414,7 @@ function UsersTab() {
                     <button
                       onClick={() => toggleAdmin(u.email, !isAdmin, u.id)}
                       disabled={pending}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/10 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-border px-2 py-1 text-xs hover:bg-accent/10 disabled:opacity-50"
                     >
                       {pending && <Loader2 className="h-3 w-3 animate-spin" />}
                       {isAdmin ? "Remove admin" : "Make admin"}

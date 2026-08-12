@@ -497,7 +497,7 @@ export function QuizzesPage() {
         </div>
 
         {showAdvanced && (
-          <div className="rounded-xl border-2 border-border/60 bg-background/50 p-4 space-y-3">
+          <div className="rounded-xl border-2 border-border bg-background/50 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-semibold">Bloom level distribution</div>
@@ -505,11 +505,11 @@ export function QuizzesPage() {
               </div>
               <div className="flex gap-1">
                 {Object.keys(PRESETS).map((p) => (
-                  <button key={p} onClick={() => applyPreset(p)} className="text-[10px] rounded-md border border-border px-2 py-1 hover:border-primary/40">
+                  <button key={p} onClick={() => applyPreset(p)} className="text-[10px] rounded-xl border-2 border-border px-2 py-1 hover:border-primary/40">
                     {p}
                   </button>
                 ))}
-                <button onClick={normalize} className="inline-flex items-center gap-1 text-[10px] rounded-md border border-border px-2 py-1 hover:border-primary/40">
+                <button onClick={normalize} className="inline-flex items-center gap-1 text-[10px] rounded-xl border-2 border-border px-2 py-1 hover:border-primary/40">
                   <RotateCcw className="h-3 w-3" /> Normalize
                 </button>
               </div>

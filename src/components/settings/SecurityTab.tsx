@@ -118,7 +118,7 @@ function TwoFactorSection() {
   }
 
   return (
-    <div className="card-chunky/60 bg-card/60 p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-start gap-3">
         <div
           className={`rounded-lg p-2 ${verified ? "bg-success/15 text-success" : "bg-primary/15 text-primary"}`}
@@ -143,14 +143,14 @@ function TwoFactorSection() {
               <button
                 onClick={disable}
                 disabled={busy}
-                className="rounded-md border border-destructive/40 px-2 py-1 text-xs font-semibold text-destructive disabled:opacity-50"
+                className="rounded-xl border border-destructive/40 px-2 py-1 text-xs font-semibold text-destructive disabled:opacity-50"
               >
                 Disable
               </button>
             </div>
           ) : enrolling ? (
             <div className="mt-3 space-y-3">
-              <div className="rounded-xl border-2 border-border/60 bg-background/60 p-3">
+              <div className="rounded-xl border-2 border-border bg-background/60 p-3">
                 <div className="text-xs text-muted-foreground">
                   Scan this QR code with your authenticator app, then enter the 6-digit code below.
                 </div>
@@ -225,7 +225,7 @@ function PasswordSection() {
   }
 
   return (
-    <div className="card-chunky/60 bg-card/60 p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-start gap-3">
         <div className="rounded-lg bg-primary/15 p-2 text-primary">
           <KeyRound className="h-5 w-5" />
@@ -321,7 +321,7 @@ function SessionSection() {
   }
 
   return (
-    <div className="card-chunky/60 bg-card/60 p-4 space-y-3">
+    <div className="card-chunky bg-card p-4 space-y-3">
       <div className="font-semibold">This session</div>
       <dl className="grid grid-cols-[120px_1fr] gap-y-1.5 text-sm">
         <dt className="text-muted-foreground">Device</dt>
@@ -331,7 +331,7 @@ function SessionSection() {
         <dt className="text-muted-foreground">Last sign-in</dt>
         <dd>{lastSignIn}</dd>
       </dl>
-      <div className="border-t border-border/60 pt-3">
+      <div className="border-t border-border pt-3">
         <button
           onClick={signOutEverywhere}
           disabled={busy}
@@ -369,7 +369,7 @@ function GeminiKeyHealthSection() {
   const failing = (results ?? []).filter((r) => !r.ok);
 
   return (
-    <div className="card-chunky/60 bg-card/60 p-4 space-y-3">
+    <div className="card-chunky bg-card p-4 space-y-3">
       <div className="flex items-start gap-3">
         <div className="rounded-lg bg-primary/15 p-2 text-primary">
           <Sparkles className="h-5 w-5" />

@@ -150,7 +150,7 @@ export function CallingCard() {
     return (
       <button
         onClick={startEditing}
-        className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-border bg-card/60 px-4 py-3 text-left transition hover:border-primary hover:bg-card"
+        className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-border bg-card px-4 py-3 text-left transition hover:border-primary hover:bg-card"
       >
         <Compass className="h-5 w-5 shrink-0 text-primary" />
         <span className="min-w-0 flex-1">

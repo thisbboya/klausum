@@ -73,12 +73,12 @@ function Shop() {
           </h1>
           <p className="text-sm text-muted-foreground">Spend gems earned from chests, quests, and perfect quizzes.</p>
         </div>
-        <div className="card-chunky/60 bg-card/60 px-4 py-2 flex items-center gap-2 text-lg font-semibold">
+        <div className="card-chunky bg-card px-4 py-2 flex items-center gap-2 text-lg font-semibold">
           <Gem className="h-5 w-5 text-sky" /> {profile?.gems ?? 0}
         </div>
       </header>
 
-      <div className="rounded-xl border-2 border-border/50 bg-muted/20 px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
+      <div className="rounded-xl border-2 border-border bg-muted/20 px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
         <Snowflake className="h-3.5 w-3.5 text-sky-400" /> You have {profile?.streak_freezes ?? 0} streak freeze{(profile?.streak_freezes ?? 0) === 1 ? "" : "s"} available.
       </div>
 
@@ -103,8 +103,8 @@ function Shop() {
           const affordable = (profile?.gems ?? 0) >= it.cost;
           const isBuying = buying === it.id;
           return (
-            <div key={it.id} className="card-chunky/60 bg-card/60 p-5 flex flex-col gap-3">
-              <div className={`h-11 w-11 rounded-xl bg-background/60 border border-border/60 flex items-center justify-center ${it.accent}`}>
+            <div key={it.id} className="card-chunky bg-card p-5 flex flex-col gap-3">
+              <div className={`h-11 w-11 rounded-xl bg-background/60 border-2 border-border flex items-center justify-center ${it.accent}`}>
                 <Icon className="h-6 w-6" />
               </div>
               <div>

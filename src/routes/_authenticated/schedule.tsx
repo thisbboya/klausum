@@ -122,9 +122,9 @@ function SchedulePage() {
           <p className="text-sm text-muted-foreground">Plan your week. Stay on rhythm.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <div className="inline-flex rounded-xl border-2 border-border/60 overflow-hidden">
+          <div className="inline-flex rounded-xl border-2 border-border overflow-hidden">
             {(["list","week","month"] as View[]).map(v => (
-              <button key={v} onClick={() => setView(v)} className={`px-3 py-2 text-xs font-semibold capitalize ${view===v?"bg-primary text-primary-foreground":"bg-card/40 text-muted-foreground hover:text-foreground"}`}>{v}</button>
+              <button key={v} onClick={() => setView(v)} className={`px-3 py-2 text-xs font-semibold capitalize ${view===v?"bg-primary text-primary-foreground":"bg-card text-muted-foreground hover:text-foreground"}`}>{v}</button>
             ))}
           </div>
           <button onClick={smartPlan} disabled={busy} className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">
@@ -137,7 +137,7 @@ function SchedulePage() {
       </header>
 
       {adding && (
-        <div className="grid md:grid-cols-2 gap-3 card-chunky/60 bg-card/60 p-4">
+        <div className="grid md:grid-cols-2 gap-3 card-chunky bg-card p-4">
           <input className="input md:col-span-2" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <input className="input" placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
           <select className="input" value={form.block_type} onChange={(e) => setForm({ ...form, block_type: e.target.value })}>
@@ -165,9 +165,9 @@ function SchedulePage() {
               : `Week of ${weekStart(cursor).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={() => shift(-1)} className="rounded-md border border-border p-1.5"><ChevronLeft className="h-4 w-4" /></button>
-            <button onClick={() => { const d = new Date(); d.setHours(0,0,0,0); setCursor(d); }} className="rounded-md border border-border px-2 py-1 text-xs">Today</button>
-            <button onClick={() => shift(1)} className="rounded-md border border-border p-1.5"><ChevronRight className="h-4 w-4" /></button>
+            <button onClick={() => shift(-1)} className="rounded-xl border-2 border-border p-1.5"><ChevronLeft className="h-4 w-4" /></button>
+            <button onClick={() => { const d = new Date(); d.setHours(0,0,0,0); setCursor(d); }} className="rounded-xl border-2 border-border px-2 py-1 text-xs">Today</button>
+            <button onClick={() => shift(1)} className="rounded-xl border-2 border-border p-1.5"><ChevronRight className="h-4 w-4" /></button>
           </div>
         </div>
       )}
@@ -194,7 +194,7 @@ function ListView({ blocks, colorFor, onComplete, onDelete }: any) {
     return acc;
   }, {});
   if (Object.keys(grouped).length === 0) return (
-    <div className="rounded-xl border border-dashed border-border/60 p-10 text-center text-sm text-muted-foreground">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
       No blocks scheduled. Use AI Smart Plan to fill the next 7 days.
     </div>
   );
@@ -248,8 +248,8 @@ function WeekGrid({ cursor, blocks, colorFor, onComplete, onDelete }: any) {
   }, [blocks]);
 
   return (
-    <div className="card-chunky/60 bg-card/40 overflow-hidden">
-      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 bg-card/60">
+    <div className="card-chunky bg-card overflow-hidden">
+      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border bg-card">
         <div />
         {days.map(d => (
           <div key={d.toISOString()} className={`p-2 text-center text-xs font-semibold ${d.toDateString()===today?"text-primary":"text-muted-foreground"}`}>
@@ -277,7 +277,7 @@ function WeekGrid({ cursor, blocks, colorFor, onComplete, onDelete }: any) {
           const top = (Math.max(6, startH) - 6) * 44;
           const height = Math.max(20, (Math.min(22, endH) - Math.max(6, startH)) * 44 - 2);
           return (
-            <div key={b.id} className={`absolute rounded-md border ${colorFor(b.block_type)} p-1.5 text-[10px] overflow-hidden ${b.completed?"opacity-50":""}`}
+            <div key={b.id} className={`absolute rounded-xl border ${colorFor(b.block_type)} p-1.5 text-[10px] overflow-hidden ${b.completed?"opacity-50":""}`}
               style={{ top, height, left: `calc(60px + ${(di * 100) / 7}% - 60px / 7 * ${di} + 2px)`, width: `calc((100% - 60px) / 7 - 4px)` }}>
               <div className="font-semibold truncate">{b.title}</div>
               <div className="opacity-70 truncate">{s.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
@@ -304,8 +304,8 @@ function MonthGrid({ cursor, blocks, colorFor, onPick }: any) {
     (byDay[k] ??= []).push(b);
   }
   return (
-    <div className="card-chunky/60 bg-card/40 overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-border/60 bg-card/60">
+    <div className="card-chunky bg-card overflow-hidden">
+      <div className="grid grid-cols-7 border-b border-border bg-card">
         {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => <div key={d} className="p-2 text-center text-xs font-semibold text-muted-foreground">{d}</div>)}
       </div>
       <div className="grid grid-cols-7">
@@ -386,7 +386,7 @@ function Pomodoro() {
   }
 
   return (
-    <div className="card-chunky/60 bg-card/60 p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase text-muted-foreground">Pomodoro</div>

@@ -139,7 +139,7 @@ function FriendsTab() {
 
   return (
     <div className="space-y-5">
-      <section className="card-chunky/60 bg-card/60 p-4">
+      <section className="card-chunky bg-card p-4">
         <h2 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Search className="h-4 w-4" /> Find friends</h2>
         <div className="flex gap-2">
           <input value={q} onChange={(e) => setQ(e.target.value)}
@@ -154,7 +154,7 @@ function FriendsTab() {
         {searchResults.length > 0 && (
           <ul className="mt-3 space-y-2">
             {searchResults.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-xl border-2 border-border/40 bg-card/40 p-2">
+              <li key={p.id} className="flex items-center gap-3 rounded-xl border-2 border-border/40 bg-card p-2">
                 <Avatar p={p} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{p.full_name}</div>
@@ -163,7 +163,7 @@ function FriendsTab() {
                 {existingIds.has(p.id) ? (
                   <span className="text-xs text-muted-foreground">Connected</span>
                 ) : (
-                  <button onClick={() => sendRequest(p.id)} className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs text-primary">
+                  <button onClick={() => sendRequest(p.id)} className="inline-flex items-center gap-1 rounded-xl border border-primary/40 bg-primary/10 px-2 py-1 text-xs text-primary">
                     <UserPlus className="h-3 w-3" /> Add
                   </button>
                 )}
@@ -184,14 +184,14 @@ function FriendsTab() {
             {incoming.map((f: any) => {
               const p = profById[f.requester_id];
               return (
-                <li key={f.id} className="flex items-center gap-3 rounded-xl border-2 border-border/60 bg-card/40 p-2">
+                <li key={f.id} className="flex items-center gap-3 rounded-xl border-2 border-border bg-card p-2">
                   <Avatar p={p} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{p?.full_name ?? "User"}</div>
                     <div className="text-xs text-muted-foreground truncate">{p?.handle ? `@${p.handle}` : ""}</div>
                   </div>
-                  <button onClick={() => respond(f.id, true)} className="rounded-md bg-success/20 p-1.5 text-success"><Check className="h-4 w-4" /></button>
-                  <button onClick={() => respond(f.id, false)} className="rounded-md bg-destructive/20 p-1.5 text-destructive"><X className="h-4 w-4" /></button>
+                  <button onClick={() => respond(f.id, true)} className="rounded-xl bg-success/20 p-1.5 text-success"><Check className="h-4 w-4" /></button>
+                  <button onClick={() => respond(f.id, false)} className="rounded-xl bg-destructive/20 p-1.5 text-destructive"><X className="h-4 w-4" /></button>
                 </li>
               );
             })}
@@ -202,7 +202,7 @@ function FriendsTab() {
       <section>
         <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Your friends ({friends.length})</h2>
         {friends.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             No friends yet. Search by @handle to add some.
           </div>
         ) : (
@@ -211,7 +211,7 @@ function FriendsTab() {
               const otherId = f.requester_id === user?.id ? f.addressee_id : f.requester_id;
               const p = profById[otherId];
               return (
-                <li key={f.id} className="flex items-center gap-3 rounded-xl border-2 border-border/60 bg-card/40 p-2">
+                <li key={f.id} className="flex items-center gap-3 rounded-xl border-2 border-border bg-card p-2">
                   <Avatar p={p} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{p?.full_name ?? "User"}</div>
@@ -235,7 +235,7 @@ function FriendsTab() {
             {outgoing.map((f: any) => {
               const p = profById[f.addressee_id];
               return (
-                <li key={f.id} className="flex items-center gap-3 rounded-lg border border-dashed border-border/60 p-2 text-sm">
+                <li key={f.id} className="flex items-center gap-3 rounded-lg border border-dashed border-border p-2 text-sm">
                   <span className="flex-1 truncate text-muted-foreground">Waiting on {p?.full_name ?? "user"}{p?.handle ? ` (@${p.handle})` : ""}</span>
                   <button onClick={() => unfriend(f.id)} className="text-xs text-muted-foreground hover:text-destructive">Cancel</button>
                 </li>
@@ -834,7 +834,7 @@ function ChallengeSection({ title, challenges, isComplete, onClaim }: {
         {challenges.map((c) => {
           const done = isComplete(c);
           return (
-            <div key={c.key} className={`rounded-xl border p-4 ${done ? "border-success/40 bg-success/10" : "border-border/60 bg-card/40"}`}>
+            <div key={c.key} className={`rounded-xl border p-4 ${done ? "border-success/40 bg-success/10" : "border-border bg-card"}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm flex items-center gap-1.5">
@@ -914,13 +914,13 @@ function GroupsTab() {
           <Plus className="h-4 w-4" /> Create
         </button>
         <button onClick={() => { setJoining(!joining); setCreating(false); }}
-          className="inline-flex items-center gap-1 rounded-xl border-2 border-border bg-card/40 px-3 py-2 text-sm font-semibold">
+          className="inline-flex items-center gap-1 rounded-xl border-2 border-border bg-card px-3 py-2 text-sm font-semibold">
           <LogIn className="h-4 w-4" /> Join with code
         </button>
       </div>
 
       {creating && (
-        <div className="card-chunky/60 bg-card/60 p-4 space-y-2">
+        <div className="card-chunky bg-card p-4 space-y-2">
           <input className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm" placeholder="Group name"
             value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <input className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm" placeholder="Subject"
@@ -935,7 +935,7 @@ function GroupsTab() {
       )}
 
       {joining && (
-        <div className="card-chunky/60 bg-card/60 p-4 flex gap-2">
+        <div className="card-chunky bg-card p-4 flex gap-2">
           <input className="flex-1 rounded-xl border-2 border-border bg-background px-3 py-2 text-sm font-mono uppercase" placeholder="ABC12345"
             value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} maxLength={8} />
           <button onClick={joinGroup} className="btn-3d rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Join</button>
@@ -943,13 +943,13 @@ function GroupsTab() {
       )}
 
       {groups.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           You're not in any groups yet. Create one or join with a code.
         </div>
       ) : (
         <ul className="space-y-2">
           {groups.map((g: any) => (
-            <li key={g.id} className="card-chunky/60 bg-card/40 p-4">
+            <li key={g.id} className="card-chunky bg-card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm">{g.name}</div>
@@ -958,7 +958,7 @@ function GroupsTab() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => { navigator.clipboard.writeText(g.invite_code); toast.success("Code copied"); }}
-                    className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-mono">
+                    className="inline-flex items-center gap-1 rounded-xl border-2 border-border bg-background px-2 py-1 text-xs font-mono">
                     <Copy className="h-3 w-3" /> {g.invite_code}
                   </button>
                   <button onClick={() => leave(g.id)} className="text-xs text-muted-foreground hover:text-destructive">Leave</button>

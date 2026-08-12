@@ -352,7 +352,7 @@ export function MaterialsPage() {
                 ) : i === stepIdx ? (
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 ) : (
-                  <span className="h-4 w-4 rounded-full border border-border inline-block" />
+                  <span className="h-4 w-4 rounded-full border-2 border-border inline-block" />
                 )}
                 <span className={i <= stepIdx ? "" : "text-muted-foreground"}>{s}</span>
               </li>
@@ -477,7 +477,7 @@ export function MaterialsPage() {
 function TabBtn({ active, children, onClick }: any) {
   return (
     <button onClick={onClick}
-      className={`px-3 py-1.5 text-sm rounded-md ${active ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+      className={`px-3 py-1.5 text-sm rounded-xl ${active ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
       {children}
     </button>
   );

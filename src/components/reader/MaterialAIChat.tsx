@@ -100,7 +100,7 @@ function ReplyWithJumps({
         )}
       </article>
       {sources.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-border/50 flex flex-wrap items-center gap-1">
+        <div className="mt-2 pt-2 border-t border-border flex flex-wrap items-center gap-1">
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-1">Sources</span>
           {sources.map((p) => (
             <button
@@ -351,7 +351,7 @@ export function MaterialAIChat({
                 <button
                   key={p.label}
                   onClick={() => send(p.label)}
-                  className="text-left text-muted-foreground text-xs bg-muted border border-border rounded-xl p-3 hover:border-primary hover:text-foreground transition leading-relaxed active:scale-95"
+                  className="text-left text-muted-foreground text-xs bg-muted border-2 border-border rounded-xl p-3 hover:border-primary hover:text-foreground transition leading-relaxed active:scale-95"
                 >
                   <span className="block text-base mb-1">{p.icon}</span>
                   {p.label}
@@ -370,7 +370,7 @@ export function MaterialAIChat({
               className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground font-medium rounded-tr-sm"
-                  : "bg-muted text-foreground border border-border rounded-tl-sm"
+                  : "bg-muted text-foreground border-2 border-border rounded-tl-sm"
               }`}
             >
               {msg.role === "ai" && (
@@ -393,7 +393,7 @@ export function MaterialAIChat({
 
         {isThinking && (
           <div className="flex gap-2 items-start">
-            <div className="bg-muted border border-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 flex items-center gap-2">
+            <div className="bg-muted border-2 border-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 flex items-center gap-2">
               <span className="text-muted-foreground text-xs italic">{thinkingStatus}</span>
               <span className="flex gap-0.5">
                 {[0, 1, 2].map((i) => (
@@ -446,7 +446,7 @@ export function MaterialAIChat({
           }
           rows={2}
           disabled={isThinking}
-          className="flex-1 bg-muted border border-border rounded-xl px-3 py-2 text-foreground text-sm placeholder-muted-foreground resize-none outline-none focus:border-primary transition disabled:opacity-40"
+          className="flex-1 bg-muted border-2 border-border rounded-xl px-3 py-2 text-foreground text-sm placeholder-muted-foreground resize-none outline-none focus:border-primary transition disabled:opacity-40"
         />
         <button
           onClick={() => send(input)}

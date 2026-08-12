@@ -306,7 +306,7 @@ function ProfileTab() {
 function CompanionCard({ profile }: { profile: any }) {
   const c = getCompanion(profile?.companion_id ?? 1);
   return (
-    <div className="card-chunky/60 bg-card/60 p-4 flex items-center gap-4">
+    <div className="card-chunky bg-card p-4 flex items-center gap-4">
       <CompanionSVG id={c.id} size={56} />
       <div className="flex-1 min-w-0">
         <div className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">Your pilot</div>
@@ -339,7 +339,7 @@ function PlanCard({ userId }: { userId?: string }) {
     },
   });
   return (
-    <div className="card-chunky/60 bg-card/60 p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Crown className="h-4 w-4 text-primary" />
@@ -365,7 +365,7 @@ function CohortCard({ profile }: { profile: any }) {
   if (!profile) return null;
   const memberSince = profile.created_at ? new Date(profile.created_at).toLocaleDateString() : "—";
   return (
-    <div className="card-chunky/60 bg-card/60 p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-center gap-2 mb-2">
         <Users className="h-4 w-4 text-primary" />
         <span className="font-semibold">Klausum cohort</span>
@@ -408,7 +408,7 @@ function NotificationsCard() {
   };
 
   return (
-    <div className="card-chunky/60 bg-card/60 p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-primary" />
@@ -451,7 +451,7 @@ function LearningTab() {
 
   return (
     <div className="max-w-lg space-y-4">
-      <div className="card-chunky/60 bg-card/60 p-4">
+      <div className="card-chunky bg-card p-4">
         <div className="text-xs uppercase text-muted-foreground">Your VARK profile</div>
         <div className="mt-1 text-2xl font-bold capitalize">{profile?.primary_style ?? "—"}</div>
         <div className="text-xs text-muted-foreground">Secondary: {profile?.secondary_style ?? "—"}</div>
@@ -641,7 +641,7 @@ function DataTab() {
 
   return (
     <div className="max-w-lg space-y-4">
-      <div className="card-chunky/60 bg-card/60 p-4 space-y-2">
+      <div className="card-chunky bg-card p-4 space-y-2">
         <div className="font-semibold">Export your data</div>
         <p className="text-sm text-muted-foreground">Download a JSON snapshot of all your study data.</p>
         <button onClick={exportData} disabled={busy} className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">{busy ? "Exporting…" : "Download export"}</button>

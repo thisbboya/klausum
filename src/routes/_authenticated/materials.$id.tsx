@@ -363,7 +363,7 @@ function SummaryTab({ material }: { material: any }) {
           ))}
         </div>
       ) : (
-        <div className="card-chunky bg-card/60 p-6 text-center space-y-3">
+        <div className="card-chunky bg-card p-6 text-center space-y-3">
           <span className="text-3xl">🔍</span>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             Key concepts haven't been extracted yet, or extraction failed.
@@ -391,7 +391,7 @@ function OriginalTab({ material }: { material: any }) {
         <span>{words} words{material.file_name ? ` · ${material.file_name}` : ""}</span>
         <button
           onClick={() => { navigator.clipboard.writeText(content); }}
-          className="rounded-md border border-border px-2 py-1 hover:bg-accent/10"
+          className="rounded-xl border-2 border-border px-2 py-1 hover:bg-accent/10"
         >Copy all</button>
       </div>
       <div className="card-chunky bg-card p-5 md:p-6 max-h-[70vh] overflow-auto">
@@ -540,7 +540,7 @@ function FormulasTab({ material }: { material: any }) {
 
   if (usable.length === 0) {
     return (
-      <div className="card-chunky bg-card/60 p-6 text-center space-y-3">
+      <div className="card-chunky bg-card p-6 text-center space-y-3">
         <span className="text-3xl">🧮</span>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           No formulas extracted yet. Try regenerating if this material contains equations.
@@ -639,7 +639,7 @@ function BloomTab({ material }: { material: any }) {
 
   if (!real) {
     return (
-      <div className="card-chunky bg-card/60 p-6 text-center space-y-3">
+      <div className="card-chunky bg-card p-6 text-center space-y-3">
         <span className="text-3xl">🎓</span>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           Bloom-level questions haven't been generated yet.
@@ -723,7 +723,7 @@ function AdaptationTab({ text, topic }: { text: string; topic?: string }) {
       <div className="flex justify-end">
         <button
           onClick={toggleSpeak}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/10"
+          className="inline-flex items-center gap-1.5 rounded-xl border-2 border-border px-3 py-1.5 text-xs hover:bg-accent/10"
         >
           {speaking ? <><Pause className="h-3.5 w-3.5" /> Stop reading</> : <><Volume2 className="h-3.5 w-3.5" /> Read aloud</>}
         </button>
@@ -867,7 +867,7 @@ function FileReaderTab({ material, userId }: { material: any; userId: string }) 
 
   const doc = image ? (
     <div className="flex h-full items-start justify-center overflow-auto bg-surface-2/60 p-4">
-      <img src={signedUrl} alt={material.title} className="max-w-full rounded-xl border border-border bg-card shadow-sm" />
+      <img src={signedUrl} alt={material.title} className="max-w-full rounded-xl border-2 border-border bg-card shadow-sm" />
     </div>
   ) : (
     <iframe
@@ -1094,7 +1094,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
                   key={h.id}
                   onClick={() => removeHighlight(h.id)}
                   title={`Remove highlight: ${String(h.text).slice(0, 80)}`}
-                  className="inline-flex max-w-[220px] items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-semibold hover:bg-destructive/10"
+                  className="inline-flex max-w-[220px] items-center gap-1 rounded-full border-2 border-border bg-card px-2 py-0.5 text-[10px] font-semibold hover:bg-destructive/10"
                 >
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.ring }} />
                   <span className="truncate">{h.text}</span>
@@ -1105,7 +1105,7 @@ function TextReaderTab({ material, userId }: { material: any; userId: string }) 
           </div>
         )}
         {/* Document canvas — reads like paper, not a terminal */}
-        <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm md:p-10">
+        <div className="mx-auto max-w-3xl rounded-2xl border-2 border-border bg-card p-6 shadow-sm md:p-10">
           <article className="prose prose-sm md:prose-base max-w-none whitespace-pre-wrap leading-relaxed text-foreground/95 dark:prose-invert">
             {currentPageText
               ? renderWithHighlights(currentPageText, pageHighlights)
@@ -1364,7 +1364,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
 
   const toc = overview?.toc ?? [];
   const TocPanel = toc.length > 0 ? (
-    <div className="border-b border-border bg-card/60">
+    <div className="border-b border-border bg-card">
       <button
         onClick={() => setTocOpen((o) => !o)}
         className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold hover:bg-accent/10 transition"
@@ -1380,7 +1380,7 @@ function ReadPdfTab({ material, userId }: { material: any; userId: string }) {
             <li key={i}>
               <button
                 onClick={() => handleJump(e.page)}
-                className={`w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-accent/10 transition flex items-center justify-between gap-2 ${
+                className={`w-full text-left text-xs px-2 py-1.5 rounded-xl hover:bg-accent/10 transition flex items-center justify-between gap-2 ${
                   e.page === page ? "bg-primary/10 text-primary" : "text-foreground/80"
                 }`}
               >

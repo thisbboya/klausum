@@ -492,7 +492,7 @@ function ReviewPage() {
             </div>
           )}
           <button onClick={() => { setFeynman(!feynman); setShowBack(false); setFeedback(null); }}
-            className={`px-3 py-1.5 rounded-md border text-xs ${feynman ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+            className={`px-3 py-1.5 rounded-xl border text-xs ${feynman ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
             <Sparkles className="h-3 w-3 inline mr-1" /> Feynman
           </button>
           <button onClick={() => { Sounds.flip(); setShowBack((s) => !s); }} className="text-muted-foreground hover:text-foreground text-xs">
@@ -519,7 +519,7 @@ function ReviewPage() {
               L{current?.bloom_level ?? 1} · {BLOOM_LABEL[current?.bloom_level ?? 1]}
             </span>
             {current?.tags?.slice(0, 3).map((t) => (
-              <span key={t} className="px-2 py-0.5 rounded-full border border-border">{t}</span>
+              <span key={t} className="px-2 py-0.5 rounded-full border-2 border-border">{t}</span>
             ))}
           </div>
           <article className="prose dark:prose-invert prose-sm md:prose-base max-w-none">

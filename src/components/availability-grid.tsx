@@ -79,7 +79,7 @@ export function AvailabilityGrid() {
   const targetMins = INTENSITY_META[intensity].minutes * 7;
 
   return (
-    <section className="card-chunky/60 bg-card/60 p-4 space-y-4">
+    <section className="card-chunky bg-card p-4 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-display text-lg font-semibold flex items-center gap-2">
@@ -97,10 +97,10 @@ export function AvailabilityGrid() {
 
       <div>
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Intensity</div>
-        <div className="inline-flex rounded-xl border-2 border-border/60 overflow-hidden">
+        <div className="inline-flex rounded-xl border-2 border-border overflow-hidden">
           {(Object.keys(INTENSITY_META) as Intensity[]).map(k => (
             <button key={k} onClick={() => { setIntensity(k); setDirty(true); }}
-              className={`px-3 py-1.5 text-xs font-semibold ${intensity === k ? "bg-primary text-primary-foreground" : "bg-card/40 text-muted-foreground hover:text-foreground"}`}>
+              className={`px-3 py-1.5 text-xs font-semibold ${intensity === k ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}>
               {INTENSITY_META[k].label}
               <span className="ml-1 opacity-70">{INTENSITY_META[k].desc}</span>
             </button>
@@ -124,7 +124,7 @@ export function AvailabilityGrid() {
                   <button key={`${d}-${h}`}
                     onMouseDown={() => { const mode = active ? "remove" : "add"; setDragging({ mode }); toggle(d, h, mode); }}
                     onMouseEnter={() => { if (dragging) toggle(d, h, dragging.mode); }}
-                    className={`h-7 rounded-sm transition-colors ${active ? "bg-primary/80 hover:bg-primary" : "bg-card/60 hover:bg-accent/40 border border-border/40"}`}
+                    className={`h-7 rounded-lg transition-colors ${active ? "bg-primary/80 hover:bg-primary" : "bg-card hover:bg-accent/40 border-2 border-border/40"}`}
                   />
                 );
               })}

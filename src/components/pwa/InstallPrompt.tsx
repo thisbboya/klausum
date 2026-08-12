@@ -102,7 +102,7 @@ export function InstallPrompt() {
         <button
           aria-label="Dismiss"
           onClick={dismiss}
-          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+          className="rounded-xl p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>

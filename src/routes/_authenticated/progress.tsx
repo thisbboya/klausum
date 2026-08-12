@@ -258,7 +258,7 @@ function ProgressPage() {
               const reached = xpTotal >= L.xp;
               const isCurrent = L.name === lvl.current.name;
               return (
-                <div key={L.name} className={`rounded-md border p-2 text-center text-[10px] transition ${isCurrent ? "border-primary bg-primary/10 text-primary" : reached ? "border-border/60 bg-card text-foreground" : "border-border/30 bg-background/50 text-muted-foreground/60"}`}>
+                <div key={L.name} className={`rounded-xl border p-2 text-center text-[10px] transition ${isCurrent ? "border-primary bg-primary/10 text-primary" : reached ? "border-border bg-card text-foreground" : "border-border/30 bg-background/50 text-muted-foreground/60"}`}>
                   <div className="font-mono">{L.xp}</div>
                   <div className="truncate" title={L.name}>{L.name.split(" ")[0]}</div>
                 </div>
@@ -468,7 +468,7 @@ function Heatmap({ days }: { days: { date: string; xp: number }[] }) {
               if (!c) return <div key={di} className="h-3 w-3" />;
               const intensity = c.xp === 0 ? 0 : Math.min(4, Math.ceil((c.xp / max) * 4));
               const bg = ["bg-muted/30", "bg-primary/20", "bg-primary/40", "bg-primary/70", "bg-primary"][intensity];
-              return <div key={di} className={`h-3 w-3 rounded-sm ${bg}`} title={`${c.date}: ${c.xp} XP`} />;
+              return <div key={di} className={`h-3 w-3 rounded-lg ${bg}`} title={`${c.date}: ${c.xp} XP`} />;
             })}
           </div>
         ))}
@@ -476,7 +476,7 @@ function Heatmap({ days }: { days: { date: string; xp: number }[] }) {
       <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
         Less
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className={`h-3 w-3 rounded-sm ${["bg-muted/30", "bg-primary/20", "bg-primary/40", "bg-primary/70", "bg-primary"][i]}`} />
+          <div key={i} className={`h-3 w-3 rounded-lg ${["bg-muted/30", "bg-primary/20", "bg-primary/40", "bg-primary/70", "bg-primary"][i]}`} />
         ))}
         More
       </div>
@@ -495,7 +495,7 @@ function CoverageBlock({ label, value, color }: { label: string; value: number; 
 
 function Stat({ icon: Icon, label, value, hint }: { icon: any; label: string; value: string; hint?: string }) {
   return (
-    <div className="card-chunky/60 bg-card/60 p-4">
+    <div className="card-chunky bg-card p-4">
       <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground"><Icon className="h-3.5 w-3.5" /> {label}</div>
       <div className="mt-1 text-xl font-bold tracking-tight truncate">{value}</div>
       {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
@@ -505,7 +505,7 @@ function Stat({ icon: Icon, label, value, hint }: { icon: any; label: string; va
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="card-chunky/60 bg-card/60 p-4">
+    <section className="card-chunky bg-card p-4">
       <h2 className="mb-3 text-sm font-semibold">{title}</h2>
       {children}
     </section>

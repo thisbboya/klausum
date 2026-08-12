@@ -320,7 +320,7 @@ export function WatchStudy({
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
             mobileTab === "video"
               ? "bg-primary text-primary-foreground"
-              : "bg-card border border-border"
+              : "bg-card border-2 border-border"
           }`}
         >
           <Play className="h-4 w-4 inline mr-1" /> Video
@@ -330,7 +330,7 @@ export function WatchStudy({
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
             mobileTab === "ai"
               ? "bg-primary text-primary-foreground"
-              : "bg-card border border-border"
+              : "bg-card border-2 border-border"
           }`}
         >
           <Sparkles className="h-4 w-4 inline mr-1" /> AI study
@@ -405,7 +405,7 @@ export function WatchStudy({
               </div>
             )}
             {analyzeError && !analyzing && (
-              <div className="mt-2 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/10 p-2">
+              <div className="mt-2 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/10 p-2">
                 <span className="text-primary text-xs shrink-0">⚠️</span>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   This video is long — automatic chapter detection was limited.
@@ -434,7 +434,7 @@ export function WatchStudy({
                       value={transcriptSearch}
                       onChange={(e) => setTranscriptSearch(e.target.value)}
                       placeholder="Search transcript…"
-                      className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary"
+                      className="w-full rounded-xl border-2 border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary"
                     />
                   </div>
                   <div className="max-h-64 overflow-y-auto text-xs">
@@ -615,7 +615,7 @@ function VideoChat({
                 <button
                   key={q}
                   onClick={() => ask(q)}
-                  className="text-left text-xs rounded-md border border-border bg-muted/30 px-2.5 py-2 hover:border-primary/40 hover:bg-muted/50 transition"
+                  className="text-left text-xs rounded-xl border-2 border-border bg-muted/30 px-2.5 py-2 hover:border-primary/40 hover:bg-muted/50 transition"
                 >
                   {q}
                 </button>
@@ -683,13 +683,13 @@ function VideoChat({
           onChange={(e) => setInput(e.target.value)}
           disabled={analyzing}
           placeholder={analyzing ? "Analyzing…" : `Ask about ${fmt(currentTime)}…`}
-          className="flex-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary disabled:opacity-50"
+          className="flex-1 rounded-xl border-2 border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary disabled:opacity-50"
         />
         {isLoading ? (
           <button
             type="button"
             onClick={() => stop()}
-            className="rounded-md bg-destructive px-2.5 text-destructive-foreground"
+            className="rounded-xl bg-destructive px-2.5 text-destructive-foreground"
           >
             <Square className="h-4 w-4" />
           </button>
@@ -802,7 +802,7 @@ function VideoNotes({
           onChange={(e) => setText(e.target.value)}
           rows={2}
           placeholder="Type your note for this moment…"
-          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-primary resize-none"
+          className="w-full rounded-xl border-2 border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-primary resize-none"
         />
         <button
           onClick={addNote}
@@ -821,7 +821,7 @@ function VideoNotes({
         {notes.map((n) => (
           <div
             key={n.id}
-            className="rounded-md border border-border bg-muted/30 p-2 text-xs"
+            className="rounded-xl border-2 border-border bg-muted/30 p-2 text-xs"
           >
             <div className="flex items-center justify-between mb-1">
               <button
@@ -848,7 +848,7 @@ function VideoNotes({
         <div className="p-2 border-t border-border">
           <button
             onClick={exportNotes}
-            className="w-full rounded-md border border-border bg-card py-1.5 text-xs font-medium hover:border-primary/40 transition"
+            className="w-full rounded-xl border-2 border-border bg-card py-1.5 text-xs font-medium hover:border-primary/40 transition"
           >
             Export {notes.length} notes
           </button>
@@ -958,7 +958,7 @@ function VideoQuiz({
                         key={opt}
                         onClick={() => answer(i, opt)}
                         disabled={shown}
-                        className={`w-full text-left rounded-md border px-2.5 py-1.5 text-xs transition ${cls}`}
+                        className={`w-full text-left rounded-xl border px-2.5 py-1.5 text-xs transition ${cls}`}
                       >
                         <span className="font-semibold mr-1.5">{opt}.</span>
                         {q.options[opt]}
@@ -967,7 +967,7 @@ function VideoQuiz({
                   })}
                 </div>
                 {shown && (
-                  <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs">
+                  <div className="mt-2 rounded-xl bg-muted/40 p-2 text-xs">
                     <p className="mb-1">{q.explanation}</p>
                     <button
                       onClick={() => seekTo(Math.max(0, q.timestamp_seconds - 10))}
@@ -983,7 +983,7 @@ function VideoQuiz({
           <button
             onClick={generate}
             disabled={loading}
-            className="w-full rounded-md border border-border py-1.5 text-xs hover:border-primary/40 transition"
+            className="w-full rounded-xl border-2 border-border py-1.5 text-xs hover:border-primary/40 transition"
           >
             {loading ? "Generating…" : "Generate a fresh quiz"}
           </button>

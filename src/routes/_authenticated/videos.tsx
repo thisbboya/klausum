@@ -87,13 +87,13 @@ function VideosPage() {
         </p>
       </div>
 
-      <div className="flex gap-1.5 p-1 rounded-lg bg-card border border-border w-fit">
+      <div className="flex gap-1.5 p-1 rounded-lg bg-card border-2 border-border w-fit">
         {tabs.map(({ k, label, Icon, disabled }) => (
           <button
             key={k}
             onClick={() => !disabled && setTab(k)}
             disabled={disabled}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
               tab === k
                 ? "bg-primary text-primary-foreground"
                 : disabled

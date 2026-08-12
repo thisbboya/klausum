@@ -532,7 +532,7 @@ export function PDFViewer({
                 <a
                   href={pdfUrl}
                   download
-                  className="inline-flex items-center gap-1.5 rounded-full bg-muted text-foreground text-xs font-semibold px-4 py-2 hover:bg-accent transition border border-border"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-muted text-foreground text-xs font-semibold px-4 py-2 hover:bg-accent transition border-2 border-border"
                 >
                   Download PDF
                 </a>
@@ -691,13 +691,13 @@ export function PDFViewer({
         <button
           onClick={() => goTo(page - 1)}
           disabled={page <= 1 || isLoading}
-          className="w-9 h-9 rounded-lg bg-muted border border-border text-muted-foreground font-bold text-lg hover:border-primary hover:text-primary disabled:opacity-25 transition active:scale-95"
+          className="w-9 h-9 rounded-lg bg-muted border-2 border-border text-muted-foreground font-bold text-lg hover:border-primary hover:text-primary disabled:opacity-25 transition active:scale-95"
           aria-label="Previous page"
         >
           ‹
         </button>
 
-        <div className="flex items-center gap-2 bg-muted border border-border rounded-lg px-3 py-1.5">
+        <div className="flex items-center gap-2 bg-muted border-2 border-border rounded-lg px-3 py-1.5">
           <span className="text-muted-foreground text-xs font-medium">Page</span>
           <input
             type="number"
@@ -717,7 +717,7 @@ export function PDFViewer({
         <button
           onClick={() => goTo(page + 1)}
           disabled={page >= totalPages || isLoading}
-          className="w-9 h-9 rounded-lg bg-muted border border-border text-muted-foreground font-bold text-lg hover:border-primary hover:text-primary disabled:opacity-25 transition active:scale-95"
+          className="w-9 h-9 rounded-lg bg-muted border-2 border-border text-muted-foreground font-bold text-lg hover:border-primary hover:text-primary disabled:opacity-25 transition active:scale-95"
           aria-label="Next page"
         >
           ›
@@ -740,14 +740,14 @@ export function PDFViewer({
               return next;
             });
           }}
-          className="w-8 h-8 rounded-md bg-muted border border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
+          className="w-8 h-8 rounded-xl bg-muted border-2 border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
           aria-label="Zoom out"
         >
           −
         </button>
         <button
           onClick={() => setFitMode((m) => (m === "width" ? "manual" : "width"))}
-          className={`px-2 h-8 rounded-md border text-[10px] font-semibold transition active:scale-95 ${
+          className={`px-2 h-8 rounded-xl border text-[10px] font-semibold transition active:scale-95 ${
             fitMode === "width"
               ? "bg-primary/15 border-primary/40 text-primary"
               : "bg-muted border-border text-muted-foreground hover:text-foreground"
@@ -766,7 +766,7 @@ export function PDFViewer({
               return next;
             });
           }}
-          className="w-8 h-8 rounded-md bg-muted border border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
+          className="w-8 h-8 rounded-xl bg-muted border-2 border-border text-muted-foreground text-xs hover:text-foreground transition active:scale-95"
           aria-label="Zoom in"
         >
           +

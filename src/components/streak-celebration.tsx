@@ -75,7 +75,7 @@ export function StreakCelebration({ streak }: { streak?: number | null }) {
             {confetti.map((c, i) => (
               <span
                 key={i}
-                className="confetti-drop absolute top-[-12px] rounded-sm"
+                className="confetti-drop absolute top-[-12px] rounded-lg"
                 style={{
                   left: c.left,
                   animationDelay: c.delay,

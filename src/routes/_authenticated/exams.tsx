@@ -127,7 +127,7 @@ function ExamsPage() {
                 </div>
                 {e.notes && <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{e.notes}</p>}
                 <div className="mt-3 flex items-center gap-3">
-                  <button onClick={() => autoReadiness(e.id, e.subject)} className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                  <button onClick={() => autoReadiness(e.id, e.subject)} className="inline-flex items-center gap-1 rounded-xl border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
                     <Sparkles className="h-3 w-3" /> Auto-compute
                   </button>
                   <button onClick={() => remove(e.id)} className="inline-flex items-center gap-1 text-xs text-destructive hover:underline">

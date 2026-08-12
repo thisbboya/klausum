@@ -132,7 +132,7 @@ function SolvePage() {
 
       {previewUrl && (
         <div className="space-y-4">
-          <div className="relative rounded-xl overflow-hidden border border-border">
+          <div className="relative rounded-xl overflow-hidden border-2 border-border">
             <img src={previewUrl} alt="Problem" className="w-full max-h-72 object-contain bg-black/40" />
             <button
               onClick={() => {
@@ -140,7 +140,7 @@ function SolvePage() {
                 setResult(null);
                 setFollowups([]);
               }}
-              className="absolute top-2 right-2 text-xs bg-background/90 border border-border rounded-full px-3 py-1 inline-flex items-center gap-1"
+              className="absolute top-2 right-2 text-xs bg-background/90 border-2 border-border rounded-full px-3 py-1 inline-flex items-center gap-1"
             >
               <RefreshCw className="h-3 w-3" /> New problem
             </button>
@@ -158,7 +158,7 @@ function SolvePage() {
 
           {result && !loading && (
             <div className="space-y-4">
-              <div className="card-chunky bg-card/60 p-4">
+              <div className="card-chunky bg-card p-4">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
                   Problem · {result.subject}
                 </div>
@@ -169,7 +169,7 @@ function SolvePage() {
 
               <ol className="space-y-3">
                 {result.steps.map((s) => (
-                  <li key={s.step_number} className="card-chunky bg-card/40 p-4">
+                  <li key={s.step_number} className="card-chunky bg-card p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="h-6 w-6 btn-3d rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                         {s.step_number}

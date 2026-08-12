@@ -108,7 +108,7 @@ function FormulasPage() {
       />
 
       {adding && (
-        <div className="space-y-3 card-chunky/60 bg-card/60 p-4">
+        <div className="space-y-3 card-chunky bg-card p-4">
           <div className="grid md:grid-cols-2 gap-3">
             <input className="input" placeholder="Name (e.g. Quadratic formula)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <input className="input" placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
@@ -138,13 +138,13 @@ function FormulasPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/60 p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           No formulas yet. Add your first one above.
         </div>
       ) : (
         <ul className="grid md:grid-cols-2 gap-3">
           {filtered.map((f: any) => (
-            <li key={f.id} className="card-chunky/60 bg-card/60 p-4 space-y-2">
+            <li key={f.id} className="card-chunky bg-card p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{f.name}</div>
@@ -159,7 +159,7 @@ function FormulasPage() {
                   </button>
                 </div>
               </div>
-              <div className="overflow-x-auto rounded-md border border-border/40 bg-background/40 p-3">
+              <div className="overflow-x-auto rounded-xl border-2 border-border/40 bg-background/40 p-3">
                 <SafeMath latex={f.latex} />
               </div>
               {f.description && <p className="text-xs text-muted-foreground">{f.description}</p>}

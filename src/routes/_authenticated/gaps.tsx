@@ -188,7 +188,7 @@ function GapsPage() {
       className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
         filter === id
           ? "border-primary bg-primary/15 text-primary"
-          : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+          : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
       }`}
     >
       {label} <span className="opacity-70">· {n}</span>
@@ -242,7 +242,7 @@ function GapsPage() {
       )}
 
       {visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/60 p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           {filter === "closed"
             ? "Nothing closed yet. Resolve a gap to see it here."
             : <>Nothing here. Take a quiz to surface weak spots. <Link to="/quizzes" className="text-primary underline">Quizzes →</Link></>}
@@ -261,7 +261,7 @@ function GapsPage() {
                 key={g.id}
                 className={`relative overflow-hidden rounded-2xl border-2 pl-5 pr-4 py-4 transition ${
                   isClosed
-                    ? "border-border bg-card/40 opacity-75"
+                    ? "border-border bg-card opacity-75"
                     : "border-border bg-card hover:border-primary/50"
                 }`}
               >
