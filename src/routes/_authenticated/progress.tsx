@@ -8,7 +8,7 @@ import { generateWeeklyInsight } from "@/lib/insights.functions";
 import { useEffect, useState } from "react";
 import { celebrateNewBadges } from "@/lib/badge-celebrate";
 import { toast } from "@/lib/notify";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line } from "recharts";
+import { XAxis, YAxis, ResponsiveContainer, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line } from "recharts";
 import { Flame, Trophy, Target, BookOpen, Sparkles, Lock } from "lucide-react";
 import { LEVELS, levelFor, BADGES, badgeProgress, nearestBadge, type BadgeStats } from "@/lib/gamification";
 import { Collection } from "@/components/collection";
@@ -253,17 +253,13 @@ function ProgressPage() {
               <div className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all" style={{ width: `${lvl.pct}%` }} />
             </div>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-11 gap-1">
-            {LEVELS.map((L) => {
-              const reached = xpTotal >= L.xp;
-              const isCurrent = L.name === lvl.current.name;
-              return (
-                <div key={L.name} className={`rounded-xl border p-2 text-center text-[10px] transition ${isCurrent ? "border-primary bg-primary/10 text-primary" : reached ? "border-border bg-card text-foreground" : "border-border/30 bg-background/50 text-muted-foreground/60"}`}>
-                  <div className="font-mono">{L.xp}</div>
-                  <div className="truncate" title={L.name}>{L.name.split(" ")[0]}</div>
-                </div>
-              );
-            })}
+          {/* An eleven-tile ladder of every level used to sit here, most of
+              them thousands of XP away and unreadable at 10px. The bar above
+              already says where you are; the only other useful fact is how
+              many rungs are left, which is one line. */}
+          <div className="text-xs font-semibold text-muted-foreground">
+            Level {LEVELS.findIndex((L) => L.name === lvl.current.name) + 1} of {LEVELS.length}
+            {lvl.next ? ` · ${LEVELS.length - LEVELS.findIndex((L) => L.name === lvl.current.name) - 1} to go` : " · the top"}
           </div>
         </div>
       </Card>
@@ -300,18 +296,9 @@ function ProgressPage() {
         <Heatmap days={heatmap} />
       </Card>
 
-      <Card title="Daily activity (14d)">
-        <div className="h-56">
-          <ResponsiveContainer>
-            <BarChart data={days14}>
-              <XAxis dataKey="day" stroke="currentColor" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="currentColor" fontSize={11} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-              <Bar dataKey="reviews" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+      {/* A 14-day bar chart of reviews sat directly beneath a 90-day heatmap
+          of the same activity — two pictures of one number, the second of them
+          a strictly smaller window than the first. */}
 
       <div className="grid md:grid-cols-2 gap-4">
         <Card title="Bloom mastery">

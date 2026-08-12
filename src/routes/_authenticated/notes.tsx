@@ -112,6 +112,60 @@ function NotesList() {
   );
 }
 
+/**
+ * One-time explanation of the Cornell method.
+ *
+ * Dismissible and remembered, because it is scaffolding: useful exactly once,
+ * and clutter every time after that.
+ */
+function HowItWorks() {
+  const [hidden, setHidden] = useState(() => {
+    try { return localStorage.getItem("klausum:cornellHelp") === "1"; } catch { return false; }
+  });
+  if (hidden) return null;
+
+  const steps = [
+    { n: 1, title: "Notes", body: "Write here first, while listening or reading. Messy is fine." },
+    { n: 2, title: "Cues", body: "Afterwards, turn each idea into a question. This is your self-test." },
+    { n: 3, title: "Summary", body: "Cover the notes and write what it meant. This is what makes it stick." },
+  ];
+
+  return (
+    <section className="rounded-2xl border-2 border-sky/40 bg-sky/8 p-3.5">
+      <div className="flex items-start justify-between gap-2">
+        <h2 className="font-display text-sm font-extrabold">How Cornell notes work</h2>
+        <button
+          onClick={() => {
+            setHidden(true);
+            try { localStorage.setItem("klausum:cornellHelp", "1"); } catch {}
+          }}
+          className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        >
+          Got it
+        </button>
+      </div>
+      <ol className="mt-2 grid gap-2 sm:grid-cols-3">
+        {steps.map((s) => (
+          <li key={s.n} className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky text-[11px] font-extrabold text-sky-foreground">
+              {s.n}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs font-extrabold">{s.title}</span>
+              <span className="block text-[11px] font-semibold leading-snug text-muted-foreground">
+                {s.body}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
+        Write the notes, then let Klausum draft your cues and summary — you edit them.
+      </p>
+    </section>
+  );
+}
+
 function NoteEditor({ id }: { id: string }) {
   const { user, session } = useAuth();
   const navigate = Route.useNavigate();
@@ -273,10 +327,16 @@ function NoteEditor({ id }: { id: string }) {
         />
       </div>
 
+      {/* The three panes were labelled "Cue Column", "Notes Column" and
+          "Summary" and left at that, which assumes the reader already knows
+          the Cornell method. Anyone who does not sees three empty boxes and no
+          reason to prefer them over a blank page. */}
+      <HowItWorks />
+
       <div className="flex flex-wrap gap-2">
-        <ToolBtn onClick={aiCues} busy={busy === "cues"} icon={Sparkles}>AI Generate Cues</ToolBtn>
-        <ToolBtn onClick={aiSummary} busy={busy === "summary"} icon={Wand2}>AI Summarise</ToolBtn>
-        <ToolBtn onClick={convertToFlashcards} busy={busy === "cards"} icon={Layers}>Convert to Flashcards</ToolBtn>
+        <ToolBtn onClick={aiCues} busy={busy === "cues"} icon={Sparkles}>Write my cues</ToolBtn>
+        <ToolBtn onClick={aiSummary} busy={busy === "summary"} icon={Wand2}>Write my summary</ToolBtn>
+        <ToolBtn onClick={convertToFlashcards} busy={busy === "cards"} icon={Layers}>Make flashcards</ToolBtn>
         <ToolBtn onClick={exportPdf} busy={exporting} icon={Download}>Export PDF</ToolBtn>
       </div>
 
@@ -288,7 +348,7 @@ function NoteEditor({ id }: { id: string }) {
             setMode={setCueMode}
             value={cue}
             onChange={setCue}
-            placeholder="Questions, keywords, recall triggers…"
+            placeholder="2. Afterwards, turn each idea into a question you could be asked. These become your self-test."
             className="border-b md:border-b-0 md:border-r border-border bg-background/40"
             tone="muted"
           />
@@ -298,7 +358,7 @@ function NoteEditor({ id }: { id: string }) {
             setMode={setNotesMode}
             value={notes}
             onChange={setNotes}
-            placeholder="Main note-taking area. Markdown & $LaTeX$ supported."
+            placeholder="1. Write here first, during the lecture or while reading. Markdown and $LaTeX$ both work."
             tone="muted"
           />
         </div>
@@ -308,7 +368,7 @@ function NoteEditor({ id }: { id: string }) {
           setMode={setSummaryMode}
           value={summary}
           onChange={setSummary}
-          placeholder="In your own words…"
+          placeholder="3. Last, close the notes and write what it all meant in your own words. This is the part that makes it stick."
           className="border-t border-border bg-primary/5"
           tone="primary"
           minH="100px"
