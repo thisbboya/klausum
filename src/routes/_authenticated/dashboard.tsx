@@ -21,6 +21,7 @@ import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { HeartsRow } from "@/components/hearts-row";
 import { CallingCard } from "@/components/calling-card";
+import { ChestCard } from "@/components/chest-card";
 import { TodaySession, buildSessionTasks } from "@/components/today-session";
 import { ensureTodayQuests } from "@/lib/quests";
 import { BADGES } from "@/lib/gamification";
@@ -393,6 +394,11 @@ function Dashboard() {
         {/* Right rail — level, league, weekly snapshot (CourieX style) */}
         <aside className="space-y-4">
           <XpLevelCard xp={profile?.xp_total ?? 0} />
+          {/* The chest was built, the unlock condition was computed on this
+              very page, and the component was never once rendered — so
+              finishing your daily quests silently rewarded nothing. It sits
+              here, next to the level it feeds. */}
+          <ChestCard userId={user?.id} tier="bronze" unlocked={!!data?.chestUnlocked} />
           <LeaguesCard />
           <div className="card-chunky bg-card p-4">
             <h3 className="font-display text-sm font-extrabold uppercase tracking-wide">
