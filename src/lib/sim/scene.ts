@@ -174,10 +174,19 @@ export function parseScene(src: string): Scene {
       const rest = m[2];
       const attrs: Record<string, Expr> = {};
       let ok = true;
-      for (const a of ATTRS[kind]) {
-        const am = new RegExp(`\\b${a}\\s*=\\s*([^\\s]+(?:\\s*[-+*/^]\\s*[^\\s]+)*)`, "i").exec(rest);
-        if (!am) continue;
-        try { attrs[a] = compile(am[1]); } catch { ok = false; }
+      // Each value runs from its "=" to the start of the NEXT "key=", rather
+      // than being matched by a pattern of what an expression may contain.
+      //
+      // The pattern version silently truncated anything it did not recognise:
+      // "%" was missing from its operator class, so a perfectly valid
+      // "y=0.1 + (0.5 * gravity * (t % 2)^2) / 10" was chopped at "(t", left
+      // with unbalanced brackets, and thrown away — taking the whole diagram
+      // with it. Delimiting on the next key instead means the expression
+      // grammar is decided by the parser that actually evaluates it, which is
+      // the only thing that can be right about it.
+      for (const [a, value] of splitAttrs(rest)) {
+        if (!ATTRS[kind].includes(a)) continue;
+        try { attrs[a] = compile(value); } catch { ok = false; }
       }
       if (!ok || Object.keys(attrs).length === 0) continue;
       const cm = /\bcount\s*=\s*(\d+)/i.exec(rest);
@@ -195,6 +204,30 @@ export function parseScene(src: string): Scene {
 
   if (shapes.length === 0) throw new Error("A scene needs at least one shape");
   return { title, blurb, params, shapes, readouts, trace };
+}
+
+/**
+ * Break `x=0.5 y=0.1 + (a*b) r=0.06 primary "apple"` into [key, expression]
+ * pairs, letting a value contain spaces, brackets and any operator.
+ *
+ * The trailing colour word and quoted label belong to the shape rather than to
+ * the last attribute, so they are trimmed off the final value.
+ */
+function splitAttrs(rest: string): [string, string][] {
+  const keys = [...rest.matchAll(/(?:^|\s)([a-z][a-z0-9_]*)\s*=/gi)];
+  const out: [string, string][] = [];
+  for (let k = 0; k < keys.length; k++) {
+    const m = keys[k];
+    const from = m.index! + m[0].length;
+    const to = k + 1 < keys.length ? keys[k + 1].index! : rest.length;
+    let value = rest.slice(from, to).trim();
+    if (k + 1 === keys.length) {
+      value = value.replace(/"[^"]*"\s*$/, "").trim();
+      value = value.replace(new RegExp(`\\s+(${COLOR_KEYS.join("|")})\\s*$`, "i"), "").trim();
+    }
+    if (value) out.push([m[1].toLowerCase(), value]);
+  }
+  return out;
 }
 
 const pickColor = (s: string) => {

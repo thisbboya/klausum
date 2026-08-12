@@ -5,8 +5,9 @@
 // when a student asks about Faraday's law, giving them the real draggable
 // magnet is better than anything the model could describe in twelve lines.
 // The AI's job there is recognition, not authorship.
-import { useMemo } from "react";
-import { AlertTriangle, FlaskConical } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { FlaskConical } from "lucide-react";
+import { reportError } from "@/lib/report-error";
 import { Link } from "@tanstack/react-router";
 import { parseScene, sceneToModel } from "@/lib/sim/scene";
 import { simById } from "@/lib/sim/registry";
@@ -21,17 +22,15 @@ export function SceneBlock({ code }: { code: string }) {
     }
   }, [code]);
 
-  if (parsed.error || !parsed.model) {
-    // A malformed diagram must not swallow the explanation around it.
-    return (
-      <div className="not-prose my-3 rounded-xl border-2 border-border bg-surface-2 p-3">
-        <div className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5" /> Diagram couldn't be built
-        </div>
-        <pre className="overflow-x-auto text-xs leading-relaxed">{code}</pre>
-      </div>
-    );
-  }
+  // A student must never be shown our failures — and least of all the raw
+  // source of the thing that failed, which is what this used to print. The
+  // explanation around the diagram is still perfectly good on its own, so the
+  // block simply isn't there; the detail goes to the admin error log instead.
+  useEffect(() => {
+    if (parsed.error) reportError("scene-block", `${parsed.error}\n---\n${code.slice(0, 800)}`);
+  }, [parsed.error, code]);
+
+  if (parsed.error || !parsed.model) return null;
 
   return <SimulationPlayer model={parsed.model} height={280} />;
 }
@@ -40,13 +39,13 @@ export function SimRefBlock({ code }: { code: string }) {
   const id = code.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
   const model = simById(id);
 
-  if (!model) {
-    return (
-      <div className="not-prose my-3 rounded-xl border-2 border-border bg-surface-2 p-3 text-xs font-semibold text-muted-foreground">
-        No built-in simulation called “{id}”.
-      </div>
-    );
-  }
+  // Same rule: a wrong id is our problem, not the student's. It is logged for
+  // admins and simply omitted from the answer.
+  useEffect(() => {
+    if (!model) reportError("simref-block", `Unknown simulation id: ${id}`);
+  }, [model, id]);
+
+  if (!model) return null;
 
   return (
     <div className="not-prose my-3">

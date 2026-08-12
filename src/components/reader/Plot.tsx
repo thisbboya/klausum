@@ -15,8 +15,9 @@
 //   ```
 //
 // Expressions are parsed by our own evaluator, never eval() — see mathexpr.ts.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Minus, Plus, RotateCcw } from "lucide-react";
+import { reportError } from "@/lib/report-error";
 import { compileExpression, prettyExpression } from "@/lib/mathexpr";
 // Recharts is heavy and most answers have no graph in them, so it only loads
 // when a plot is actually on screen — the same rule Diagram.tsx follows. It is
@@ -118,16 +119,14 @@ export function Plot({ code }: { code: string }) {
     return rows;
   }, [parsed.spec, zoom]);
 
-  if (parsed.error || !parsed.spec) {
-    return (
-      <div className="not-prose my-3 rounded-xl border-2 border-border bg-surface-2 p-3">
-        <div className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5" /> Graph couldn't be drawn
-        </div>
-        <pre className="overflow-x-auto text-xs leading-relaxed">{code}</pre>
-      </div>
-    );
-  }
+  // Never show a student our failure, and never dump the source that caused
+  // it — the surrounding explanation stands on its own without the visual.
+  // The detail goes to the admin error log instead.
+  useEffect(() => {
+    if (parsed.error || !parsed.spec) reportError("plot-block", String(code).slice(0, 800));
+  }, [parsed.error, parsed.spec, code]);
+
+  if (parsed.error || !parsed.spec) return null;
 
   const { title, series } = parsed.spec;
 

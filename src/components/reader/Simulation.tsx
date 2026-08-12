@@ -21,8 +21,9 @@
 //   ```
 //
 // Every expression goes through the same parser as plots: no eval, ever.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { reportError } from "@/lib/report-error";
 import { compileScoped } from "@/lib/mathexpr";
 
 import { usePlotCanvas } from "./use-plot-canvas";
@@ -183,16 +184,14 @@ export function Simulation({ code }: { code: string }) {
     return rows;
   }, [parsed.spec, values]);
 
-  if (parsed.error || !parsed.spec) {
-    return (
-      <div className="not-prose my-3 rounded-xl border-2 border-border bg-surface-2 p-3">
-        <div className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5" /> Simulation couldn't be built
-        </div>
-        <pre className="overflow-x-auto text-xs leading-relaxed">{code}</pre>
-      </div>
-    );
-  }
+  // Never show a student our failure, and never dump the source that caused it.
+  // The explanation around the simulation stands on its own; the detail goes to
+  // the admin error log.
+  useEffect(() => {
+    if (parsed.error) reportError("sim-block", `${parsed.error}\n---\n${code.slice(0, 800)}`);
+  }, [parsed.error, code]);
+
+  if (parsed.error || !parsed.spec) return null;
 
   const spec = parsed.spec;
   const reset = () =>

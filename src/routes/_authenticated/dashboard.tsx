@@ -20,7 +20,7 @@ import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { CallingCard } from "@/components/calling-card";
 import { ChestCard } from "@/components/chest-card";
-import { GuidedTour } from "@/components/tour/GuidedTour";
+import { GuidedTour, hasSeenTour } from "@/components/tour/GuidedTour";
 import { TodaySession, buildSessionTasks } from "@/components/today-session";
 import { ensureTodayQuests } from "@/lib/quests";
 import { BADGES } from "@/lib/gamification";
@@ -200,15 +200,17 @@ function Dashboard() {
   const rawName = profile?.full_name || "";
   const firstName = (rawName.includes("@") ? rawName.split("@")[0] : rawName.split(" ")[0]) || "there";
 
-  // First-run coach mark: brand-new account, nothing uploaded yet
-  const [tourDismissed, setTourDismissed] = useState(() => {
-    try { return localStorage.getItem("klausum:startTourDone") === "1"; } catch { return true; }
-  });
-  const showTour =
-    !tourDismissed && data && data.materials.length === 0 && data.totalCards === 0;
+  // Shown to anyone who has not seen it, not only to empty accounts.
+  //
+  // Gating it on "zero materials and zero cards" meant every existing student
+  // — the people who most need telling what Review, the Lab and the tutor are
+  // for — was silently excluded, and the tour appeared to be broken because
+  // for them it simply never ran. New features arrive after signup; a
+  // walkthrough that can only ever fire on day one can never explain them.
+  const [tourDismissed, setTourDismissed] = useState(() => hasSeenTour());
+  const showTour = !tourDismissed && !!data;
   function dismissTour() {
     setTourDismissed(true);
-    try { localStorage.setItem("klausum:startTourDone", "1"); } catch {}
   }
 
   return (

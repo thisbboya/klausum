@@ -10,6 +10,7 @@
 // actually appears. A student who never asks for one never pays for it.
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Maximize2 } from "lucide-react";
+import { reportError } from "@/lib/report-error";
 
 let mermaidPromise: Promise<any> | null = null;
 /** Theme the loaded instance was configured for, so a switch re-applies it. */
@@ -129,18 +130,14 @@ export function Diagram({ code }: { code: string }) {
     };
   }, [code]);
 
-  if (error) {
-    // A diagram that won't parse must not eat the explanation around it — show
-    // the source so the answer is still usable.
-    return (
-      <div className="not-prose my-3 rounded-xl border-2 border-border bg-surface-2 p-3">
-        <div className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5" /> Diagram couldn't be drawn
-        </div>
-        <pre className="overflow-x-auto text-xs leading-relaxed">{code}</pre>
-      </div>
-    );
-  }
+  // Never show a student our failure, and never dump the source that caused
+  // it — the surrounding explanation stands on its own without the visual.
+  // The detail goes to the admin error log instead.
+  useEffect(() => {
+    if (error) reportError("diagram-block", String(code).slice(0, 800));
+  }, [error, code]);
+
+  if (error) return null;
 
   if (!svg) {
     return (

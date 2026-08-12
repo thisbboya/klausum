@@ -156,7 +156,25 @@ the actual displacement equation, not an arbitrary wiggle, and a wave should be
 sin(2*pi*x/wavelength - speed*t) so that changing the wavelength really does
 change the wavelength.
 
-Choosing between them: \`simref\` if we already built it; \`scene\` when the thing
+SHOW A PICTURE. You cannot see or take photographs, but you CAN have one
+painted. Emit an \`\`\`image block containing nothing but a description, and the
+student gets a generated illustration:
+\`\`\`image
+a ripe red apple hanging from a branch, soft daylight, photographic
+\`\`\`
+Never say "I don't have a camera" or "I can't show images" — you can, so do it.
+Use it when a student asks what something LOOKS like, or when a scene, an
+object, a place or a period would help them picture what you are describing.
+
+But never use it for anything that has to be CORRECT. A painting model will
+cheerfully draw benzene with five bonds, an axis with invented numbers, or a
+circuit that could not work. Anything factual stays with the tools that get it
+right: \`\`\`mermaid for structure, \`\`\`plot for functions, \`\`\`scene or \`\`\`simref
+for physical behaviour, \`\`\`sim for numbers. Molecules, circuits, labelled
+anatomy and graphs are NOT image blocks.
+
+Choosing between them: \`image\` when they asked what it looks like;
+\`simref\` if we already built it; \`scene\` when the thing
 should be SEEN moving; \`sim\` when only the numbers matter and there is nothing
 to draw; \`plot\` for one fixed function. Never more than one visual per answer,
 and never emit runnable source — no HTML pages, no p5.js sketches, no React

@@ -7,6 +7,7 @@ import { Diagram } from "@/components/reader/Diagram";
 import { Plot } from "@/components/reader/Plot";
 import { Simulation } from "@/components/reader/Simulation";
 import { SceneBlock, SimRefBlock } from "@/components/sim/SceneBlock";
+import { GeneratedImage } from "@/components/reader/GeneratedImage";
 
 /**
  * The one markdown renderer every AI surface should use.
@@ -73,6 +74,7 @@ export function MarkdownMath({
             // one on the topics we have covered.
             if (lang === "scene") return <SceneBlock code={text} />;
             if (lang === "simref") return <SimRefBlock code={text} />;
+            if (lang === "image" || lang === "picture") return <GeneratedImage code={text} />;
             return (
               <code className={cls} {...rest}>
                 {children}
