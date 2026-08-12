@@ -2200,6 +2200,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_scenes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          subject: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          subject?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          subject?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_chapters: {
         Row: {
           channel: string | null

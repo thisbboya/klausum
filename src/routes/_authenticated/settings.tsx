@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/notify";
-import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck, Bell, Sparkles, Crown, Users, Megaphone, LifeBuoy, Mail } from "lucide-react";
+import { resetPageTours } from "@/components/tour/PageTour";
+import { User, GraduationCap, Sliders, Database, LogOut, ShieldCheck, Bell, Sparkles, Crown, Users, Megaphone, LifeBuoy, Mail, RotateCcw } from "lucide-react";
 import { SecurityTab } from "@/components/settings/SecurityTab";
 import { useTheme } from "@/components/theme-provider";
 import { CompanionSVG, getCompanion } from "@/components/companion-svg";
@@ -520,6 +521,25 @@ function PreferencesTab() {
       </Field>
       <ThemePicker />
       <SoundsToggle />
+
+      {/* The walkthroughs are shown once per page and then never again, which
+          is right for someone who has learned the app and wrong for anyone who
+          skipped through them. */}
+      <section className="card-chunky bg-card p-4">
+        <h2 className="font-display text-lg font-extrabold">Tutorials</h2>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">
+          Replay the walkthrough on every page — what each button does and why.
+        </p>
+        <button
+          onClick={() => {
+            resetPageTours();
+            toast.success("Tutorials reset — open any page to see it again");
+          }}
+          className="btn-3d mt-3 inline-flex items-center gap-2 rounded-xl bg-sky px-4 py-2 text-sm font-extrabold uppercase tracking-wide text-sky-foreground"
+        >
+          <RotateCcw className="h-4 w-4" /> Show tutorials again
+        </button>
+      </section>
       <button onClick={save} disabled={saving} className="btn-3d rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
       <style>{`.input { width:100%; border-radius: 0.5rem; border:1px solid hsl(var(--border)); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline:none; }`}</style>
     </div>

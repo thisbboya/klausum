@@ -233,7 +233,9 @@ function Dashboard() {
 
       {/* The reason sits directly under the companion and above every counter,
           because the counters only mean something in service of it. */}
-      <CallingCard />
+      <div data-tour-calling>
+        <CallingCard />
+      </div>
 
       {/* Hearts were shown here too, floating on their own row. They only mean
           anything inside a review session, which is the one place they are
@@ -366,7 +368,9 @@ function Dashboard() {
               very page, and the component was never once rendered — so
               finishing your daily quests silently rewarded nothing. It sits
               here, next to the level it feeds. */}
+          <div data-tour-chest>
           <ChestCard userId={user?.id} tier="bronze" unlocked={!!data?.chestUnlocked} />
+          </div>
           <LeaguesCard />
           <div className="card-chunky bg-card p-4">
             <h3 className="font-display text-sm font-extrabold uppercase tracking-wide">

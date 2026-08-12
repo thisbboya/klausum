@@ -151,7 +151,7 @@ function GamesPage() {
             <h2 className="mb-2 text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
               1 · Pick a material
             </h2>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div data-tour-game-pick className="grid gap-2 sm:grid-cols-2">
               {materials.map((m) => {
                 const n = toConcepts(m.key_concepts).length;
                 const active = m.id === materialId;

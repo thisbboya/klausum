@@ -404,12 +404,14 @@ function ReviewPage() {
   // The choice happens here, between wanting to study and the first card.
   if (!started) {
     return (
-      <LoadoutPicker
-        selected={loadout}
-        onChange={setLoadout}
-        onStart={startSession}
-        dueCount={cards.length}
-      />
+      <div data-tour-loadout>
+        <LoadoutPicker
+          selected={loadout}
+          onChange={setLoadout}
+          onStart={startSession}
+          dueCount={cards.length}
+        />
+      </div>
     );
   }
 

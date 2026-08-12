@@ -32,7 +32,17 @@ export function hasSeenTour() {
   }
 }
 
-export function GuidedTour({ steps, onDone }: { steps: TourStep[]; onDone?: () => void }) {
+export function GuidedTour({
+  steps,
+  onDone,
+  /** Whether finishing writes the global "seen the tour" flag. Per-page tours
+      keep their own record, so they opt out of the shared one. */
+  persist = true,
+}: {
+  steps: TourStep[];
+  onDone?: () => void;
+  persist?: boolean;
+}) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [ready, setReady] = useState(false);
@@ -86,10 +96,12 @@ export function GuidedTour({ steps, onDone }: { steps: TourStep[]; onDone?: () =
   }, []);
 
   function finish() {
-    try {
-      localStorage.setItem(SEEN_KEY, "1");
-    } catch {
-      /* nothing to remember it with; the tour simply runs again */
+    if (persist) {
+      try {
+        localStorage.setItem(SEEN_KEY, "1");
+      } catch {
+        /* nothing to remember it with; the tour simply runs again */
+      }
     }
     onDone?.();
   }

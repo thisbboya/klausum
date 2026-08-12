@@ -14,6 +14,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
 import { StudentBadge } from "@/components/student-badge";
 import { FloatingCompanion } from "@/components/floating-companion";
+import { PageTour } from "@/components/tour/PageTour";
 import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
 import { toast } from "@/lib/notify";
 
@@ -203,6 +204,11 @@ function AuthLayout() {
           <Outlet />
         </div>
       </main>
+      {/* Each page teaches itself the first time it is opened, which is the
+          only moment the explanation is about something the student can
+          actually see in front of them. */}
+      <PageTour />
+
       {/* Not on the tutor: it is pinned bottom-right, which is exactly where
           the composer's send button lives, so it sat on top of the one control
           that screen exists for. The tutor is also the one page where a second

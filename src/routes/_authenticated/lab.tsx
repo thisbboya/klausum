@@ -4,10 +4,10 @@
 // experiment you chose to run teaches more than one you were marched through —
 // but never only a toy: each simulation carries missions, so curiosity has
 // somewhere to go once the novelty of dragging things wears off.
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FlaskConical, Trophy } from "lucide-react";
+import { FlaskConical, Trophy, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SIMULATIONS, SUBJECT_LABEL } from "@/lib/sim/registry";
@@ -17,6 +17,9 @@ import { ChallengePanel } from "@/components/sim/ChallengePanel";
 import { PhetEmbed } from "@/components/sim/PhetEmbed";
 import { phetBySubject, type PhetSim } from "@/lib/sim/phet";
 import { QUESTS, questState } from "@/lib/sim/quests";
+import { parseScene, sceneToModel } from "@/lib/sim/scene";
+import { toast } from "@/lib/notify";
+import { reportError } from "@/lib/report-error";
 import { CHALLENGES } from "@/lib/sim/challenges";
 import { QuestTrack } from "@/components/sim/QuestTrack";
 import { useCollection } from "@/components/collection";
@@ -37,7 +40,23 @@ function Lab() {
   // throttles them precisely so this doesn't thrash.
   const [readouts, setReadouts] = useState<Record<string, number>>({});
   const [phetSubject, setPhetSubject] = useState<PhetSim["subject"]>("physics");
-  const [view, setView] = useState<"quests" | "bench" | "explore">("quests");
+  const [view, setView] = useState<"quests" | "bench" | "mine" | "explore">("quests");
+
+  // Simulations the student asked the tutor for and kept. This is how the Lab
+  // covers topics nobody hand-built: the engine is already loaded, so each one
+  // costs a few hundred bytes of stored text.
+  const { data: mine = [] } = useQuery({
+    queryKey: ["user-scenes", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_scenes")
+        .select("id, title, code, created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
 
   const { data: progress = [] } = useQuery({
     queryKey: ["sim-progress", user?.id],
@@ -88,11 +107,12 @@ function Lab() {
           cards, a simulation, its missions and eighteen PhET tiles into a
           single scroll, so finding the thing you came for meant reading past
           everything you didn't. */}
-      <div className="flex gap-1 rounded-2xl border-2 border-border bg-surface-2 p-1">
+      <div data-tour-lab-tabs className="flex gap-1 rounded-2xl border-2 border-border bg-surface-2 p-1">
         {(
           [
             ["quests", "Quests"],
             ["bench", "Bench"],
+            ["mine", "Mine"],
             ["explore", "Explore"],
           ] as const
         ).map(([k, label]) => (
@@ -110,7 +130,7 @@ function Lab() {
 
       {view === "quests" && (
         <section>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div data-tour-lab-quest className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {questOrder.map((q) => (
             <QuestTrack
               key={q.id}
@@ -199,6 +219,29 @@ function Lab() {
         </>
       )}
 
+      {view === "mine" && (
+        <section className="space-y-3">
+          {mine.length === 0 ? (
+            <div className="card-chunky border-dashed p-8 text-center">
+              <p className="text-sm font-extrabold">No simulations of your own yet</p>
+              <p className="mx-auto mt-1 max-w-md text-xs font-semibold text-muted-foreground">
+                Ask the tutor for one — “simulate a pendulum”, “show me how a
+                transformer works” — then tap <em>Save to my Lab</em> under the
+                simulation it builds. It lands here.
+              </p>
+              <Link
+                to="/tutor"
+                className="btn-3d mt-4 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-extrabold text-primary-foreground"
+              >
+                Ask the tutor
+              </Link>
+            </div>
+          ) : (
+            mine.map((s: any) => <SavedScene key={s.id} row={s} onDeleted={() => qc.invalidateQueries({ queryKey: ["user-scenes"] })} />)
+          )}
+        </section>
+      )}
+
       {/* Breadth, clearly separated from the scored tier. These cannot report
           their state to us, so they cannot be missions — and saying so here is
           better than letting someone wonder why an hour of PhET earned them
@@ -232,6 +275,43 @@ function Lab() {
         </div>
       </section>
       )}
+    </div>
+  );
+}
+
+/**
+ * One saved simulation. Parsed on render rather than stored parsed, so an
+ * improvement to the scene engine reaches every scene a student already kept.
+ */
+function SavedScene({ row, onDeleted }: { row: any; onDeleted: () => void }) {
+  const model = useMemo(() => {
+    try {
+      return sceneToModel(parseScene(row.code), `saved-${row.id}`);
+    } catch {
+      return null;
+    }
+  }, [row.code, row.id]);
+
+  async function remove() {
+    if (!confirm(`Remove "${row.title}" from your Lab?`)) return;
+    const { error } = await supabase.from("user_scenes").delete().eq("id", row.id);
+    if (error) toast.error(reportError("scene-delete", error));
+    else onDeleted();
+  }
+
+  // A scene that no longer parses is our bug, not the student's; it is dropped
+  // quietly rather than shown to them as a broken card.
+  if (!model) return null;
+
+  return (
+    <div>
+      <SimulationPlayer model={model} height={300} />
+      <button
+        onClick={() => void remove()}
+        className="mt-1.5 inline-flex items-center gap-1.5 rounded-xl border-2 border-border px-3 py-1.5 text-xs font-extrabold text-muted-foreground transition hover:border-destructive hover:text-destructive"
+      >
+        <Trash2 className="h-3.5 w-3.5" /> Remove
+      </button>
     </div>
   );
 }
