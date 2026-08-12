@@ -254,6 +254,9 @@ function NavItem({ to, icon: Icon, label, showDot }: { to: string; icon: any; la
   return (
     <Link
       to={to as any}
+      // Anchors the first-run tour. Keyed by route so a step survives the
+      // label being reworded, which is the thing most likely to change.
+      data-tour={to}
       className={`relative flex items-center gap-3 rounded-xl border-2 px-3 py-2 font-bold transition ${
         active
           ? "border-sky/40 bg-sky/12 text-sky"

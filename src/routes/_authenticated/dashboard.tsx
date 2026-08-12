@@ -20,6 +20,7 @@ import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
 import { CallingCard } from "@/components/calling-card";
 import { ChestCard } from "@/components/chest-card";
+import { GuidedTour } from "@/components/tour/GuidedTour";
 import { TodaySession, buildSessionTasks } from "@/components/today-session";
 import { ensureTodayQuests } from "@/lib/quests";
 import { BADGES } from "@/lib/gamification";
@@ -28,6 +29,47 @@ import { BADGES } from "@/lib/gamification";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
+
+/**
+ * Six steps, in the order the daily loop actually runs.
+ *
+ * Every one names a destination and says what it is FOR, because the sidebar
+ * already tells you the names. Anything that cannot be explained in a sentence
+ * is left out — a new student does not need to hear about the Lab before they
+ * have uploaded anything.
+ */
+const TOUR_STEPS = [
+  {
+    target: '[data-tour="/materials"]',
+    title: "Start here: your materials",
+    body: "Upload a PDF, slides, or a photo of your notes. Klausum reads it and builds everything else from it.",
+  },
+  {
+    target: '[data-tour="/review"]',
+    title: "Review is where it sticks",
+    body: "Your uploads become flashcards. Klausum schedules them so you see each one just before you'd forget it.",
+  },
+  {
+    target: '[data-tour="/quizzes"]',
+    title: "Quizzes test you properly",
+    body: "Real questions from your own material — and passing one refills the hearts you spend in Review.",
+  },
+  {
+    target: '[data-tour="/tutor"]',
+    title: "Ask the tutor anything",
+    body: "It explains, draws diagrams, and builds simulations you can drag. Ask it about the thing you just uploaded.",
+  },
+  {
+    target: '[data-tour="/community"]',
+    title: "You're not doing this alone",
+    body: "Add friends, send them a free daily boost, and see where you sit in this week's league.",
+  },
+  {
+    target: "[data-tour-session]",
+    title: "And every day, this",
+    body: "Today's session is the short list of what to do next. Finish it and your streak lives another day.",
+  },
+];
 
 function Dashboard() {
   const { user } = useAuth();
@@ -171,34 +213,12 @@ function Dashboard() {
 
   return (
     <div className="space-y-6 pb-12">
-      {showTour && (
-        <div className="fixed inset-x-0 bottom-0 z-50 p-3 md:left-60">
-          <div className="card-chunky mx-auto flex max-w-2xl flex-col gap-3 border-sky/50 bg-sky p-4 text-sky-foreground shadow-[0_12px_32px_-12px_rgba(0,0,0,0.35)] sm:flex-row sm:items-center">
-            <div className="flex-1">
-              <p className="font-display text-sm font-extrabold uppercase tracking-wide">Start here</p>
-              <p className="mt-0.5 text-sm font-semibold opacity-90">
-                Upload your first material — Klausum will turn it into flashcards, notes, and quizzes.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Link
-                to="/materials"
-                onClick={dismissTour}
-                className="btn-3d rounded-xl bg-background px-4 py-2 text-sm font-extrabold uppercase tracking-wide text-sky [--edge:rgba(0,0,0,0.2)]"
-              >
-                Take me there
-              </Link>
-              <button
-                onClick={dismissTour}
-                aria-label="Dismiss"
-                className="rounded-xl border-2 border-sky-foreground/30 p-2 transition hover:bg-sky-foreground/10"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* The blocking walkthrough, for an account that has genuinely never
+          done anything. It replaces the old bottom card as the first thing a
+          new student meets — that card explained one button and left the other
+          seventeen destinations unexplained. */}
+      {showTour && <GuidedTour steps={TOUR_STEPS} onDone={dismissTour} />}
+
       <StreakCelebration streak={profile?.streak_days} />
       <CompanionHero
         firstName={firstName}
@@ -232,18 +252,20 @@ function Dashboard() {
           {/* Today's session — the plan comes before the shortcuts, because a
               student who opens the app should be told what to do, not handed a
               menu and left to decide. */}
-          <TodaySession
-            tasks={buildSessionTasks({
-              dueCount: data?.dueCount ?? 0,
-              topGap: data?.topGap,
-              material: data?.materials?.[0]
-                ? { id: data.materials[0].id, title: data.materials[0].title }
-                : null,
-              quizzedToday: data?.quizzedToday ?? false,
-              dailyMinutes: (profile as any)?.daily_goal_minutes ?? undefined,
-            })}
-            exam={data?.exams?.[0] ?? null}
-          />
+          <div data-tour-session>
+            <TodaySession
+              tasks={buildSessionTasks({
+                dueCount: data?.dueCount ?? 0,
+                topGap: data?.topGap,
+                material: data?.materials?.[0]
+                  ? { id: data.materials[0].id, title: data.materials[0].title }
+                  : null,
+                quizzedToday: data?.quizzedToday ?? false,
+                dailyMinutes: (profile as any)?.daily_goal_minutes ?? undefined,
+              })}
+              exam={data?.exams?.[0] ?? null}
+            />
+          </div>
 
           {/* Jump back in — CourieX card row */}
           <section>

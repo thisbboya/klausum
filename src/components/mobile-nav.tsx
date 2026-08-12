@@ -107,6 +107,11 @@ export function MobileNav({
               key={to}
               to={to as any}
               aria-current={active ? "page" : undefined}
+              // Same tour anchor as the sidebar. Only one of the two is ever on
+              // screen, and the tour skips steps whose target is not rendered,
+              // so phones get the walkthrough pointed at the thumb row instead
+              // of falling through to a single step.
+              data-tour={to}
               className={`flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition ${
                 active ? "text-sky" : "text-muted-foreground"
               }`}
