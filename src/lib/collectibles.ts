@@ -8,7 +8,7 @@
 // Crests are the opposite: bought or earned once, kept forever, and worn where
 // other people can see them. They also come in sets, because an incomplete set
 // is one of the few goals a person will pursue without being asked to.
-export type CrestSet = "elements" | "scholar" | "ghana";
+export type CrestSet = "elements" | "scholar" | "ghana" | "labs";
 
 export type Crest = {
   id: string;
@@ -33,6 +33,10 @@ export const SETS: Record<CrestSet, { name: string; blurb: string }> = {
   ghana: {
     name: "Adinkra",
     blurb: "Symbols that meant something long before this app existed.",
+  },
+  labs: {
+    name: "Lab Quests",
+    blurb: "One for each journey finished in the Lab. Not for sale at any price.",
   },
 };
 
@@ -71,6 +75,32 @@ export const CRESTS: Crest[] = [
   {
     id: "nyansapo", name: "Nyansapo", emoji: "🪢", set: "ghana", gems: null,
     earn: { stat: "attempts", need: 20, label: "20 quizzes taken" },
+  },
+
+  // Quest rewards. These are granted by the Lab when a journey finishes, not
+  // claimed from a stat, so `earn.stat` names nothing real on purpose — it
+  // keeps the locked card explaining what earns it while making the progress
+  // bar sit at zero, which is honest: you either finished the quest or you
+  // didn't. Never buyable; that is the entire point of them.
+  {
+    id: "coil", name: "The Coil", emoji: "🧲", set: "labs", gems: null,
+    earn: { stat: "quest", need: 1, label: "Finish the Induction Engineer quest" },
+  },
+  {
+    id: "flask", name: "The Flask", emoji: "⚗️", set: "labs", gems: null,
+    earn: { stat: "quest", need: 1, label: "Finish the Analytical Chemist quest" },
+  },
+  {
+    id: "tangent", name: "The Tangent", emoji: "📐", set: "labs", gems: null,
+    earn: { stat: "quest", need: 1, label: "Finish the Limit Breaker quest" },
+  },
+  {
+    id: "resistor", name: "The Resistor", emoji: "⚡", set: "labs", gems: null,
+    earn: { stat: "quest", need: 1, label: "Finish the Circuit Builder quest" },
+  },
+  {
+    id: "membrane", name: "The Membrane", emoji: "🧬", set: "labs", gems: null,
+    earn: { stat: "quest", need: 1, label: "Finish the Cell Biologist quest" },
   },
 ];
 

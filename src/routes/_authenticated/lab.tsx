@@ -16,6 +16,9 @@ import { SimulationPlayer } from "@/components/sim/SimulationPlayer";
 import { ChallengePanel } from "@/components/sim/ChallengePanel";
 import { PhetEmbed } from "@/components/sim/PhetEmbed";
 import { phetBySubject, type PhetSim } from "@/lib/sim/phet";
+import { QUESTS, questState } from "@/lib/sim/quests";
+import { QuestTrack } from "@/components/sim/QuestTrack";
+import { useCollection } from "@/components/collection";
 
 export const Route = createFileRoute("/_authenticated/lab")({ component: Lab });
 
@@ -47,6 +50,17 @@ function Lab() {
   const missions = active ? challengesFor(active.id) : [];
   const doneHere = missions.filter((m) => doneIds.has(m.id)).length;
 
+  const { data: crestRows = [] } = useCollection();
+  const ownedCrests = new Set(crestRows.map((r) => r.item_id));
+
+  // Quests come first and unfinished ones lead, because the whole point is to
+  // give someone arriving with no plan an obvious next move.
+  const questOrder = [...QUESTS].sort((a, b) => {
+    const A = questState(a, doneIds), B = questState(b, doneIds);
+    if (A.complete !== B.complete) return A.complete ? 1 : -1;
+    return B.doneCount - A.doneCount;
+  });
+
   return (
     <div className="space-y-5">
       <header>
@@ -58,7 +72,35 @@ function Lab() {
         </p>
       </header>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Journeys, before the equipment. A rack of instruments is a menu;
+          "you are two steps from being an Induction Engineer" is a reason to
+          start one of them. */}
+      <section>
+        <h2 className="mb-3 font-display text-xl font-extrabold">Quests</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {questOrder.map((q) => (
+            <QuestTrack
+              key={q.id}
+              quest={q}
+              doneIds={doneIds}
+              ownedCrests={ownedCrests}
+              activeChallengeId={null}
+              onSelectStep={(simId) => {
+                setActiveId(simId);
+                setReadouts({});
+                // Jump to the bench so the chosen step is actually in view.
+                document.getElementById("lab-bench")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              onAwarded={() => {
+                qc.invalidateQueries({ queryKey: ["collectibles"] });
+                qc.invalidateQueries({ queryKey: ["sim-progress"] });
+              }}
+            />
+          ))}
+        </div>
+      </section>
+
+      <div id="lab-bench" className="flex flex-wrap gap-2 scroll-mt-4">
         {SIMULATIONS.map((s) => {
           const total = challengesFor(s.id).length;
           const done = challengesFor(s.id).filter((c) => doneIds.has(c.id)).length;
