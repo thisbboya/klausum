@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen, Brain, MessagesSquare, Plus, CalendarClock,
-  Frown, Meh, Smile, Laugh, Flame, Sparkles, X, Play, ChevronRight, ListChecks,
+  Frown, Meh, Smile, Laugh, Flame, Sparkles, X, Play, ChevronRight,
   Zap, Gem,
 } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
@@ -358,90 +358,36 @@ function Dashboard() {
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </Link>
               )}
-              {/* Review and Quiz are hidden on phones: Today's session already
-                  states both, with real counts and a Start button, so repeating
-                  them here was pure length on the screen that can least
-                  afford it. Desktop has the room, so it keeps them. */}
-              <Link to="/review" className="card-chunky card-chunky-hover hidden items-center gap-3 bg-card p-4 sm:flex">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15">
-                  <Brain className="h-5 w-5 text-primary" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                    Review
-                  </div>
-                  <div className="font-display text-sm font-extrabold">
-                    {(data?.dueCount ?? 0) > 0 ? `${data?.dueCount} cards due` : "All caught up"}
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
-              <Link to="/quizzes" className="card-chunky card-chunky-hover hidden items-center gap-3 bg-card p-4 sm:flex">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky/15">
-                  <ListChecks className="h-5 w-5 text-sky" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                    Quiz yourself
-                  </div>
-                  <div className="font-display text-sm font-extrabold">Practice quiz</div>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
-              <Link to="/materials" className="card-chunky card-chunky-hover flex items-center gap-3 bg-card p-4">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface-2">
-                  <BookOpen className="h-5 w-5 text-muted-foreground" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                    Materials
-                  </div>
-                  <div className="font-display text-sm font-extrabold">Upload &amp; browse</div>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
+              {/* Review, Quiz and Materials used to sit here too. All three are
+                  in the sidebar, in the thumb row, and in Today's session with
+                  real counts and a Start button — so they were the same three
+                  destinations offered for the fourth time, and they were most of
+                  why this page scrolled. "Jump back in" should mean the two
+                  things you were genuinely in the middle of. */}
             </div>
           </section>
 
           <QuizPerformance userId={user?.id} />
 
-          <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-lg font-extrabold">Recent materials</h2>
-              <Link to="/materials" className="text-xs font-extrabold text-sky hover:underline">
-                View all
+          {/* "Recent materials" lived here as a bare list of titles. The
+              Materials page now shows the same documents with their opening
+              lines and how far through each you are, so this was a worse copy
+              of a page one tap away — and the last screenful of a dashboard
+              that was already too long. The empty state is worth keeping,
+              because a new account genuinely has nothing else to do. */}
+          {(!data?.materials || data.materials.length === 0) && (
+            <div className="card-chunky border-dashed p-10 text-center">
+              <p className="text-sm font-semibold text-muted-foreground">
+                Nothing in your library yet.
+              </p>
+              <Link
+                to="/materials"
+                className="btn-3d btn-3d-success mt-4 inline-flex items-center gap-2 rounded-2xl bg-success px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
+              >
+                <Plus className="h-4 w-4" /> Upload your first
               </Link>
             </div>
-            {(!data?.materials || data.materials.length === 0) ? (
-              <div className="card-chunky border-dashed p-10 text-center">
-                <p className="text-sm font-semibold text-muted-foreground">No materials yet.</p>
-                <Link
-                  to="/materials"
-                  className="btn-3d btn-3d-success mt-4 inline-flex items-center gap-2 rounded-2xl bg-success px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-success-foreground"
-                >
-                  <Plus className="h-4 w-4" /> Upload your first
-                </Link>
-              </div>
-            ) : (
-              <ul className="card-chunky divide-y-2 divide-border overflow-hidden bg-card">
-                {data.materials.map((m) => (
-                  <li key={m.id}>
-                    <Link
-                      to="/materials/$id"
-                      params={{ id: m.id }}
-                      className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-2"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-extrabold">{m.title}</div>
-                        <div className="text-xs font-semibold text-muted-foreground">{m.subject}</div>
-                      </div>
-                      <StatusBadge status={m.processing_status} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          )}
         </div>
 
         {/* Right rail — level, league, weekly snapshot (CourieX style) */}
@@ -609,19 +555,6 @@ function ActionCard({ to, icon: Icon, title, desc, highlight }: any) {
       <h3 className="mt-3 font-display text-base font-extrabold">{title}</h3>
       <p className="mt-1 text-sm font-semibold text-muted-foreground">{desc}</p>
     </Link>
-  );
-}
-
-function StatusBadge({ status }: { status: string | null }) {
-  const map: Record<string, string> = {
-    pending: "bg-muted text-muted-foreground",
-    processing: "bg-primary/15 text-primary",
-    ready: "bg-primary/15 text-primary",
-    error: "bg-destructive/15 text-destructive",
-  };
-  const s = status ?? "pending";
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full ${map[s] || map.pending}`}>{s}</span>
   );
 }
 

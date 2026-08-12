@@ -23,7 +23,9 @@ import type { DrawCtx, ParamSpec, SimModel } from "@/lib/sim/engine";
 
 type Expr = (scope: Record<string, number>) => number;
 
-type ShapeKind = "circle" | "rect" | "line" | "arrow" | "text" | "curve" | "particles";
+type ShapeKind =
+  | "circle" | "rect" | "line" | "arrow" | "text" | "curve" | "particles"
+  | "polygon" | "arc" | "ring";
 
 type Shape = {
   kind: ShapeKind;
@@ -37,6 +39,21 @@ type Shape = {
   to?: number;
   /** particles only */
   count?: number;
+  /**
+   * Draw this shape `repeat` times with `i` bound to 0..repeat-1.
+   *
+   * This is the single thing that separates a format that can only render
+   * diagrams somebody anticipated from one that can render a diagram nobody
+   * has drawn before. Field lines, electron shells, a row of molecules, a
+   * Riemann sum's rectangles, a wavefront, a lattice — every one of them is
+   * "the same shape N times with i in the maths", and without repetition the
+   * AI had to enumerate them by hand or give up.
+   *
+   * It is still not a loop in any dangerous sense: N is a literal bounded at
+   * parse time, the body is one shape, and `i` is just another number in
+   * scope for the same parser.
+   */
+  repeat?: number;
 };
 
 export type Scene = {
@@ -52,13 +69,16 @@ const COLOR_KEYS = ["primary", "sky", "success", "grape", "destructive", "fg", "
 
 /** Attributes each shape understands, so a typo fails loudly at parse time. */
 const ATTRS: Record<ShapeKind, string[]> = {
-  circle: ["x", "y", "r"],
-  rect: ["x", "y", "w", "h", "angle"],
-  line: ["x1", "y1", "x2", "y2"],
-  arrow: ["x1", "y1", "x2", "y2"],
-  text: ["x", "y"],
+  circle: ["x", "y", "r", "fill"],
+  rect: ["x", "y", "w", "h", "angle", "fill"],
+  line: ["x1", "y1", "x2", "y2", "width"],
+  arrow: ["x1", "y1", "x2", "y2", "width"],
+  text: ["x", "y", "size"],
   curve: [],
   particles: ["x", "y", "w", "h", "speed"],
+  polygon: ["x", "y", "r", "sides", "angle", "fill"],
+  arc: ["x", "y", "r", "start", "end", "width"],
+  ring: ["x", "y", "r", "count", "dot", "spin"],
 };
 
 export function parseScene(src: string): Scene {
@@ -69,13 +89,29 @@ export function parseScene(src: string): Scene {
   const readouts: Scene["readouts"] = [];
   let trace: Scene["trace"];
 
-  // Every expression may use the declared params plus t (seconds since start).
-  const vars = () => [...params.map((p) => p.key), "t"];
+  // Every expression may use the declared params, t (seconds since start), i
+  // (the repeat index) and n (the repeat count). i and n are always in scope
+  // even without a repeat, where they are simply 0 and 1 — that costs nothing
+  // and spares the model a class of mistake it would otherwise make constantly.
+  const vars = () => [...params.map((p) => p.key), "t", "i", "n"];
   const compile = (src: string): Expr => compileScoped(src, vars());
 
-  for (const raw of src.split("\n")) {
-    const line = raw.trim();
+  for (const rawLine of src.split("\n")) {
+    let line = rawLine.trim();
     if (!line || line.startsWith("#") || line.startsWith("//")) continue;
+
+    // `repeat 12: circle ...` — strip the prefix, remember the count, and let
+    // the shape parse exactly as it otherwise would.
+    let repeat: number | undefined;
+    const rep = /^repeat\s+(\d+)\s*:\s*(.+)$/i.exec(line);
+    if (rep) {
+      // Bounded hard: a scene that asks for ten thousand circles is a dropped
+      // frame rate, and the model has no business choosing that number freely.
+      repeat = Math.max(1, Math.min(200, Number(rep[1])));
+      line = rep[2].trim();
+    }
+
+    const raw = line;
 
     let m = /^title\s*:\s*(.+)$/i.exec(line);
     if (m) { title = m[1].trim().slice(0, 120); continue; }
@@ -125,13 +161,14 @@ export function parseScene(src: string): Scene {
           fn: compileScoped(m[1], [...vars(), "x"]),
           from: Number(m[2]),
           to: Number(m[3]),
+          repeat,
         });
       } catch { /* ignore an unparseable curve */ }
       continue;
     }
 
     // <kind> a=<expr> b=<expr> ... [color] ["label"]
-    m = /^(circle|rect|line|arrow|text|particles)\s+(.*)$/i.exec(line);
+    m = /^(circle|rect|line|arrow|text|particles|polygon|arc|ring)\s+(.*)$/i.exec(line);
     if (m) {
       const kind = m[1].toLowerCase() as ShapeKind;
       const rest = m[2];
@@ -150,6 +187,7 @@ export function parseScene(src: string): Scene {
         label: pickLabel(rest),
         attrs,
         count: cm ? Math.min(120, Number(cm[1])) : undefined,
+        repeat,
       });
       continue;
     }
@@ -195,28 +233,44 @@ export function sceneToModel(scene: Scene, id = "scene"): SimModel<{ t: number }
       : undefined,
 
     draw: (s, p, { ctx, width: W, height: H, colors }: DrawCtx) => {
-      const scope = { ...p, t: s.t };
       // Scene coordinates are 0..1 so a diagram is resolution-independent and
       // the model never has to know how big the canvas is.
       const X = (v: number) => v * W;
       const Y = (v: number) => v * H;
-      const val = (e: Expr | undefined, d: number) => {
-        if (!e) return d;
-        try { return S(e(scope), d); } catch { return d; }
-      };
 
       for (const sh of scene.shapes) {
+        const n = sh.repeat ?? 1;
+        for (let idx = 0; idx < n; idx++) {
+          // Rebound per copy: this is what lets one line describe twelve field
+          // lines or forty rectangles under a curve.
+          const scope = { ...p, t: s.t, i: idx, n };
+          const val = (e: Expr | undefined, d: number) => {
+            if (!e) return d;
+            try { return S(e(scope), d); } catch { return d; }
+          };
+          drawShape(sh, scope, val);
+        }
+      }
+
+      function drawShape(
+        sh: Shape,
+        scope: Record<string, number>,
+        val: (e: Expr | undefined, d: number) => number,
+      ) {
         const col = colors[sh.color] ?? colors.primary;
         ctx.strokeStyle = col;
         ctx.fillStyle = col;
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = Math.max(0.5, val(sh.attrs.width, 2.5));
+        // `fill` lets a shape be a solid body rather than an outline — the
+        // difference between a drawn bob and a drawn hoop.
+        const fill = val(sh.attrs.fill, 0.25);
 
         switch (sh.kind) {
           case "circle": {
             const x = X(val(sh.attrs.x, 0.5)), y = Y(val(sh.attrs.y, 0.5));
             const r = Math.max(1, val(sh.attrs.r, 0.05) * Math.min(W, H));
             ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1; ctx.stroke();
+            ctx.globalAlpha = fill; ctx.fill(); ctx.globalAlpha = 1; ctx.stroke();
             if (sh.label) drawLabel(ctx, sh.label, x, y - r - 6, colors.muted);
             break;
           }
@@ -224,7 +278,7 @@ export function sceneToModel(scene: Scene, id = "scene"): SimModel<{ t: number }
             const w = val(sh.attrs.w, 0.1) * W, h = val(sh.attrs.h, 0.1) * H;
             const x = X(val(sh.attrs.x, 0.5)), y = Y(val(sh.attrs.y, 0.5));
             ctx.save(); ctx.translate(x, y); ctx.rotate(val(sh.attrs.angle, 0));
-            ctx.globalAlpha = 0.25; ctx.fillRect(-w / 2, -h / 2, w, h);
+            ctx.globalAlpha = fill; ctx.fillRect(-w / 2, -h / 2, w, h);
             ctx.globalAlpha = 1; ctx.strokeRect(-w / 2, -h / 2, w, h);
             ctx.restore();
             if (sh.label) drawLabel(ctx, sh.label, x, y - h / 2 - 6, colors.muted);
@@ -248,7 +302,59 @@ export function sceneToModel(scene: Scene, id = "scene"): SimModel<{ t: number }
           }
           case "text": {
             if (!sh.label) break;
-            drawLabel(ctx, sh.label, X(val(sh.attrs.x, 0.5)), Y(val(sh.attrs.y, 0.5)), col, 14);
+            drawLabel(
+              ctx, sh.label,
+              X(val(sh.attrs.x, 0.5)), Y(val(sh.attrs.y, 0.5)),
+              col, val(sh.attrs.size, 14),
+            );
+            break;
+          }
+          case "polygon": {
+            // Regular n-gon: triangles, hexagons, benzene rings, crystal cells.
+            const x = X(val(sh.attrs.x, 0.5)), y = Y(val(sh.attrs.y, 0.5));
+            const r = Math.max(1, val(sh.attrs.r, 0.08) * Math.min(W, H));
+            const sides = Math.max(3, Math.min(24, Math.round(val(sh.attrs.sides, 6))));
+            const a0 = val(sh.attrs.angle, -Math.PI / 2);
+            ctx.beginPath();
+            for (let k = 0; k < sides; k++) {
+              const a = a0 + (k / sides) * Math.PI * 2;
+              const px = x + r * Math.cos(a), py = y + r * Math.sin(a);
+              k === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.globalAlpha = fill; ctx.fill(); ctx.globalAlpha = 1; ctx.stroke();
+            if (sh.label) drawLabel(ctx, sh.label, x, y - r - 8, colors.muted);
+            break;
+          }
+          case "arc": {
+            // A partial circle — an angle being swept, an orbit segment, the
+            // shaded sector of a pie.
+            const x = X(val(sh.attrs.x, 0.5)), y = Y(val(sh.attrs.y, 0.5));
+            const r = Math.max(1, val(sh.attrs.r, 0.12) * Math.min(W, H));
+            ctx.beginPath();
+            ctx.arc(x, y, r, val(sh.attrs.start, 0), val(sh.attrs.end, Math.PI));
+            ctx.stroke();
+            if (sh.label) drawLabel(ctx, sh.label, x, y - r - 8, colors.muted);
+            break;
+          }
+          case "ring": {
+            // Evenly spaced dots on a circle, optionally rotating: electron
+            // shells, a rotating field, points on a unit circle.
+            const x = X(val(sh.attrs.x, 0.5)), y = Y(val(sh.attrs.y, 0.5));
+            const r = Math.max(1, val(sh.attrs.r, 0.15) * Math.min(W, H));
+            const count = Math.max(1, Math.min(60, Math.round(val(sh.attrs.count, 8))));
+            const dot = Math.max(1, val(sh.attrs.dot, 4));
+            const spin = val(sh.attrs.spin, 0);
+            ctx.globalAlpha = 0.35;
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 1;
+            for (let k = 0; k < count; k++) {
+              const a = spin + (k / count) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.arc(x + r * Math.cos(a), y + r * Math.sin(a), dot, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            if (sh.label) drawLabel(ctx, sh.label, x, y - r - 8, colors.muted);
             break;
           }
           case "curve": {

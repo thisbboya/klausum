@@ -125,16 +125,36 @@ Rules:
 - Coordinates run 0..1 across the canvas: x=0 is the left edge, y=0 the top.
 - \`t\` is seconds since the diagram started. Use it to make things move.
 - Shapes: \`circle x y r\`, \`rect x y w h angle\`, \`line\`/\`arrow x1 y1 x2 y2\`,
-  \`text x y "words"\`, \`particles x y w h speed count=20\` (flowing dots — current
-  in a wire, ions crossing a membrane), \`curve <expr in x> from <a> to <b>\`.
+  \`text x y "words" size\`, \`polygon x y r sides angle\`, \`arc x y r start end\`,
+  \`ring x y r count dot spin\` (evenly spaced dots on a circle — electron
+  shells, a rotating field), \`particles x y w h speed count=20\` (flowing dots —
+  current in a wire, ions crossing a membrane), \`curve <expr in x> from <a> to <b>\`.
+- \`fill=0..1\` sets how solid a circle, rect or polygon is; \`width=\` sets stroke
+  weight.
 - Colours: primary, sky, success, grape, destructive, fg, muted, border.
 - \`show <name> = <expr> | unit\` adds a live number; \`trace <name> = <expr>\`
   adds a rolling graph.
-- Every value is an expression in the params and t. Same maths vocabulary as
-  plots — nothing else exists, and there are no loops, conditionals or
-  variables you can define.
-Build the motion out of the physics: a pendulum bob's y should be the actual
-displacement equation, not an arbitrary wiggle.
+
+REPEAT is the powerful one. Prefix any shape with \`repeat N:\` to draw it N
+times with \`i\` bound to 0, 1, ... N-1 and \`n\` to N. Use it for anything that
+is "the same thing many times":
+\`\`\`scene
+title: Riemann sum approaching the integral
+param bars: 2..40 = 8
+repeat 40: rect x=(i+0.5)/bars y=1-((i+0.5)/bars)^2/2 w=1/bars h=((i+0.5)/bars)^2 fill=0.35 sky
+curve x^2 from 0 to 1 primary
+show rectangles = bars
+\`\`\`
+Field lines, electron shells, a wavefront of particles, a lattice, rays of
+light, a row of molecules, bars of a distribution — all of them are one
+\`repeat\` line. Guard against drawing more than you need: N is capped at 200.
+
+Every value is an expression in the params, t, i and n. Same maths vocabulary
+as plots — nothing else exists, and there are no conditionals or variables you
+can define. Build the motion out of the physics: a pendulum bob's y should be
+the actual displacement equation, not an arbitrary wiggle, and a wave should be
+sin(2*pi*x/wavelength - speed*t) so that changing the wavelength really does
+change the wavelength.
 
 Choosing between them: \`simref\` if we already built it; \`scene\` when the thing
 should be SEEN moving; \`sim\` when only the numbers matter and there is nothing
