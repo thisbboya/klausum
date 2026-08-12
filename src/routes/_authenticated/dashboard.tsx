@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen, Brain, MessagesSquare, Plus, CalendarClock,
   Frown, Meh, Smile, Laugh, Flame, Sparkles, X, Play, ChevronRight,
-  Zap, Gem,
 } from "lucide-react";
 import { isDue } from "@/lib/fsrs";
 import { useEffect, useState } from "react";
@@ -19,7 +18,6 @@ import { WeeklyConsistency } from "@/components/weekly-consistency";
 import { CompanionHero } from "@/components/companion-hero";
 import { LeaguesCard } from "@/components/leagues-card";
 import { XpLevelCard } from "@/components/xp-level-card";
-import { HeartsRow } from "@/components/hearts-row";
 import { CallingCard } from "@/components/calling-card";
 import { ChestCard } from "@/components/chest-card";
 import { TodaySession, buildSessionTasks } from "@/components/today-session";
@@ -34,14 +32,16 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [hearts, setHearts] = useState<{ hearts: number; msUntilNext: number } | null>(null);
+  // The refill still runs on load - it is what actually tops hearts back up
+  // server-side - but nothing on this page renders them any more.
+  
 
   useEffect(() => {
     if (!user?.id) return;
     checkAndApplyStreakFreeze(user.id).then((used) => {
       if (used) qc.invalidateQueries({ queryKey: ["dash", user.id] });
     });
-    refillHeartsIfDue(user.id).then(setHearts).catch(() => {});
+    void refillHeartsIfDue(user.id).catch(() => {});
   }, [user?.id, qc]);
 
   const { data } = useQuery({
@@ -213,72 +213,16 @@ function Dashboard() {
           because the counters only mean something in service of it. */}
       <CallingCard />
 
-      {hearts && (
-        <div className="flex justify-end -mt-2">
-          <HeartsRow hearts={hearts.hearts} msUntilNext={hearts.msUntilNext} />
-        </div>
-      )}
+      {/* Hearts were shown here too, floating on their own row. They only mean
+          anything inside a review session, which is the one place they are
+          spent and the one place they are already displayed. */}
 
-      {/* Duolingo-style stat strip — the four numbers that drive daily return.
-          One row on phones, not a 2x2 grid of tall cards: that grid burned about
-          160px of a 812px screen to show four numbers, which is most of why the
-          dashboard felt long and empty. */}
-      <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
-        {[
-          {
-            to: "/progress" as const,
-            icon: Flame,
-            label: "Day streak",
-            value: profile?.streak_days ?? 0,
-            // was text-amber/bg-amber — no such token, so this rendered
-            // colourless while its three neighbours were tinted.
-            tone: "text-primary",
-            chip: "bg-primary/15",
-          },
-          {
-            to: "/progress" as const,
-            icon: Zap,
-            label: "Total XP",
-            value: (profile?.xp_total ?? 0).toLocaleString(),
-            tone: "text-success",
-            chip: "bg-success/15",
-          },
-          {
-            to: "/shop" as const,
-            icon: Gem,
-            label: "Gems",
-            value: profile?.gems ?? 0,
-            tone: "text-sky",
-            chip: "bg-sky/15",
-          },
-          {
-            to: "/review" as const,
-            icon: Brain,
-            label: "Cards due",
-            value: data?.dueCount ?? 0,
-            tone: (data?.dueCount ?? 0) > 0 ? "text-grape" : "text-muted-foreground",
-            chip: (data?.dueCount ?? 0) > 0 ? "bg-grape/15" : "bg-surface-2",
-          },
-        ].map(({ to, icon: Icon, label, value, tone, chip }) => (
-          <Link
-            key={label}
-            to={to}
-            className="card-chunky card-chunky-hover flex flex-col items-center gap-1 bg-card px-1 py-2.5 sm:flex-row sm:gap-2.5 sm:px-3 sm:py-3"
-          >
-            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-9 sm:w-9 ${chip}`}>
-              <Icon className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${tone}`} />
-            </span>
-            <div className="min-w-0 text-center sm:text-left">
-              <div className={`font-display text-base font-extrabold leading-none sm:text-xl ${tone}`}>
-                {value}
-              </div>
-              <div className="mt-1 truncate text-[9px] font-extrabold uppercase tracking-wide text-muted-foreground sm:text-[10px] sm:tracking-widest">
-                {label}
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {/* The four-stat strip lived here: day streak, total XP, gems, cards
+          due. Every one of them is already on this page - the streak is in the
+          hero AND in Weekly consistency, XP is the level card, cards due is the
+          first line of Today's session, and gems belong to a shop that is now
+          one tap away. Four cards of pure duplication were most of what made
+          this screen scroll. */}
 
       {/* CourieX-style two-column layout: content left, status rail right */}
       <div className="grid gap-4 lg:grid-cols-3">

@@ -9,17 +9,61 @@ import { useQueryClient } from "@tanstack/react-query";
 import confetti from "canvas-confetti";
 import { CHEST_ODDS, crestById } from "@/lib/collectibles";
 
-// The gradients below deliberately use literal palette values: a chest is a
-// physical object and bronze/silver/gold read as metals, not as theme states.
+// Literal palette values on purpose: a chest is a physical object, and
+// bronze/silver/gold read as metals rather than as theme states. Tinting these
+// with the app's semantic tokens would make a gold chest change colour when
+// somebody switched theme, which is not what gold does.
 type Tier = "bronze" | "silver" | "gold";
-const TIER_REWARDS: Record<Tier, { xp: [number, number]; gems: [number, number]; color: string }> = {
-  bronze: { xp: [10, 25], gems: [5, 15], color: "from-amber-700 to-primary" },
-  silver: { xp: [25, 60], gems: [15, 35], color: "from-slate-400 to-slate-200" },
-  gold: { xp: [60, 150], gems: [35, 80], color: "from-primary to-yellow-200" },
+
+const METAL: Record<Tier, { body: string; lid: string; dark: string; metal: string; spark: string }> = {
+  bronze: { body: "#8A5A2B", lid: "#A9713A", dark: "#4E3117", metal: "#D8A657", spark: "#FFD98A" },
+  silver: { body: "#8E97A6", lid: "#AAB3C0", dark: "#525A67", metal: "#E2E8F0", spark: "#FFFFFF" },
+  gold:   { body: "#B8860B", lid: "#DAA520", dark: "#6B4E06", metal: "#FFD700", spark: "#FFF3B0" },
 };
 
-function roll([min, max]: [number, number]) {
-  return Math.floor(min + Math.random() * (max - min + 1));
+/**
+ * A drawn chest, rather than a gift icon on a gradient square.
+ *
+ * SVG rather than an image file: it has to be tinted per tier and stay crisp
+ * at any size, and shipping three PNGs to say "bronze, silver, gold" would be
+ * three network requests to express one variable.
+ */
+function ChestArt({ tier, unlocked }: { tier: Tier; unlocked: boolean }) {
+  const m = METAL[tier];
+  return (
+    <svg width="112" height="96" viewBox="0 0 112 96" fill="none" aria-hidden>
+      {/* glow behind an available chest */}
+      {unlocked && (
+        <ellipse cx="56" cy="82" rx="40" ry="7" fill={m.dark} opacity="0.28" />
+      )}
+      {/* body */}
+      <rect x="14" y="44" width="84" height="38" rx="6" fill={m.body} stroke={m.dark} strokeWidth="3" />
+      {/* wood banding */}
+      <rect x="14" y="56" width="84" height="5" fill={m.dark} opacity="0.45" />
+      {/* lid */}
+      <path
+        d="M14 46 C14 28, 30 18, 56 18 C82 18, 98 28, 98 46 Z"
+        fill={m.lid}
+        stroke={m.dark}
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      {/* metal straps */}
+      <rect x="24" y="20" width="7" height="62" fill={m.metal} opacity="0.75" />
+      <rect x="81" y="20" width="7" height="62" fill={m.metal} opacity="0.75" />
+      {/* lock plate */}
+      <rect x="48" y="42" width="16" height="18" rx="3" fill={m.metal} stroke={m.dark} strokeWidth="2.5" />
+      <circle cx="56" cy="51" r="3" fill={m.dark} />
+      {/* a hint of light escaping a chest you can open */}
+      {unlocked && (
+        <>
+          <path d="M40 44 L44 30" stroke={m.spark} strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+          <path d="M56 42 L56 26" stroke={m.spark} strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+          <path d="M72 44 L68 30" stroke={m.spark} strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+        </>
+      )}
+    </svg>
+  );
 }
 
 export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: string; tier?: Tier; unlocked: boolean }) {
@@ -56,8 +100,6 @@ export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: stri
     }
   }
 
-  const conf = TIER_REWARDS[tier];
-
   return (
     <div className="card-chunky bg-card p-5 text-center">
       <div className="flex items-center justify-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground mb-3">
@@ -92,13 +134,27 @@ export function ChestCard({ userId, tier = "bronze", unlocked }: { userId?: stri
             key="chest"
             disabled={!unlocked || opening}
             onClick={openChest}
-            whileHover={unlocked ? { scale: 1.05, rotate: [-2, 2, -2, 0] } : {}}
-            whileTap={unlocked ? { scale: 0.95 } : {}}
-            className={`mx-auto block rounded-2xl bg-gradient-to-br ${conf.color} p-6 shadow-lg transition ${
-              !unlocked ? "opacity-40 grayscale cursor-not-allowed" : "cursor-pointer"
+            // An unlocked chest rocks on its own, the way Duolingo's does. That
+            // idle motion is the whole reason a closed box reads as "open me"
+            // rather than as an icon someone forgot to make interactive.
+            animate={
+              unlocked && !opening
+                ? { rotate: [-3, 3, -3], y: [0, -2, 0] }
+                : opening
+                  ? { rotate: [-14, 14, -14, 14, 0], scale: [1, 1.12, 1] }
+                  : {}
+            }
+            transition={
+              opening
+                ? { duration: 0.5, ease: "easeInOut" }
+                : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+            }
+            whileTap={unlocked ? { scale: 0.92 } : {}}
+            className={`mx-auto block transition ${
+              !unlocked ? "cursor-not-allowed opacity-45 grayscale" : "cursor-pointer"
             }`}
           >
-            <Gift className="h-12 w-12 text-white drop-shadow-lg" />
+            <ChestArt tier={tier} unlocked={unlocked} />
           </motion.button>
         )}
       </AnimatePresence>

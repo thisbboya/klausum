@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "@/lib/notify";
-import { Upload, FileText, Loader2, CheckCircle2, Trash2, Layers } from "lucide-react";
+import { MaterialActions } from "@/components/materials/MaterialActions";
+import { Upload, FileText, Loader2, CheckCircle2, Layers } from "lucide-react";
 import { processMaterial } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { getAccessToken } from "@/lib/auth-helper";
@@ -958,21 +959,14 @@ export function MaterialsPage() {
                       {pctRead > 0 && pctRead < 100 ? "Resume" : hasPdf ? "Read" : "Open"}
                     </Link>
                   )}
-                  <button
-                    onClick={async () => {
-                      if (!confirm(`Delete "${m.title}"?`)) return;
-                      const { error } = await supabase.from("study_materials").delete().eq("id", m.id);
-                      if (error) toast.error(reportError("materials.index", error));
-                      else {
-                        toast.success("Material deleted");
-                        qc.invalidateQueries({ queryKey: ["materials"] });
-                      }
+                  <MaterialActions
+                    material={{ id: m.id, title: m.title, subject: m.subject }}
+                    courses={courses.map((c: any) => c.name)}
+                    onChanged={() => {
+                      qc.invalidateQueries({ queryKey: ["materials"] });
+                      qc.invalidateQueries({ queryKey: ["courses"] });
                     }}
-                    className="shrink-0 rounded-xl border-2 border-border p-2 text-muted-foreground transition hover:border-destructive hover:text-destructive active:scale-95"
-                    aria-label="Delete material"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </div>
               </div>
             );

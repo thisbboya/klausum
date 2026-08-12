@@ -18,7 +18,10 @@ export const PRIMARY_LINKS: NavLink[] = [
   { to: "/tutor", label: "AI Tutor", icon: MessagesSquare },
   { to: "/community", label: "Social", icon: Users },
   { to: "/schedule", label: "Planner", icon: CalendarClock },
-  { to: "/shop", label: "Gem Shop", icon: Gem },
+  // Gem Shop moved out of the daily loop. It sells three consumables and is
+  // somewhere you go after earning, not a place you work — a permanent slot in
+  // the primary list made the sidebar one item longer than the thing it was
+  // being compared against, for a page most sessions never open.
 ];
 
 /**
@@ -45,10 +48,11 @@ export const MORE_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "Progress",
+    title: "Progress & rewards",
     links: [
       { to: "/progress", label: "Progress", icon: TrendingUp },
       { to: "/exams", label: "Exams", icon: GraduationCap },
+      { to: "/shop", label: "Gem Shop", icon: Gem },
     ],
   },
   {
