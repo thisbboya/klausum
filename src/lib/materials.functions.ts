@@ -639,3 +639,66 @@ export const regenerateFormulas = createServerFn({ method: "POST" })
     return { formulas: object.formulas };
   });
 
+
+// ─── PODCAST ────────────────────────────────────────────────────────────────
+// Turns a material into a two-host conversation the student can listen to.
+//
+// The point is not novelty: explanation-by-dialogue is genuinely easier to
+// follow than prose, because one host asks the questions a confused reader
+// would ask and the other answers them. It also makes a document usable while
+// walking, cooking, or on a bus — the times when reading is impossible and
+// most revision does not happen.
+//
+// The audio itself costs nothing. The browser speaks it with two different
+// system voices, so there is no TTS bill and no API key.
+const PodcastInput = z.object({
+  accessToken: z.string(),
+  materialId: z.string().uuid(),
+});
+
+const PodcastSchema = z.object({
+  title: z.string(),
+  lines: z
+    .array(
+      z.object({
+        speaker: z.enum(["host", "guest"]),
+        text: z.string(),
+      }),
+    )
+    .min(6)
+    .max(40),
+});
+
+export const generatePodcast = createServerFn({ method: "POST" })
+  .inputValidator((d) => PodcastInput.parse(d))
+  .handler(async ({ data }) => {
+    const userId = await getUserIdFromToken(data.accessToken);
+    const admin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+    const { data: mat, error } = await admin
+      .from("study_materials")
+      .select("id, user_id, title, subject, original_content, ai_summary")
+      .eq("id", data.materialId)
+      .maybeSingle();
+    if (error || !mat) throw new Error("Material not found");
+    if (mat.user_id !== userId) throw new Error("Forbidden");
+
+    const source = (mat.ai_summary || mat.original_content || "").slice(0, 24000);
+    if (!source.trim()) throw new Error("Nothing to talk about yet");
+
+    const { object } = await generateObjectSafe({
+      schema: PodcastSchema,
+      prompt:
+        `Write a short two-person audio explainer about this material, for a student who is listening rather than reading.\n\n` +
+        `"host" is the curious one: they ask the questions a confused student would actually ask, and they push back when something is hand-waved.\n` +
+        `"guest" is the expert: warm, plain-spoken, uses concrete analogies, never lectures for more than about four sentences at a time.\n\n` +
+        `Rules:\n` +
+        `- 14 to 24 lines, alternating, opening with the host framing why this topic matters.\n` +
+        `- This is SPOKEN. No markdown, no bullet points, no LaTeX, no "as you can see". Say numbers as words where it reads better.\n` +
+        `- Cover the genuinely important ideas, not a summary of the summary. Include at least one worked example said aloud.\n` +
+        `- End with the guest naming the single thing worth remembering.\n\n` +
+        `Title: "${mat.title}" (${mat.subject ?? "General"}).\n\n--- MATERIAL ---\n${source}`,
+    });
+
+    return object;
+  });

@@ -23,6 +23,7 @@ import { reportError } from "@/lib/report-error";
 import { CHALLENGES } from "@/lib/sim/challenges";
 import { QuestTrack } from "@/components/sim/QuestTrack";
 import { CircuitLab } from "@/components/sim/CircuitLab";
+import { LiveCircuit } from "@/components/sim/LiveCircuit";
 import { useCollection } from "@/components/collection";
 
 export const Route = createFileRoute("/_authenticated/lab")({ component: Lab });
@@ -254,7 +255,11 @@ function Lab() {
             A real circuit solver - the same Modified Nodal Analysis SPICE uses. DC
             operating points and full AC sweeps for R, L, C and sources.
           </p>
+          <LiveCircuit />
+          <div className="border-t-2 border-border pt-4">
+            <h3 className="mb-2 font-display text-sm font-extrabold uppercase tracking-wide">Netlist bench</h3>
           <CircuitLab />
+          </div>
         </section>
       )}
 

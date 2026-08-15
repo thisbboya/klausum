@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
+import { PodcastMode } from "@/components/reader/PodcastMode";
+import { ttsSupported } from "@/lib/speech";
 import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List, ListChecks, Layers, MessagesSquare, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { toast } from "@/lib/notify";
 import ReactMarkdown from "react-markdown";
@@ -74,6 +76,7 @@ const MOBILE_READER_HEIGHT = "calc(100dvh - 11.5rem)";
 const TABS = [
   { key: "read", label: "Read", color: "text-foreground" },
   { key: "summary", label: "Summary", color: "text-foreground" },
+  { key: "listen", label: "Listen", color: "text-foreground" },
   { key: "original", label: "Original", color: "text-foreground" },
   { key: "visual", label: "Visual", color: "text-[color:var(--color-visual)]" },
   { key: "auditory", label: "Auditory", color: "text-[color:var(--color-auditory)]" },
@@ -127,6 +130,8 @@ function MaterialDetail() {
     return TABS.filter((t) => {
       if (t.key === "read") return hasPdf || hasStoredFile || hasReadableText;
       if (t.key === "summary") return !!m.ai_summary;
+      // Listening needs something to talk about, and a browser that can talk.
+      if (t.key === "listen") return (!!m.ai_summary || !!m.original_content) && ttsSupported();
       if (t.key === "original") return !!m.original_content;
       if (t.key === "visual" || t.key === "auditory" || t.key === "reading" || t.key === "kinesthetic") {
         return !!m[`adapted_${t.key}`];
@@ -264,6 +269,7 @@ function MaterialDetail() {
             : <TextReaderTab material={material} userId={user.id} />
           )}
           {tab === "summary" && <SummaryTab material={material} />}
+          {tab === "listen" && <PodcastMode materialId={material.id} />}
           {tab === "original" && <OriginalTab material={material} />}
           {(tab === "visual" || tab === "auditory" || tab === "reading" || tab === "kinesthetic") && (
             <AdaptationTab text={(material as any)[`adapted_${tab}`] ?? ""} topic={material.title} />
