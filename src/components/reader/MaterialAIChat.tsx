@@ -234,13 +234,34 @@ export function MaterialAIChat({
         page: m.page,
       }));
 
-      // Compact page index for cross-page search (first 500 chars per page, capped)
+      // The cross-page index, budgeted so EVERY page is represented.
+      //
+      // This used to take 500 characters per page and then truncate the whole
+      // string at 30 000 — which is about 58 pages. Page 59 onwards simply did
+      // not exist as far as the model was concerned, which is exactly why it
+      // lost the thread on any long document: it was not confused, it was
+      // never shown the rest.
+      //
+      // Now the per-page budget shrinks to fit the document, so a 200-page PDF
+      // gives every page a shorter snippet rather than giving the first 58
+      // pages a long one and the rest nothing. Pages near where the student is
+      // reading keep the full snippet, because that is what "this section"
+      // questions are actually about.
       let compactIndex: string | undefined;
       if (pageIndex) {
-        const entries = Object.entries(pageIndex)
-          .map(([p, txt]) => `[p.${p}] ${(txt || "").slice(0, 500)}`)
+        const BUDGET = 30000;
+        const all = Object.entries(pageIndex);
+        const perPage = Math.max(90, Math.min(500, Math.floor(BUDGET / Math.max(1, all.length)) - 12));
+        const entries = all
+          .map(([p, txt]) => {
+            const n = Number(p);
+            const near = Math.abs(n - currentPage) <= 3;
+            const width = near ? 500 : perPage;
+            return `[p.${p}] ${(txt || "").slice(0, width)}`;
+          })
           .join("\n");
-        compactIndex = entries.slice(0, 30000);
+        // Only ever a safety net now; the budget above should keep us under it.
+        compactIndex = entries.slice(0, 34000);
       }
 
       const { reply } = await chatFn({

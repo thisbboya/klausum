@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "@/lib/notify";
 import { MaterialActions } from "@/components/materials/MaterialActions";
+import { CourseActions } from "@/components/materials/CourseActions";
 import { Upload, FileText, Loader2, CheckCircle2, Layers } from "lucide-react";
 import { processMaterial } from "@/lib/materials.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -771,6 +772,23 @@ export function MaterialsPage() {
                     {course && course.user_id !== user?.id && (
                       <span className="shrink-0 rounded-full bg-sky/15 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sky">
                         Shared
+                      </span>
+                    )}
+                    {/* Only on your own courses: renaming one you were shared
+                        into would rewrite it for the person who made it. */}
+                    {(!course || course.user_id === user?.id) && (
+                      <span className="ml-auto">
+                        <CourseActions
+                          name={subjectName}
+                          courseId={course?.id ?? null}
+                          count={items.length}
+                          allCourses={Object.keys(courseByName)}
+                          onChanged={() => {
+                            qc.invalidateQueries({ queryKey: ["materials"] });
+                            qc.invalidateQueries({ queryKey: ["courses"] });
+                            setActiveSubject(null);
+                          }}
+                        />
                       </span>
                     )}
                   </div>

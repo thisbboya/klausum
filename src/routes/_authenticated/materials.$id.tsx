@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List, ListChecks, Layers, MessagesSquare } from "lucide-react";
+import { Loader2, ArrowLeft, Brain, BookOpen, Youtube, Volume2, Pause, Download, Trash2, Network, List, ListChecks, Layers, MessagesSquare, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { toast } from "@/lib/notify";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -764,6 +764,19 @@ function ConceptGraphTab({ graph, concepts }: { graph: any[]; concepts: any[] })
 function chunkTextPages(text: string): string[] {
   const clean = text.replace(/\r\n/g, "\n").trim();
   if (!clean) return [""];
+
+  // Slide and page markers win over arbitrary chunking.
+  //
+  // The office extractor already writes "## Slide 4" ahead of each slide's
+  // text, but this function ignored them and cut the document into 1800-char
+  // blocks instead — so on a PowerPoint the reader's "page 7" had no relation
+  // to slide 7, and the tutor confidently answered about the wrong slide. When
+  // the markers exist they ARE the pagination.
+  const marked = clean.split(/\n(?=##\s+(?:Slide|Page)\s+\d+)/i);
+  if (marked.length > 1) {
+    return marked.map((p) => p.trim()).filter(Boolean);
+  }
+
   const paragraphs = clean.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   const pages: string[] = [];
   let current = "";
@@ -846,6 +859,16 @@ function FileReaderTab({ material, userId }: { material: any; userId: string }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [material.id, material.file_storage_path, image]);
 
+  // The tutor panel can be folded away so a document gets the full width.
+  // Remembered, because whether you are reading or asking is a mode you stay
+  // in for a while rather than a per-document choice.
+  const [chatOpen, setChatOpen] = useState(() => {
+    try { return localStorage.getItem("klausum:readerChat") !== "0"; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("klausum:readerChat", chatOpen ? "1" : "0"); } catch {}
+  }, [chatOpen]);
+
   useEffect(() => {
     if (!material.file_storage_path) { setSignError(true); return; }
     let mounted = true;
@@ -914,9 +937,22 @@ function FileReaderTab({ material, userId }: { material: any; userId: string }) 
   }
 
   return (
-    <div className="flex h-[calc(100dvh-6rem)] min-h-[640px] overflow-hidden card-chunky">
-      <div className="w-[62%] border-r border-border">{doc}</div>
-      <div className="w-[38%]">{chat}</div>
+    // Taller and wider than before: the reader is the page you spend the most
+    // time on and it was giving up 6rem of height and 38% of width by default.
+    // The chat is collapsible now, so a document can have the whole pane when
+    // you are reading rather than asking.
+    <div className="relative flex h-[calc(100dvh-3.5rem)] min-h-[680px] overflow-hidden card-chunky">
+      <div className={`${chatOpen ? "w-[68%]" : "w-full"} border-r border-border transition-[width] duration-200`}>
+        {doc}
+      </div>
+      {chatOpen && <div className="w-[32%]">{chat}</div>}
+      <button
+        onClick={() => setChatOpen((o) => !o)}
+        title={chatOpen ? "Hide the tutor" : "Ask the tutor"}
+        className="absolute right-3 top-3 z-20 rounded-xl border-2 border-border bg-card p-2 text-muted-foreground shadow transition hover:border-primary hover:text-primary"
+      >
+        {chatOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+      </button>
     </div>
   );
 }
