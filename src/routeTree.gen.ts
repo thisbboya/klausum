@@ -47,6 +47,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes.index'
 import { Route as AuthenticatedMaterialsIndexRouteImport } from './routes/_authenticated/materials.index'
 import { Route as AuthenticatedMaterialsIdRouteImport } from './routes/_authenticated/materials.$id'
+import { Route as AuthenticatedDuelIdRouteImport } from './routes/_authenticated/duel.$id'
 import { Route as AuthenticatedQuizzesIdTakeRouteImport } from './routes/_authenticated/quizzes.$id.take'
 import { Route as AuthenticatedQuizzesIdResultsRouteImport } from './routes/_authenticated/quizzes.$id.results'
 
@@ -242,6 +243,11 @@ const AuthenticatedMaterialsIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedMaterialsRoute,
   } as any)
+const AuthenticatedDuelIdRoute = AuthenticatedDuelIdRouteImport.update({
+  id: '/duel/$id',
+  path: '/duel/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedQuizzesIdTakeRoute =
   AuthenticatedQuizzesIdTakeRouteImport.update({
     id: '/$id/take',
@@ -290,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
+  '/duel/$id': typeof AuthenticatedDuelIdRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes/': typeof AuthenticatedQuizzesIndexRoute
@@ -329,6 +336,7 @@ export interface FileRoutesByTo {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
+  '/duel/$id': typeof AuthenticatedDuelIdRoute
   '/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/materials': typeof AuthenticatedMaterialsIndexRoute
   '/quizzes': typeof AuthenticatedQuizzesIndexRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/api/video-quiz': typeof ApiVideoQuizRoute
   '/api/youtube-search': typeof ApiYoutubeSearchRoute
   '/u/$handle': typeof UHandleRoute
+  '/_authenticated/duel/$id': typeof AuthenticatedDuelIdRoute
   '/_authenticated/materials/$id': typeof AuthenticatedMaterialsIdRoute
   '/_authenticated/materials/': typeof AuthenticatedMaterialsIndexRoute
   '/_authenticated/quizzes/': typeof AuthenticatedQuizzesIndexRoute
@@ -415,6 +424,7 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
+    | '/duel/$id'
     | '/materials/$id'
     | '/materials/'
     | '/quizzes/'
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
+    | '/duel/$id'
     | '/materials/$id'
     | '/materials'
     | '/quizzes'
@@ -496,6 +507,7 @@ export interface FileRouteTypes {
     | '/api/video-quiz'
     | '/api/youtube-search'
     | '/u/$handle'
+    | '/_authenticated/duel/$id'
     | '/_authenticated/materials/$id'
     | '/_authenticated/materials/'
     | '/_authenticated/quizzes/'
@@ -788,6 +800,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMaterialsIdRouteImport
       parentRoute: typeof AuthenticatedMaterialsRoute
     }
+    '/_authenticated/duel/$id': {
+      id: '/_authenticated/duel/$id'
+      path: '/duel/$id'
+      fullPath: '/duel/$id'
+      preLoaderRoute: typeof AuthenticatedDuelIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/quizzes/$id/take': {
       id: '/_authenticated/quizzes/$id/take'
       path: '/$id/take'
@@ -858,6 +877,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedWrappedRoute: typeof AuthenticatedWrappedRoute
+  AuthenticatedDuelIdRoute: typeof AuthenticatedDuelIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -882,6 +902,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedWrappedRoute: AuthenticatedWrappedRoute,
+  AuthenticatedDuelIdRoute: AuthenticatedDuelIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

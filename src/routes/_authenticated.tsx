@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { KlausumLogo } from "@/components/klausum-mark";
 import { KlausumLoading } from "@/components/loading";
 import { getCompanion } from "@/components/companion-svg";
-import { LogOut, Shield, ChevronDown } from "lucide-react";
+import { LogOut, Shield, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { PRIMARY_LINKS, MORE_LINKS, MORE_GROUPS, SETTINGS_LINK } from "@/lib/nav";
 import { hasUnseenUpdates } from "@/lib/updates";
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -28,6 +28,11 @@ function AuthLayout() {
   const location = useLocation();
   const { isAdmin } = useIsAdmin();
   const isTutor = location.pathname === "/tutor";
+  // Sidebar collapsed to an icon rail. Remembered, because it is a workspace
+  // preference rather than a per-visit decision.
+  const [railed, setRailed] = useState(() => {
+    try { return localStorage.getItem("klausum:rail") === "1"; } catch { return false; }
+  });
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -111,17 +116,40 @@ function AuthLayout() {
         isTutor ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh]"
       }`}
     >
-      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r-2 border-border bg-background px-3 py-5">
-        <Link to="/dashboard" className="mb-8 flex items-center gap-2 px-2">
-          <KlausumLogo size={24} />
-        </Link>
+      <aside
+        className={`hidden md:flex shrink-0 flex-col border-r-2 border-border bg-background py-5 transition-[width] duration-200 ${
+          railed ? "w-[4.5rem] px-2" : "w-60 px-3"
+        }`}
+      >
+        <div className={`mb-6 flex items-center ${railed ? "justify-center" : "justify-between px-2"}`}>
+          {!railed && (
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <KlausumLogo size={24} />
+            </Link>
+          )}
+          {/* Collapsing to a rail gives a wide page back about 180px, which
+              matters most on the screens that need it — the reader, the Lab
+              bench, a long tutor answer. The choice is remembered. */}
+          <button
+            onClick={() => {
+              const next = !railed;
+              setRailed(next);
+              try { localStorage.setItem("klausum:rail", next ? "1" : "0"); } catch {}
+            }}
+            aria-label={railed ? "Expand sidebar" : "Collapse sidebar"}
+            title={railed ? "Expand sidebar" : "Collapse sidebar"}
+            className="rounded-lg border-2 border-border p-1.5 text-muted-foreground transition hover:border-primary hover:text-primary"
+          >
+            {railed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>
+        </div>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto text-sm">
           {PRIMARY_LINKS.map((l) => (
-            <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} />
+            <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} art={l.art} collapsed={railed} />
           ))}
-          <MoreTools />
-          <NavItem to={SETTINGS_LINK.to} icon={SETTINGS_LINK.icon} label={SETTINGS_LINK.label} showDot={hasUnseenUpdates()} />
-          {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" />}
+          <MoreTools collapsed={railed} />
+          <NavItem to={SETTINGS_LINK.to} icon={SETTINGS_LINK.icon} label={SETTINGS_LINK.label} art={SETTINGS_LINK.art} collapsed={railed} showDot={hasUnseenUpdates()} />
+          {isAdmin && <NavItem to="/admin" icon={Shield} label="Admin" art="🛡️" collapsed={railed} />}
         </nav>
         <div className="mt-auto px-2 text-xs text-muted-foreground space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -220,12 +248,25 @@ function AuthLayout() {
   );
 }
 
-function MoreTools() {
+function MoreTools({ collapsed }: { collapsed?: boolean }) {
   const location = useLocation();
   const containsActive = MORE_LINKS.some(
     (l) => location.pathname === l.to || location.pathname.startsWith(l.to + "/"),
   );
   const [open, setOpen] = useState(containsActive);
+
+  // On the rail there is no room for a heading or an indent guide, so the
+  // secondary destinations simply join the column as more pictograms. Hiding
+  // them entirely would make half the app unreachable without expanding first.
+  if (collapsed) {
+    return (
+      <div className="mt-1 flex flex-col gap-1 border-t-2 border-border pt-1">
+        {MORE_LINKS.map((l) => (
+          <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} art={l.art} collapsed />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -244,7 +285,7 @@ function MoreTools() {
                 {g.title}
               </div>
               {g.links.map((l) => (
-                <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} />
+                <NavItem key={l.to} to={l.to} icon={l.icon} label={l.label} art={l.art} />
               ))}
             </div>
           ))}
@@ -254,7 +295,11 @@ function MoreTools() {
   );
 }
 
-function NavItem({ to, icon: Icon, label, showDot }: { to: string; icon: any; label: string; showDot?: boolean }) {
+function NavItem({
+  to, icon: Icon, label, showDot, art, collapsed,
+}: {
+  to: string; icon: any; label: string; showDot?: boolean; art?: string; collapsed?: boolean;
+}) {
   const location = useLocation();
   const active = location.pathname === to || location.pathname.startsWith(to + "/");
   return (
@@ -263,14 +308,30 @@ function NavItem({ to, icon: Icon, label, showDot }: { to: string; icon: any; la
       // Anchors the first-run tour. Keyed by route so a step survives the
       // label being reworded, which is the thing most likely to change.
       data-tour={to}
-      className={`relative flex items-center gap-3 rounded-xl border-2 px-3 py-2 font-bold transition ${
+      title={collapsed ? label : undefined}
+      className={`relative flex items-center rounded-xl border-2 font-bold transition ${
+        collapsed ? "justify-center px-2 py-2" : "gap-2.5 px-3 py-2"
+      } ${
         active
           ? "border-sky/40 bg-sky/12 text-sky"
           : "border-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground"
       }`}
     >
-      <Icon className="h-4 w-4" />
-      {label}
+      {/* The coloured pictogram, on its own tinted tile. A column of identical
+          grey line icons is what made this read as a settings menu rather than
+          as a place with distinct rooms. */}
+      {art ? (
+        <span
+          className={`flex shrink-0 items-center justify-center rounded-lg text-base leading-none ${
+            collapsed ? "h-7 w-7" : "h-7 w-7"
+          } ${active ? "bg-sky/20" : "bg-surface-2"}`}
+        >
+          {art}
+        </span>
+      ) : (
+        <Icon className="h-4 w-4 shrink-0" />
+      )}
+      {!collapsed && label}
       {showDot && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-destructive" />}
     </Link>
   );

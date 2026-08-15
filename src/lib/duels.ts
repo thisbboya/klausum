@@ -31,10 +31,50 @@ export const EXPIRY_OPTIONS = [
   { label: "12h", hours: 12 },
 ];
 
+/**
+ * Build the question set for a duel out of a material's key concepts.
+ *
+ * A duel used to point at an existing quiz, which either player could open
+ * beforehand and read the answers from — so the winner was whoever thought to
+ * cheat. Generating from the material means the questions do not exist until
+ * the duel is created, and both players meet the same unseen set.
+ *
+ * Built locally from stored concepts rather than by calling the model: a duel
+ * has to be instant, and this costs nothing and cannot fail halfway.
+ */
+export function buildDuelQuestions(
+  concepts: { concept: string; definition: string }[],
+  count = 6,
+) {
+  const pool = [...concepts]
+    .filter((c) => c.concept?.trim() && c.definition?.trim())
+    // Fisher–Yates, so the same material gives a different duel each time.
+    .map((c) => ({ c, k: Math.random() }))
+    .sort((a, b) => a.k - b.k)
+    .map((x) => x.c);
+
+  return pool.slice(0, count).map((answer) => {
+    const distractors = pool
+      .filter((c) => c.concept !== answer.concept)
+      .slice(0, 3)
+      .map((c) => c.concept);
+    const options = [answer.concept, ...distractors]
+      .map((o) => ({ o, k: Math.random() }))
+      .sort((a, b) => a.k - b.k)
+      .map((x) => x.o);
+    return {
+      question: `Which term does this describe?\n\n"${answer.definition}"`,
+      options,
+      correct: options.indexOf(answer.concept),
+    };
+  });
+}
+
 export async function createDuel(opts: {
   challengerId: string;
   opponentId: string;
-  quizId: string;
+  materialId: string;
+  questions: ReturnType<typeof buildDuelQuestions>;
   timeLimitSeconds: number;
   expiryHours: number;
 }) {
@@ -46,7 +86,8 @@ export async function createDuel(opts: {
     .insert({
       challenger_id: opts.challengerId,
       opponent_id: opts.opponentId,
-      quiz_id: opts.quizId,
+      material_id: opts.materialId,
+      questions: opts.questions,
       time_limit_seconds: opts.timeLimitSeconds,
       expires_at: expiresAt,
       status: "pending",

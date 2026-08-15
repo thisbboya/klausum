@@ -4,20 +4,30 @@ import {
   GraduationCap, Youtube, Camera, Gem, Gamepad2, FlaskConical, type LucideIcon,
 } from "lucide-react";
 
-export type NavLink = { to: string; label: string; icon: LucideIcon };
+/**
+ * `art` is the coloured pictogram shown in the sidebar; `icon` is the flat
+ * line version still used by the phone's thumb row, where a 20px emoji reads
+ * as a smudge.
+ *
+ * CourieX uses illustrations rather than a column of identical grey strokes,
+ * and it is the single biggest reason its sidebar looks like a product instead
+ * of a settings menu. Emoji rather than image files on purpose: they are
+ * already on every device, cost no requests, and cannot 404.
+ */
+export type NavLink = { to: string; label: string; icon: LucideIcon; art?: string };
 
 /**
  * Primary destinations — the daily loop. Everything else lives under "More tools"
  * so the sidebar stays scannable.
  */
 export const PRIMARY_LINKS: NavLink[] = [
-  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { to: "/materials", label: "Materials", icon: BookOpen },
-  { to: "/review", label: "Review", icon: Brain },
-  { to: "/quizzes", label: "Quizzes", icon: ListChecks },
-  { to: "/tutor", label: "AI Tutor", icon: MessagesSquare },
-  { to: "/community", label: "Social", icon: Users },
-  { to: "/schedule", label: "Planner", icon: CalendarClock },
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard, art: "🏠" },
+  { to: "/materials", label: "Materials", icon: BookOpen, art: "📚" },
+  { to: "/review", label: "Review", icon: Brain, art: "🧠" },
+  { to: "/quizzes", label: "Quizzes", icon: ListChecks, art: "✅" },
+  { to: "/tutor", label: "AI Tutor", icon: MessagesSquare, art: "💬" },
+  { to: "/community", label: "Social", icon: Users, art: "👥" },
+  { to: "/schedule", label: "Planner", icon: CalendarClock, art: "🗓️" },
   // Gem Shop moved out of the daily loop. It sells three consumables and is
   // somewhere you go after earning, not a place you work — a permanent slot in
   // the primary list made the sidebar one item longer than the thing it was
@@ -38,21 +48,21 @@ export const MORE_GROUPS: NavGroup[] = [
   {
     title: "Study tools",
     links: [
-      { to: "/gaps", label: "Gaps", icon: Target },
-      { to: "/formulas", label: "Formulas", icon: Sigma },
-      { to: "/videos", label: "Videos", icon: Youtube },
-      { to: "/solve", label: "Snap & Solve", icon: Camera },
-      { to: "/lab", label: "Lab", icon: FlaskConical },
-      { to: "/notes", label: "Notes", icon: NotebookPen },
-      { to: "/mindmaps", label: "Mind Maps", icon: Network },
+      { to: "/gaps", label: "Gaps", icon: Target, art: "🎯" },
+      { to: "/formulas", label: "Formulas", icon: Sigma, art: "➗" },
+      { to: "/videos", label: "Videos", icon: Youtube, art: "📺" },
+      { to: "/solve", label: "Snap & Solve", icon: Camera, art: "📸" },
+      { to: "/lab", label: "Lab", icon: FlaskConical, art: "🧪" },
+      { to: "/notes", label: "Notes", icon: NotebookPen, art: "📝" },
+      { to: "/mindmaps", label: "Mind Maps", icon: Network, art: "🕸️" },
     ],
   },
   {
     title: "Progress & rewards",
     links: [
-      { to: "/progress", label: "Progress", icon: TrendingUp },
-      { to: "/exams", label: "Exams", icon: GraduationCap },
-      { to: "/shop", label: "Gem Shop", icon: Gem },
+      { to: "/progress", label: "Progress", icon: TrendingUp, art: "📈" },
+      { to: "/exams", label: "Exams", icon: GraduationCap, art: "🎓" },
+      { to: "/shop", label: "Gem Shop", icon: Gem, art: "💎" },
     ],
   },
   {
@@ -62,7 +72,7 @@ export const MORE_GROUPS: NavGroup[] = [
       // focus_sessions rows in the app's lifetime, and the timer people do use
       // is the one embedded in the material reader, which writes to the same
       // table. A standalone page for it was a nav slot spent on nothing.
-      { to: "/games", label: "Games", icon: Gamepad2 },
+      { to: "/games", label: "Games", icon: Gamepad2, art: "🎮" },
     ],
   },
 ];
@@ -70,7 +80,7 @@ export const MORE_GROUPS: NavGroup[] = [
 /** Flat list, kept for callers that just need every secondary destination. */
 export const MORE_LINKS: NavLink[] = MORE_GROUPS.flatMap((g) => g.links);
 
-export const SETTINGS_LINK: NavLink = { to: "/settings", label: "Settings", icon: Settings };
+export const SETTINGS_LINK: NavLink = { to: "/settings", label: "Settings", icon: Settings, art: "⚙️" };
 
 /**
  * The phone's thumb row. Four destinations plus a "More" button — any more and
@@ -78,8 +88,8 @@ export const SETTINGS_LINK: NavLink = { to: "/settings", label: "Settings", icon
  * loop actually needs; everything else is one tap away behind More.
  */
 export const BOTTOM_TAB_LINKS: NavLink[] = [
-  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { to: "/materials", label: "Study", icon: BookOpen },
-  { to: "/review", label: "Review", icon: Brain },
-  { to: "/quizzes", label: "Quiz", icon: ListChecks },
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard, art: "🏠" },
+  { to: "/materials", label: "Study", icon: BookOpen, art: "📚" },
+  { to: "/review", label: "Review", icon: Brain, art: "🧠" },
+  { to: "/quizzes", label: "Quiz", icon: ListChecks, art: "✅" },
 ];

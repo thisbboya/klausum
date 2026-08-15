@@ -131,14 +131,116 @@ export const PAGE_TOURS: Record<string, TourStep[]> = {
 
   "/community": [
     {
+      target: "[data-tour-community-tabs]",
+      title: "Five things live here",
+      body: "Friends, Leaderboard, Duels, Challenges and Groups. Every one of them is optional — but the students who use them study noticeably more, because someone else is watching.",
+    },
+    {
+      target: "[data-tour-find]",
+      title: "Add someone by @handle",
+      body: "Do this: search their handle or name, tap Add, and wait for them to accept. Your own handle is in Settings — send it to your class group.",
+    },
+    {
       target: "[data-tour-boost]",
       title: "Send a friend a boost — it's free",
-      body: "Do this: tap Boost on any friend, once a day. They get 25 XP, you get 10. It costs you nothing, which is the point: a gift you pay for makes people hoard.",
+      body: "Do this: tap Boost on any friend, once a day. They get 25 XP, you get 10. It costs you nothing, which is the point: a gift you pay for out of your own balance just makes people hoard.",
+    },
+    {
+      target: "[data-tour-duels]",
+      title: "Duels: same questions, no cheating",
+      body: "Do this: open Duels, tap New Duel, pick a friend and one of YOUR materials. Klausum writes fresh questions the moment you send it — they don't exist beforehand, so neither of you can look them up. Each question is timed, and you can share the result when you win.",
     },
     {
       target: "[data-tour-league]",
-      title: "The league resets weekly",
-      body: "You're ranked against a small group, not the whole app, so the person above you is always catchable. Finish high and you're promoted.",
+      title: "The league resets every week",
+      body: "You're ranked against a small group, not the whole app, so the person above you is always catchable. Finish near the top and you're promoted; the reset means a bad week is never permanent.",
+    },
+  ],
+
+  "/gaps": [
+    {
+      target: "[data-tour-gaps-list]",
+      title: "Gaps are what you got wrong",
+      body: "Every quiz question you miss becomes a gap, ranked by how badly it hurt. This is the list Today's session drills you on, so it empties itself if you follow the plan.",
+    },
+    {
+      target: "[data-tour-gap-explain]",
+      title: "Explain this",
+      body: "Do this: tap it on your worst gap. The tutor teaches that one topic from scratch, using your own material. Close the gap and it leaves the list.",
+    },
+  ],
+
+  "/formulas": [
+    {
+      target: "[data-tour-formulas]",
+      title: "Your own formula sheet",
+      body: "Do this: save any formula you keep forgetting. How it works: they're stored with LaTeX, so they render properly, and you can export the whole sheet as a PDF to take into a revision session.",
+    },
+  ],
+
+  "/videos": [
+    {
+      target: "[data-tour-video-search]",
+      title: "Search, or paste a link",
+      body: "Do this: search a topic, or paste any YouTube URL. The chips underneath come from your own uploads, so the first suggestions are about what you're actually studying.",
+    },
+    {
+      target: "[data-tour-video-tabs]",
+      title: "Watch & study is the real feature",
+      body: "Open a video here rather than on YouTube: Klausum reads its transcript, splits it into chapters, answers questions about it as you watch, and can turn it into a quiz. Your position is saved, so you can leave mid-video.",
+    },
+  ],
+
+  "/solve": [
+    {
+      target: "[data-tour-solve]",
+      title: "Photograph a problem you're stuck on",
+      body: "Do this: take a picture of the question — handwritten is fine. You get the working step by step, not just the answer, so you can find the line where you went wrong.",
+    },
+  ],
+
+  "/notes": [
+    {
+      target: "[data-tour-notes-new]",
+      title: "Cornell notes, in three panes",
+      body: "Do this: make a note and write in the big pane first. Then turn each idea into a question on the left, and finally summarise it at the bottom from memory. That order is the whole method.",
+    },
+  ],
+
+  "/mindmaps": [
+    {
+      target: "[data-tour-mindmap]",
+      title: "See how ideas connect",
+      body: "Do this: generate a map from a material. Useful when a topic has parts that relate to each other — a flat list of notes hides the shape, and the shape is often the thing being examined.",
+    },
+  ],
+
+  "/schedule": [
+    {
+      target: "[data-tour-availability]",
+      title: "Tell it when you're free",
+      body: "Do this: drag across the hours you can actually study. Be honest — a plan built on hours you don't have is the fastest way to abandon it.",
+    },
+    {
+      target: "[data-tour-smart-plan]",
+      title: "AI Smart Plan fills the gaps",
+      body: "It takes your free hours, your exam dates and what you're behind on, and lays out sessions. You can drag anything afterwards; it's a starting point, not a contract.",
+    },
+  ],
+
+  "/exams": [
+    {
+      target: "[data-tour-exam-add]",
+      title: "Add your exam dates",
+      body: "Do this: add each exam with its date. How it works: the countdown feeds the planner, so revision is scheduled backwards from the exam rather than forwards from today.",
+    },
+  ],
+
+  "/shop": [
+    {
+      target: "[data-tour-shop-items]",
+      title: "Gems buy time, not answers",
+      body: "A streak freeze protects a missed day, hints help on a hard quiz, and a boost doubles XP for half an hour. Nothing here can be bought with money, and nothing gives you a grade you didn't earn.",
     },
   ],
 
@@ -147,6 +249,11 @@ export const PAGE_TOURS: Record<string, TourStep[]> = {
       target: "[data-tour-collection]",
       title: "Crests are the things you keep",
       body: "Some are bought with gems, some are earned and can never be bought, and a few only drop from chests. Equip one and it shows beside your name on the leaderboard.",
+    },
+    {
+      target: "[data-tour-heatmap]",
+      title: "Ninety days at a glance",
+      body: "Each square is a day; darker means more studied. It is the least flattering and most useful chart in the app — gaps in it are the honest record of a bad fortnight.",
     },
   ],
 

@@ -135,6 +135,7 @@ export function SendTreasureButton({ friendId, name }: { friendId: string; name?
     <button
       onClick={() => void send()}
       disabled={sending}
+      data-tour-boost
       title="Send a free daily boost"
       className="inline-flex shrink-0 items-center gap-1 rounded-xl border-2 border-border px-2.5 py-1 text-[11px] font-extrabold transition hover:border-success hover:text-success disabled:opacity-50"
     >

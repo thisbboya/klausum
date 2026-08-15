@@ -6,12 +6,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { awardXp } from "@/lib/xp";
 import { CHALLENGES, challengeWindow, type Challenge } from "@/lib/challenges";
-import { createDuel, TIME_LIMIT_OPTIONS, EXPIRY_OPTIONS, type Duel } from "@/lib/duels";
+import { createDuel, buildDuelQuestions, TIME_LIMIT_OPTIONS, EXPIRY_OPTIONS, type Duel } from "@/lib/duels";
 import { toast } from "@/lib/notify";
 import { TreasureInbox, SendTreasureButton } from "@/components/social-treasures";
 import {
   Users, Trophy, Target, UsersRound, Search, UserPlus, Check, X, Crown,
-  Plus, LogIn, Copy, Sparkles, CheckCircle2, Swords, Clock, Hourglass,
+  Plus, LogIn, Copy, Sparkles, CheckCircle2, Swords, Clock, Hourglass, Share2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/community")({ component: CommunityPage });
@@ -35,7 +35,7 @@ function CommunityPage() {
         <p className="text-sm font-semibold text-muted-foreground">Friends, leaderboard, duels, and study groups.</p>
       </header>
 
-      <div className="flex flex-wrap gap-2">
+      <div data-tour-community-tabs className="flex flex-wrap gap-2">
         {TABS.map(([k, label, Icon]) => (
           <button key={k} onClick={() => setTab(k)}
             className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-wide transition ${
@@ -139,7 +139,7 @@ function FriendsTab() {
 
   return (
     <div className="space-y-5">
-      <section className="card-chunky bg-card p-4">
+      <section data-tour-find className="card-chunky bg-card p-4">
         <h2 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Search className="h-4 w-4" /> Find friends</h2>
         <div className="flex gap-2">
           <input value={q} onChange={(e) => setQ(e.target.value)}
@@ -501,13 +501,21 @@ function DuelsTab() {
     },
   });
 
-  const { data: myQuizzes = [] } = useQuery({
-    queryKey: ["duel_quizzes", user?.id],
+  // Materials, not quizzes. A duel pointed at a saved quiz could be opened and
+  // read in another tab before accepting, so the winner was whoever thought of
+  // that first. Only materials with enough key concepts to build a real set are
+  // offered.
+  const { data: myMaterials = [] } = useQuery({
+    queryKey: ["duel_materials", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("quizzes").select("id, title, question_count")
-        .eq("user_id", user!.id).order("created_at", { ascending: false });
-      return data ?? [];
+      const { data } = await supabase
+        .from("study_materials")
+        .select("id, title, subject, key_concepts")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return (data ?? []).filter((m: any) => Array.isArray(m.key_concepts) && m.key_concepts.length >= 4);
     },
   });
 
@@ -538,16 +546,47 @@ function DuelsTab() {
   });
   const profById = useMemo(() => Object.fromEntries(duelProfiles.map((p: any) => [p.id, p])), [duelProfiles]);
 
-  const { data: quizTitles = [] } = useQuery({
-    queryKey: ["duel_quiz_titles", duels.map((d) => d.quiz_id).join(",")],
+  // Titles come from the material a duel was built from. Older duels still
+  // carry a quiz_id and no material, so both are looked up.
+  const { data: duelTitles = [] } = useQuery({
+    queryKey: ["duel_titles", duels.map((d: any) => d.material_id ?? d.quiz_id).join(",")],
     enabled: duels.length > 0,
     queryFn: async () => {
-      const ids = Array.from(new Set(duels.map((d) => d.quiz_id)));
-      const { data } = await supabase.from("quizzes").select("id, title").in("id", ids);
-      return data ?? [];
+      const matIds = Array.from(new Set(duels.map((d: any) => d.material_id).filter(Boolean)));
+      const quizIds = Array.from(new Set(duels.map((d: any) => d.quiz_id).filter(Boolean)));
+      const [mats, quizzes] = await Promise.all([
+        matIds.length
+          ? supabase.from("study_materials").select("id, title").in("id", matIds as string[])
+          : Promise.resolve({ data: [] as any[] }),
+        quizIds.length
+          ? supabase.from("quizzes").select("id, title").in("id", quizIds as string[])
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      return [...(mats.data ?? []), ...(quizzes.data ?? [])];
     },
   });
-  const titleById = useMemo(() => Object.fromEntries(quizTitles.map((q: any) => [q.id, q.title])), [quizTitles]);
+  const titleById = useMemo(() => Object.fromEntries(duelTitles.map((q: any) => [q.id, q.title])), [duelTitles]);
+
+  // Shared as text rather than a link or an image: it survives WhatsApp, means
+  // something to a friend who has never heard of Klausum, and needs nothing
+  // generated or hosted.
+  async function shareWin(mine: number, theirs: number | null, name?: string) {
+    const text = `Beat ${name ?? "a friend"} ${mine}% to ${theirs ?? 0}% in a Klausum duel. ${window.location.origin}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch {
+        /* dismissed — fall through to the clipboard */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied — go and gloat");
+    } catch {
+      toast.error("Couldn't copy that");
+    }
+  }
 
   const now = Date.now();
   const isExpired = (d: Duel) => d.status !== "completed" && new Date(d.expires_at).getTime() < now;
@@ -618,14 +657,26 @@ function DuelsTab() {
                     <div className="text-xs font-bold text-muted-foreground">
                       {myScore ?? "—"}% vs {theirScore ?? "—"}%
                     </div>
+                    {/* Bragging rights: a win nobody can see is worth much
+                        less than one you can show someone. */}
+                    {iWon && myScore !== null && (
+                      <button
+                        onClick={() => shareWin(myScore as number, theirScore, other?.full_name)}
+                        className="mt-1 inline-flex items-center gap-1 rounded-lg border-2 border-border px-2 py-0.5 text-[10px] font-extrabold transition hover:border-sky hover:text-sky"
+                      >
+                        <Share2 className="h-3 w-3" /> Share
+                      </button>
+                    )}
                   </div>
                 ) : myScore !== null ? (
                   <span className="shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Waiting on {other?.full_name ?? "friend"}</span>
                 ) : (
                   <Link
-                    to="/quizzes/$id/take"
-                    params={{ id: d.quiz_id }}
-                    search={{ challenge: d.id, timer: d.time_limit_seconds }}
+                    // Material duels carry their own questions and are played
+                    // here; anything older still points at its quiz.
+                    to={(d as any).material_id ? "/duel/$id" : "/quizzes/$id/take"}
+                    params={{ id: (d as any).material_id ? d.id : d.quiz_id }}
+                    search={(d as any).material_id ? undefined : { challenge: d.id, timer: d.time_limit_seconds }}
                     className="btn-3d btn-3d-success shrink-0 rounded-xl bg-success px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-success-foreground"
                   >
                     Go first
@@ -640,7 +691,7 @@ function DuelsTab() {
       {modalOpen && (
         <NewDuelModal
           friends={friends}
-          quizzes={myQuizzes}
+          materials={myMaterials}
           onClose={() => setModalOpen(false)}
           onCreated={() => {
             setModalOpen(false);
@@ -653,26 +704,44 @@ function DuelsTab() {
 }
 
 function NewDuelModal({
-  friends, quizzes, onClose, onCreated,
+  friends, materials, onClose, onCreated,
 }: {
-  friends: any[]; quizzes: any[]; onClose: () => void; onCreated: () => void;
+  friends: any[]; materials: any[]; onClose: () => void; onCreated: () => void;
 }) {
   const { user } = useAuth();
   const [friendId, setFriendId] = useState<string | null>(null);
-  const [quizId, setQuizId] = useState<string | null>(null);
+  const [materialId, setMaterialId] = useState<string | null>(null);
   const [timeLimit, setTimeLimit] = useState(60);
   const [expiryHours, setExpiryHours] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
   async function issue() {
-    if (!user || !friendId || !quizId) return;
+    if (!user || !friendId || !materialId) return;
+    const material = materials.find((m: any) => m.id === materialId);
+    // Questions are built here, at the moment the duel is issued, from the
+    // material's key concepts. Nothing exists to be looked up beforehand,
+    // which is the entire point of moving off saved quizzes.
+    const concepts = (material?.key_concepts ?? []).map((c: any) => ({
+      concept: String(c?.concept ?? c?.term ?? "").trim(),
+      definition: String(c?.definition ?? c?.description ?? "").trim(),
+    }));
+    const questions = buildDuelQuestions(concepts);
+    if (questions.length < 3) {
+      return toast.error("That material needs a few more key concepts first");
+    }
+
     setSubmitting(true);
     const { error } = await createDuel({
-      challengerId: user.id, opponentId: friendId, quizId, timeLimitSeconds: timeLimit, expiryHours,
+      challengerId: user.id,
+      opponentId: friendId,
+      materialId,
+      questions,
+      timeLimitSeconds: timeLimit,
+      expiryHours,
     });
     setSubmitting(false);
     if (error) return toast.error(reportError("community", error));
-    toast.success("Duel issued!");
+    toast.success("Duel issued — same questions for both of you");
     onCreated();
   }
 
@@ -707,18 +776,21 @@ function NewDuelModal({
         </div>
 
         <div className="mt-4">
-          <div className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Quiz to duel with</div>
-          {quizzes.length === 0 ? (
+          <div className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Material to duel on</div>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground">
+            Fresh questions are generated when you send it, so neither of you can see them first.
+          </p>
+          {materials.length === 0 ? (
             <div className="mt-2 rounded-xl border-2 border-dashed border-border p-4 text-center text-xs font-semibold text-muted-foreground">
-              No quizzes found — generate one in Quizzes first.
+              No material has enough key concepts yet — open one so Klausum can read it.
             </div>
           ) : (
             <div className="mt-2 max-h-32 space-y-1.5 overflow-y-auto">
-              {quizzes.map((q: any) => (
-                <button key={q.id} onClick={() => setQuizId(q.id)}
-                  className={`flex w-full items-center justify-between rounded-xl border-2 p-2 text-left transition ${quizId === q.id ? "border-success bg-success/10" : "border-border hover:border-success/50"}`}>
-                  <span className="truncate text-sm font-bold">{q.title}</span>
-                  <span className="shrink-0 text-xs font-bold text-muted-foreground">{q.question_count} Qs</span>
+              {materials.map((m: any) => (
+                <button key={m.id} onClick={() => setMaterialId(m.id)}
+                  className={`flex w-full items-center justify-between rounded-xl border-2 p-2 text-left transition ${materialId === m.id ? "border-success bg-success/10" : "border-border hover:border-success/50"}`}>
+                  <span className="truncate text-sm font-bold">{m.title}</span>
+                  <span className="shrink-0 text-xs font-bold text-muted-foreground">{m.key_concepts.length} concepts</span>
                 </button>
               ))}
             </div>
@@ -756,7 +828,7 @@ function NewDuelModal({
           </button>
           <button
             onClick={issue}
-            disabled={!friendId || !quizId || submitting}
+            disabled={!friendId || !materialId || submitting}
             className="btn-3d btn-3d-success flex-1 rounded-2xl bg-success py-2.5 text-sm font-extrabold uppercase tracking-wide text-success-foreground disabled:cursor-not-allowed"
           >
             <Swords className="mr-1.5 inline h-4 w-4" /> Issue Challenge
