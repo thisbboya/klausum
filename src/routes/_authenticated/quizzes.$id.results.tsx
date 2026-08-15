@@ -244,7 +244,7 @@ function Results() {
       </motion.div>
 
       {bloomData.length > 0 && (
-        <section>
+        <section data-tour-results-bloom>
           <h2 className="font-display text-base font-semibold mb-3">Bloom level breakdown</h2>
           <div className="card-chunky bg-card p-4 h-64">
             <ResponsiveContainer width="100%" height="100%">

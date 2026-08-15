@@ -119,13 +119,54 @@ export const PAGE_TOURS: Record<string, TourStep[]> = {
   "/lab": [
     {
       target: "[data-tour-lab-tabs]",
-      title: "Four views, not one long page",
-      body: "Quests are journeys with a crest at the end. Bench is the simulation you're running. Mine is the ones you asked the tutor for. Explore is a few hundred PhET experiments — good to play with, but they can't award XP because they can't tell us what you did.",
+      title: "Five views, not one long page",
+      body: "Quests are journeys with a crest at the end. Bench is the simulation you're running. Mine is the ones you asked the tutor for. Circuits is a real solver for R/L/C networks. Explore is a few hundred PhET experiments — good to play with, but they can't award XP because they can't tell us what you did.",
     },
     {
       target: "[data-tour-lab-quest]",
       title: "Quests unlock in order",
       body: "Do this: tap the first step. It opens the right simulation with the mission attached. Finish every step and you keep a crest that cannot be bought at any price.",
+    },
+  ],
+
+  // ── Sub-pages. These are separate routes, so they get their own tours
+  //    rather than being crammed into the parent page's walkthrough.
+  "/materials/$id": [
+    {
+      target: "[data-tour-reader-tabs]",
+      title: "One document, six ways to study it",
+      body: "Read is the original. Adapted is the same content rewritten for your learning style. Then flashcards, quiz, notes and chat — all built from this one upload, so nothing here needed a second file.",
+    },
+    {
+      target: "[data-tour-highlight]",
+      title: "Highlight anything and ask about it",
+      body: "Do this: select any sentence in the text. A button appears — tap it and the tutor explains that exact passage, with the rest of the document as context. It is the fastest way out of being stuck on one paragraph.",
+    },
+    {
+      target: "[data-tour-reader-timer]",
+      title: "The timer is doing real work",
+      body: "It records how long you actually read, which feeds Today's session and your weekly totals. Leave the page and it stops — there is no credit for a tab left open.",
+    },
+  ],
+
+  "/quizzes/$id/results": [
+    {
+      target: "[data-tour-results-breakdown]",
+      title: "Read the breakdown, not just the score",
+      body: "Every question you missed is listed with the right answer and why. How it works: each one also becomes a knowledge gap, so tomorrow's session drills exactly these and nothing else.",
+    },
+    {
+      target: "[data-tour-results-bloom]",
+      title: "Bloom levels show HOW you failed",
+      body: "Losing marks at Level 1 means you haven't memorised it. Losing them at Level 4 means you know the facts but can't apply them — a completely different fix, and the reason this chart is here.",
+    },
+  ],
+
+  "/duel/$id": [
+    {
+      target: "[data-tour-duel-timer]",
+      title: "One clock per question",
+      body: "It runs down for each question separately. Running out counts as a wrong answer and moves on — there is no going back, which is what makes a duel a duel.",
     },
   ],
 

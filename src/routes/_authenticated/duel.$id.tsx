@@ -142,6 +142,7 @@ function DuelPage() {
           <Swords className="h-4 w-4 text-primary" /> Duel · {idx + 1}/{questions.length}
         </span>
         <span
+          data-tour-duel-timer
           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-mono text-sm font-extrabold tabular-nums ${
             (left ?? 99) <= 5 ? "bg-destructive/15 text-destructive" : "bg-surface-2 text-muted-foreground"
           }`}

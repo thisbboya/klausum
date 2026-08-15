@@ -22,6 +22,7 @@ import { toast } from "@/lib/notify";
 import { reportError } from "@/lib/report-error";
 import { CHALLENGES } from "@/lib/sim/challenges";
 import { QuestTrack } from "@/components/sim/QuestTrack";
+import { CircuitLab } from "@/components/sim/CircuitLab";
 import { useCollection } from "@/components/collection";
 
 export const Route = createFileRoute("/_authenticated/lab")({ component: Lab });
@@ -40,7 +41,7 @@ function Lab() {
   // throttles them precisely so this doesn't thrash.
   const [readouts, setReadouts] = useState<Record<string, number>>({});
   const [phetSubject, setPhetSubject] = useState<PhetSim["subject"]>("physics");
-  const [view, setView] = useState<"quests" | "bench" | "mine" | "explore">("quests");
+  const [view, setView] = useState<"quests" | "bench" | "mine" | "circuits" | "explore">("quests");
 
   // Simulations the student asked the tutor for and kept. This is how the Lab
   // covers topics nobody hand-built: the engine is already loaded, so each one
@@ -113,6 +114,7 @@ function Lab() {
             ["quests", "Quests"],
             ["bench", "Bench"],
             ["mine", "Mine"],
+            ["circuits", "Circuits"],
             ["explore", "Explore"],
           ] as const
         ).map(([k, label]) => (
@@ -246,6 +248,16 @@ function Lab() {
           their state to us, so they cannot be missions — and saying so here is
           better than letting someone wonder why an hour of PhET earned them
           nothing. */}
+      {view === "circuits" && (
+        <section className="space-y-3">
+          <p className="text-sm font-semibold text-muted-foreground">
+            A real circuit solver - the same Modified Nodal Analysis SPICE uses. DC
+            operating points and full AC sweeps for R, L, C and sources.
+          </p>
+          <CircuitLab />
+        </section>
+      )}
+
       {view === "explore" && (
       <section className="space-y-3">
         <p className="text-sm font-semibold text-muted-foreground">

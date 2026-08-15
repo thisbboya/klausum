@@ -31,11 +31,21 @@ export function resetPageTours() {
 
 export function PageTour() {
   const location = useLocation();
-  // Match the longest configured route that prefixes the current path, so
-  // /materials/<id> still counts as the materials page.
+  // Match the most specific configured route.
+  //
+  // Keys may contain params — "/materials/$id" — so each is compiled to a
+  // pattern where a $segment matches one path segment. Sorting by segment
+  // count first means "/materials/$id" wins over "/materials" when reading a
+  // document, and the parent still wins on the index page.
+  const path = location.pathname.replace(/\/+$/, "") || "/";
   const route = Object.keys(PAGE_TOURS)
-    .filter((r) => location.pathname === r || location.pathname.startsWith(r + "/"))
-    .sort((a, b) => b.length - a.length)[0];
+    .filter((r) => {
+      const rx = new RegExp(
+        "^" + r.split("/").map((s) => (s.startsWith("$") ? "[^/]+" : s)).join("/") + "(/|$)",
+      );
+      return rx.test(path);
+    })
+    .sort((a, b) => b.split("/").length - a.split("/").length || b.length - a.length)[0];
 
   const [run, setRun] = useState(false);
 

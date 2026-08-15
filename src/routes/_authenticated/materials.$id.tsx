@@ -198,7 +198,9 @@ function MaterialDetail() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
+          <span data-tour-reader-timer>
           <FocusTimer materialId={material.id} />
+          </span>
           <button onClick={handleDownload} className="rounded-xl border-2 border-border px-3 py-2 text-xs hover:bg-accent/10 inline-flex items-center gap-1.5" title="Download original">
             <Download className="h-3.5 w-3.5" /> Download
           </button>
@@ -233,7 +235,7 @@ function MaterialDetail() {
         <>
           {/* CourieX-simple: Read is the main mode; every other view lives in
               one compact dropdown so mobile and desktop stay uncluttered */}
-          <div className="flex items-center justify-between gap-3 border-b border-border pb-2">
+          <div data-tour-reader-tabs className="flex items-center justify-between gap-3 border-b border-border pb-2">
             <button
               onClick={() => setTab("read")}
               className={`rounded-full border-2 px-4 py-1.5 text-sm font-extrabold transition ${
